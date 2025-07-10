@@ -106,7 +106,7 @@ Meows: {meows}, :3's {colon_threes}
             total, meows, colon_threes = calculate_basic_analytics(data)
             activity = generate_last_7_days(data)
 
-            requests.post(f"{WEB_SERVER_URL}/api/admin/robot/sendDiscordStats", json={
+            requests.post(f"{WEB_SERVER_URL}/api/admin/robot/send-discord-stats", json={
                 'code': WEB_SERVER_CODE,
                 'totalMessages': total,
                 'meows': meows,
