@@ -60,7 +60,7 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error):
         return
 
     if isinstance(error, commands.BotMissingPermissions):
-        await ctx.respond(f"Sowwie mldchan gave too little permissions to me :( ask her to give me {', '.join(error.missing_permissions)} 🥺",
+        await ctx.respond(f"Sowwie Lunya gave too little permissions to me :( ask her to give me {', '.join(error.missing_permissions)} 🥺",
             ephemeral=True)
         return
 
@@ -71,7 +71,7 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error):
     sentry_sdk.capture_exception(error)
     try:
         # respond
-        await ctx.respond("An error occured with this command, please ask mldchan to fix it :(", ephemeral=True)
+        await ctx.respond("An error occured with this command, please ask Lunya to fix it :(", ephemeral=True)
     except Exception as e:
         sentry_sdk.capture_exception(e)
     raise error

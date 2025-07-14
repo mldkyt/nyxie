@@ -81,7 +81,7 @@ class AutoTikTokNotifications(discord.Cog):
                 existing_data["counter"] = existing_data["counter"] + 1
 
                 emb = discord.Embed(
-                    title="mldchan just posted a video!",
+                    title="Lunya just posted a video!",
                     description=f'{i["title"]}\n\n{i["description"]}',
                     color=discord.Color.from_rgb(32, 170, 176) if existing_data["counter"] % 2 == 0 else discord.Color.from_rgb(236, 0, 70),
                     url=i["url"],
@@ -93,7 +93,7 @@ class AutoTikTokNotifications(discord.Cog):
                     ]
                 )
                 asyncio.get_event_loop().create_task(
-                    channel.send(f"<@&{ROLE_TIKTOK}> mldchan posted a new video~!\nClick the title of the embed or click this link~ <{i['url']}>", embed=emb)
+                    channel.send(f"<@&{ROLE_TIKTOK}> Lunya posted a new video~!\nClick the title of the embed or click this link~ <{i['url']}>", embed=emb)
                 )
                 existing_data["posted_ids"].append(i["id"])
                 existing_data["posted_data"].append(i)
@@ -103,7 +103,7 @@ class AutoTikTokNotifications(discord.Cog):
                     if i["id"] in msg.content:
                         # Update the embed
                         emb = discord.Embed(
-                            title="mldchan just posted a video!",
+                            title="Lunya just posted a video!",
                             description=f'{i["title"]}\n\n{i["description"]}',
                             color=discord.Color.from_rgb(32, 170, 176) if existing_data[
                                                                               "counter"] % 2 == 0 else discord.Color.from_rgb(
