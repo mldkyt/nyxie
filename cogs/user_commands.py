@@ -327,7 +327,7 @@ class PickerComponent(discord.ui.View):
 
     async def paws_at_you(self, interaction: discord.Interaction):
         try:
-            await interaction.respond("✅ *paws at mldchan*", ephemeral=True)
+            await interaction.respond("✅ *paws at Lunya*", ephemeral=True)
             dm_cache.append(f"{interaction.user.mention} *paws at you* :3")
         except Exception as e:
             sentry_sdk.capture_exception(e)
@@ -335,7 +335,7 @@ class PickerComponent(discord.ui.View):
 
     async def click(self, interaction: discord.Interaction):
         try:
-            await interaction.respond("✅ *click click* at mldchan", ephemeral=True)
+            await interaction.respond("✅ *click click* at Lunya", ephemeral=True)
 
             click_data = get_data("clicker")
             # total
@@ -972,9 +972,9 @@ class UserCommands(discord.Cog):
             sentry_sdk.capture_exception(e)
             await ctx.respond("Failed to create new issue!", ephemeral=True)
 
-    @user_commands.command(name='ban_from_mldchan', description='Ban user from mldchan\'s Discord server',
+    @user_commands.command(name='ban_from_lunya', description='Ban user from Lunya\'s Discord server',
                            integration_types=[discord.IntegrationType.user_install])
-    async def ban_from_mldchan(self, ctx: discord.ApplicationContext, user: discord.User, reason: str):
+    async def ban_from_lunya(self, ctx: discord.ApplicationContext, user: discord.User, reason: str):
         try:
             # Verify right user
             if ctx.user.id != int(OWNER):
@@ -995,7 +995,7 @@ class UserCommands(discord.Cog):
 
             await logs_channel.send(embed=discord.Embed(
                 title="Member Banned Externally",
-                description=f"The member {user.mention} was banned here because mldchan issued a ban command from a different server.",
+                description=f"The member {user.mention} was banned here because Lunya issued a ban command from a different server.",
                 fields=[
                     discord.EmbedField(name="Banned Member", value=user.mention, inline=True),
                     discord.EmbedField(name="Reason", value=reason, inline=True)
@@ -1050,7 +1050,7 @@ class UserCommands(discord.Cog):
             sentry_sdk.capture_exception(e)
 
     @discord.message_command(name='Borrow Meme',
-                             description='Repost the message inside of the memes channel of mldchan\'s Discord server',
+                             description='Repost the message inside of the memes channel of Lunya\'s Discord server',
                              integration_types=[discord.IntegrationType.user_install])
     async def borrow_meme(self, ctx: discord.ApplicationContext, message: discord.Message):
         try:
@@ -1073,7 +1073,7 @@ class UserCommands(discord.Cog):
             # Delete
             shutil.rmtree("temp")
 
-            await ctx.respond("Meme reposted in mldchan server successfully!", ephemeral=True)
+            await ctx.respond("Meme reposted in Lunya server successfully!", ephemeral=True)
         except Exception as e:
             await ctx.respond("Error!", ephemeral=True)
             sentry_sdk.capture_exception(e)
@@ -1086,7 +1086,7 @@ class UserCommands(discord.Cog):
                               f"py-cord {discord.__version__}\n"
                               f"sentry_sdk {sentry_sdk.VERSION}\n"
                               f"yt_dlp {yt_dlp.version.__version__} {yt_dlp.version.CHANNEL}\n\n"
-                              f"Licensed under GNU AGPL v3.0. Software's source code is [here](<https://code.mldchan.dev/mld/Ai>)", ephemeral=True)
+                              f"Licensed under GNU AGPL v3.0. Software's source code is [here](<https://git.lunya.pet/Lunya/Ai>)", ephemeral=True)
         except Exception as e:
             await ctx.respond("Error!", ephemeral=True)
             sentry_sdk.capture_exception(e)

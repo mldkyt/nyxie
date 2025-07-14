@@ -66,7 +66,7 @@ class AutoFediNotifications(discord.Cog):
 
             asyncio.get_event_loop().create_task(
                 channel.send(
-                    f"<@&{ROLE_FEDI}> mldchan posted a new note on fedi~! Go check it out~ https://{FEDI_INSTANCE}/notes/{i}")
+                    f"<@&{ROLE_FEDI}> Lunya posted a new note on fedi~! Go check it out~ https://{FEDI_INSTANCE}/notes/{i}")
             )
 
             existing_data["posted_posts"].append(i)

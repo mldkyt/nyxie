@@ -87,7 +87,7 @@ class AutoYouTubeNotifications(discord.Cog):
                 )
 
                 asyncio.get_event_loop().create_task(
-                    channel.send(f"<@&{ROLE_VIDEOS}> mldchan posted a new video~!\nClick the title of the embed or click this link~ https://youtube.com/watch?v={i['id']}", embed=emb)
+                    channel.send(f"<@&{ROLE_VIDEOS}> Lunya posted a new video~!\nClick the title of the embed or click this link~ https://youtube.com/watch?v={i['id']}", embed=emb)
                 )
 
                 existing_data["posted_ids"].append(i["id"])
