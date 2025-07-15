@@ -4,7 +4,7 @@ import logging
 import discord
 import sentry_sdk
 
-from constants import GUILD, CHANNEL_MODERATION
+from constants import GUILD, CHANNEL_MODERATION, CHANNEL_COUNTING
 from util.storage import set_data, get_data
 from discord.ext import tasks
 
@@ -234,6 +234,13 @@ class InitCache(discord.Cog):
             if not cached_author:
                 return
             if "bot" in cached_author and cached_author["bot"]:
+                return
+
+            # Explicitly skip number messages in the counting channel
+            if int(payload.channel_id) == int(CHANNEL_COUNTING) \
+                    and 'content' in cached \
+                    and isinstance(cached['content'], str) \
+                    and cached['content'].isnumeric():
                 return
 
             log_channel = self.bot.get_channel(int(CHANNEL_MODERATION))
