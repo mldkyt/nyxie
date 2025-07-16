@@ -1,12 +1,12 @@
-import datetime
+import logging
 
 import discord
-import sentry_sdk
 from discord import Interaction
 
 from constants import CHANNEL_MODERATION
 from util.storage import get_data, set_data
 
+ai_logger = logging.getLogger("ai")
 
 class ReportMessageOptions(discord.ui.View):
     def __init__(self):
@@ -32,7 +32,7 @@ class ReportMessageOptions(discord.ui.View):
 
             await reporter.send(embed=emb)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
 
     async def reject_ban_reason(self, interaction: discord.Interaction, logs_id: int):
         try:
@@ -54,7 +54,7 @@ class ReportMessageOptions(discord.ui.View):
 
             await reporter.send(embed=emb)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
 
     # Buttons to report author of message
 
@@ -77,7 +77,7 @@ class ReportMessageOptions(discord.ui.View):
             await interaction.respond(f"`/ban user:{data['author_id']} reason:{data['report_reason']}`", ephemeral=True)
             await self.approve_ban_reason(interaction, data['logs_msg'])
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await interaction.respond("An error occured. Report created successfully.", ephemeral=True)
 
     @discord.ui.button(label="Warn Message Author...", style=discord.ButtonStyle.red, custom_id="warn_message_author", row=2)
@@ -95,7 +95,7 @@ class ReportMessageOptions(discord.ui.View):
                                       ephemeral=True)
             await self.approve_ban_reason(interaction, data['logs_msg'])
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await interaction.respond("An error occured. Report created successfully.", ephemeral=True)
 
     @discord.ui.button(label="Kick Message Author", style=discord.ButtonStyle.red, custom_id="kick_message_author", row=2)
@@ -113,7 +113,7 @@ class ReportMessageOptions(discord.ui.View):
                                       ephemeral=True)
             await self.approve_ban_reason(interaction, data['logs_msg'])
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await interaction.respond("An error occured. Report created successfully.", ephemeral=True)
 
     @discord.ui.button(label="Timeout Message Author 24h", style=discord.ButtonStyle.red, custom_id="timeout_message_author_1", row=2)
@@ -131,7 +131,7 @@ class ReportMessageOptions(discord.ui.View):
                                       ephemeral=True)
             await self.approve_ban_reason(interaction, data['logs_msg'])
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await interaction.respond("An error occured. Report created successfully.", ephemeral=True)
 
     @discord.ui.button(label="Timeout Message Author 7d", style=discord.ButtonStyle.red, custom_id="timeout_message_author_2", row=2)
@@ -149,7 +149,7 @@ class ReportMessageOptions(discord.ui.View):
                                       ephemeral=True)
             await self.approve_ban_reason(interaction, data['logs_msg'])
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await interaction.respond("An error occured. Report created successfully.", ephemeral=True)
 
 

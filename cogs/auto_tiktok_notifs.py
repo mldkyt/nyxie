@@ -1,13 +1,14 @@
 import asyncio
+import logging
 
 import discord
-import sentry_sdk
 import yt_dlp
 from discord.ext import tasks
 
 from constants import TT_LINK, ROLE_TIKTOK, CHANNEL_NEW_TIKTOK
 from util.storage import get_data, set_data
 
+ai_logger = logging.getLogger("ai")
 
 async def get_all_latest_post_info():
     try:
@@ -34,7 +35,7 @@ async def get_all_latest_post_info():
 
         return output
     except Exception as e:
-        sentry_sdk.capture_exception(e)
+        ai_logger.exception("An error occurred:")
         return []
 
 
@@ -125,5 +126,5 @@ class AutoTikTokNotifications(discord.Cog):
 
             set_data("tt_notifications", existing_data)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
 

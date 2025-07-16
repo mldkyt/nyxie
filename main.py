@@ -1,11 +1,8 @@
 import logging
-import sys
+import os
 
 import discord
-import sentry_sdk
 from discord.ext import commands
-from sentry_sdk.integrations.aiohttp import AioHttpIntegration
-from sentry_sdk.integrations.asyncio import AsyncioIntegration
 
 from cogs.auto_fedi_notifs import AutoFediNotifications
 from cogs.auto_tiktok_notifs import AutoTikTokNotifications
@@ -19,16 +16,28 @@ from cogs.message_reporting import MessageReporting
 from cogs.nsfw_verification import NsfwVerification
 from cogs.statistics import ServerStatistics
 from cogs.user_commands import UserCommands
-from constants import DISCORD_TOKEN, SENTRY_DSN
+from constants import DISCORD_TOKEN
 
-logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+ai_logger = logging.getLogger("ai")
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-sentry_sdk.init(SENTRY_DSN,
-                integrations=[AioHttpIntegration(), AsyncioIntegration()], traces_sample_rate=1.0,
-                profiles_sample_rate=1.0)
+ai_logger.setLevel(logging.DEBUG)
+
+if not os.path.exists("logs"):
+    os.mkdir("logs")
+
+file_handler = logging.FileHandler(filename="logs/ai.log", mode="a", encoding="utf-8")
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(formatter)
+
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+console_handler.setFormatter(formatter)
+
+ai_logger.addHandler(file_handler)
+ai_logger.addHandler(console_handler)
 
 bot = discord.Bot(intents=discord.Intents.all())
-
 
 @bot.event
 async def on_ready():
@@ -68,12 +77,12 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error):
         await ctx.respond("This command was only meant to be used in DM's with me 👉👈", ephemeral=True)
         return
 
-    sentry_sdk.capture_exception(error)
+    ai_logger.exception("An error occurred:")
     try:
         # respond
         await ctx.respond("An error occured with this command, please ask Lunya to fix it :(", ephemeral=True)
     except Exception as e:
-        sentry_sdk.capture_exception(e)
+        pass
     raise error
 
 bot.add_cog(DevCommands(bot))
