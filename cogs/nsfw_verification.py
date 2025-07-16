@@ -1,13 +1,14 @@
 import asyncio
+import logging
 import time
 
 import discord
-import sentry_sdk
 from discord.ext import commands
 
 from constants import ROLE_NSFW, GUILD
 from util.storage import get_data, set_data
 
+ai_logger = logging.getLogger("ai")
 
 class NsfwView(discord.ui.View):
     def __init__(self):
@@ -43,7 +44,7 @@ class NsfwView(discord.ui.View):
                     ephemeral=True)
             )
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await interaction.respond("an error occured :(", ephemeral=True)
 
 
@@ -54,7 +55,7 @@ class NsfwView(discord.ui.View):
             self.disable_all_items()
             await interaction.edit(view=self)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await interaction.respond("an error occured :(", ephemeral=True)
 
 class NsfwRolePicker(discord.ui.View):
@@ -114,7 +115,7 @@ class NsfwVerification(commands.Cog):
 
             await ctx.respond(f"banned {message.author.name}", ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await ctx.respond("an error occured :(", ephemeral=True)
 
     @discord.command(name="unban_nsfw", description="unban user from nsfw")
@@ -139,6 +140,6 @@ class NsfwVerification(commands.Cog):
 
             await ctx.respond(f"unbanned {user.name}", ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await ctx.respond("an error occured :(", ephemeral=True)
 

@@ -1,12 +1,12 @@
-import asyncio
+import logging
 import random
 import re
 
 import discord
-import sentry_sdk
 
 from constants import GUILD
 
+ai_logger = logging.getLogger("ai")
 
 def handle_colon_three(message: discord.Message):
     # count :3 in message
@@ -109,4 +109,4 @@ class FunnyAutoResponse(discord.Cog):
             if len(message_reply.strip()) > 0:
                 await message.channel.send(message_reply)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")

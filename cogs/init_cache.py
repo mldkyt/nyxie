@@ -2,12 +2,12 @@ import asyncio
 import logging
 
 import discord
-import sentry_sdk
 
 from constants import GUILD, CHANNEL_MODERATION, CHANNEL_COUNTING
 from util.storage import set_data, get_data
 from discord.ext import tasks
 
+ai_logger = logging.getLogger("ai")
 
 def compare_embeds(cached: list[dict], embeds: list[discord.Embed]):
     cached: list[discord.Embed] = [discord.Embed.from_dict(i) for i in cached]
@@ -77,9 +77,9 @@ class InitCache(discord.Cog):
 
                 self.cache_message(message)
 
-            logging.info(f"Caching channel #%s finished.", channel.name)
+            ai_logger.info(f"Caching channel #%s finished.", channel.name)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
 
     @discord.Cog.listener()
     async def on_ready(self):
@@ -89,17 +89,17 @@ class InitCache(discord.Cog):
             if guild is None:
                 return
 
-            logging.info("Counting %d channels...", len(guild.text_channels))
+            ai_logger.info("Counting %d channels...", len(guild.text_channels))
 
             await asyncio.gather(
                 *[self.init_channel(i) for i in guild.text_channels]
             )
 
             self.save()
-            logging.info(f"Created cache for %d messages and %d users", len(self.cached_messages),
+            ai_logger.info(f"Created cache for %d messages and %d users", len(self.cached_messages),
                          len(self.cached_users))
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
 
     def message_is_cached(self, message: discord.Message) -> bool:
         return any([i['id'] == message.id for i in self.cached_messages])
@@ -153,27 +153,25 @@ class InitCache(discord.Cog):
         return None if len(a) == 0 else a[0]
 
     def save(self):
-        with sentry_sdk.start_transaction(op="task", name="Save cache"):
-            logging.info("Writing bot_cache")
-            set_data("bot_cache", {
-                "messages": self.cached_messages,
-                "users": self.cached_users,
-                "channels": self.cached_channels
-            })
-            logging.info("Written bot_cache")
+        ai_logger.info("Writing bot_cache")
+        set_data("bot_cache", {
+            "messages": self.cached_messages,
+            "users": self.cached_users,
+            "channels": self.cached_channels
+        })
+        ai_logger.info("Written bot_cache")
 
     def load(self):
-        with sentry_sdk.start_transaction(op="task", name="Load cache"):
-            logging.info("Loading bot_cache")
-            data = get_data("bot_cache")
+        ai_logger.info("Loading bot_cache")
+        data = get_data("bot_cache")
 
-            if "messages" in data:
-                self.cached_messages = data["messages"]
-            if "users" in data:
-                self.cached_users = data["users"]
-            if "channels" in data:
-                self.cached_channels = data["channels"]
-            logging.info("Loaded bot_cache")
+        if "messages" in data:
+            self.cached_messages = data["messages"]
+        if "users" in data:
+            self.cached_users = data["users"]
+        if "channels" in data:
+            self.cached_channels = data["channels"]
+        ai_logger.info("Loaded bot_cache")
 
     @discord.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -220,7 +218,7 @@ class InitCache(discord.Cog):
 
             self.update_cached_message(fetched)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
 
     @discord.Cog.listener()
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
@@ -255,4 +253,4 @@ class InitCache(discord.Cog):
                 ]
             ))
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")

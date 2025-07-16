@@ -1,14 +1,15 @@
 import datetime
+import logging
 import re
 
 import discord
 import requests
-import sentry_sdk
 from discord.ext import tasks
 
 from constants import OWNER, WEB_SERVER_URL, WEB_SERVER_CODE
 from util.storage import get_data
 
+ai_logger = logging.getLogger("ai")
 
 def calculate_basic_analytics(data: dict) -> tuple[int, int, int]:
     """
@@ -96,7 +97,7 @@ Meows: {meows}, :3's {colon_threes}
 {activity}""")
         except Exception as e:
             await ctx.respond("An error occured UwU", ephemeral=True)
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
 
     @tasks.loop(hours=1)
     async def send_statistics_to_server(self):
@@ -118,4 +119,4 @@ Meows: {meows}, :3's {colon_threes}
             }).raise_for_status()
 
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")

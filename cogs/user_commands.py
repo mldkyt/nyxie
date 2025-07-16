@@ -1,4 +1,5 @@
 import datetime
+import logging
 import os.path
 import random
 import re
@@ -12,7 +13,6 @@ import aiohttp
 import discord
 import pytz
 import requests
-import sentry_sdk
 import yt_dlp.version
 from dateutil.parser import isoparse
 from discord import Interaction
@@ -25,6 +25,7 @@ from util.storage import get_data, set_data
 
 dm_cache = []
 
+ai_logger = logging.getLogger("ai")
 
 def generate_meow():
     meow = random.choice(["meow", "nya", "mraow", "mwrmmwra"])
@@ -69,7 +70,7 @@ class RefreshTimeView(discord.ui.View):
                                            f"Server clock: {utc_time.strftime('%a %d %b %Y, %H:%M:%S %Z (%z)')}\n"
                                            f"Your time: <t:{int(utc_time.timestamp())}:F>")
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await interaction.response.send_message(f"error :(", ephemeral=True)
 
 class ReadReceiptComponent(discord.ui.View):
@@ -96,7 +97,7 @@ class ReadReceiptComponent(discord.ui.View):
             await interaction.edit(content=f'{data["message"]}\n*Read by {", ".join([f"<@{i}>" for i in data["readUsers"]])}*')
             set_data(f"read_receipt/{interaction.message.id}", data)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await interaction.respond("error :(\n"
                                       "-# this error was automatically reported", ephemeral=True)
 
@@ -196,7 +197,7 @@ class PickerComponent(discord.ui.View):
             await interaction.respond(f"✅ Message sent\n{meow} :3", ephemeral=True)
             dm_cache.append(f"{meow} by {interaction.user.mention} :3")
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
     async def meow_fedi(self, interaction: discord.Interaction):
@@ -219,7 +220,7 @@ class PickerComponent(discord.ui.View):
                         message = await req.text()
                         raise ValueError(f"Fedi Meow failed with code {req.status}: {req.reason} {message}")
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
     async def colon_three(self, interaction: discord.Interaction):
@@ -228,7 +229,7 @@ class PickerComponent(discord.ui.View):
             await interaction.respond(f"✅ Message sent\n:{colon_three} :3", ephemeral=True)
             dm_cache.append(f"{colon_three} by {interaction.user.mention} :3")
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
     async def colon_three_fedi(self, interaction: discord.Interaction):
@@ -250,7 +251,7 @@ class PickerComponent(discord.ui.View):
                         message = await req.text()
                         raise ValueError(f"Fedi Meow failed with code {req.status}: {req.reason} {message}")
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
     async def cute(self, interaction: discord.Interaction):
@@ -258,7 +259,7 @@ class PickerComponent(discord.ui.View):
             await interaction.respond(f"✅ {generate_fluster()}", ephemeral=True)
             dm_cache.append(f"{interaction.user.mention} said that you're such a cute girl~ :3")
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
     async def pretty(self, interaction: discord.Interaction):
@@ -266,7 +267,7 @@ class PickerComponent(discord.ui.View):
             await interaction.respond(f"✅ {generate_fluster()}", ephemeral=True)
             dm_cache.append(f"{interaction.user.mention} said that you're such a pretty girl~ :3")
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
     async def gorgeous(self, interaction: discord.Interaction):
@@ -274,7 +275,7 @@ class PickerComponent(discord.ui.View):
             await interaction.respond(f"✅ {generate_fluster()}", ephemeral=True)
             dm_cache.append(f"{interaction.user.mention} said that you're such a gorgeous girl~ :3")
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
     async def cool(self, interaction: discord.Interaction):
@@ -282,7 +283,7 @@ class PickerComponent(discord.ui.View):
             await interaction.respond(f"✅ {generate_fluster()}", ephemeral=True)
             dm_cache.append(f"{interaction.user.mention} said that you're such a coool girl~ :3")
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
     async def good_girl(self, interaction: discord.Interaction):
@@ -290,7 +291,7 @@ class PickerComponent(discord.ui.View):
             await interaction.respond(f"✅ {generate_fluster()} {generate_fluster()}", ephemeral=True)
             dm_cache.append(f"{interaction.user.mention} said that you're such a goooood girl~ :3")
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
     async def meowat(self, interaction: discord.Interaction):
@@ -298,7 +299,7 @@ class PickerComponent(discord.ui.View):
             await interaction.respond(f"✅ meow -> <@{OWNER}>", ephemeral=True)
             dm_cache.append(f"{interaction.user.mention} meowd at you :3")
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
     async def purrr(self, interaction: discord.Interaction):
@@ -306,7 +307,7 @@ class PickerComponent(discord.ui.View):
             await interaction.respond("✅ *purrrrrrr*", ephemeral=True)
             dm_cache.append(f"{interaction.user.mention} has *purrrrr* :3")
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
     async def girlkiss(self, interaction: discord.Interaction):
@@ -314,7 +315,7 @@ class PickerComponent(discord.ui.View):
             await interaction.respond("✅ Girls were kissed :3", ephemeral=True)
             dm_cache.append(f"{interaction.user.mention} has give you girlkiss :3333333333")
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
     async def boop(self, interaction: discord.Interaction):
@@ -322,7 +323,7 @@ class PickerComponent(discord.ui.View):
             await interaction.respond("✅ >///<", ephemeral=True)
             dm_cache.append(f"{interaction.user.mention} has booped you :3")
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
     async def paws_at_you(self, interaction: discord.Interaction):
@@ -330,7 +331,7 @@ class PickerComponent(discord.ui.View):
             await interaction.respond("✅ *paws at Lunya*", ephemeral=True)
             dm_cache.append(f"{interaction.user.mention} *paws at you* :3")
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
     async def click(self, interaction: discord.Interaction):
@@ -357,7 +358,7 @@ class PickerComponent(discord.ui.View):
 
             dm_cache.append(f"{interaction.user.mention} clicked at you :3")
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
 
@@ -391,7 +392,7 @@ class ForgejoCreateIssueModal(discord.ui.Modal):
             await interaction.respond("Issue created successfully!\n"
                                       f"https://{FORGEJO_INSTANCE}/{self.user}/{self.repo}/issues/{res_b['number']}", ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await interaction.respond("an error occurred", ephemeral=True)
 
 class ForgejoCreateIssueButton(discord.ui.View):
@@ -405,7 +406,7 @@ class ForgejoCreateIssueButton(discord.ui.View):
         try:
             await interaction.response.send_modal(ForgejoCreateIssueModal(user=self.user, repo=self.repo))
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await interaction.respond("an error occurred", ephemeral=True)
 
 def generate_user_embed(resp_body):
@@ -763,7 +764,6 @@ class UserCommands(discord.Cog):
             uptime = subprocess.run(["uptime"], capture_output=True, text=True)
             version = (f"Python {sys.version} on {sys.platform}\n"
                       f"py-cord {discord.__version__}\n"
-                      f"sentry_sdk {sentry_sdk.VERSION}\n"
                       f"yt_dlp {yt_dlp.version.__version__} {yt_dlp.version.CHANNEL}\n")
 
             await ctx.respond(f"# 愛OS (AiOS) version {VERSION}\n"
@@ -774,7 +774,7 @@ class UserCommands(discord.Cog):
                               f"```",
                               ephemeral=not public)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await ctx.respond("An error occurred while executing the command.", ephemeral=True)
 
     @user_commands.command(name="picker")
@@ -790,7 +790,7 @@ class UserCommands(discord.Cog):
 
             await ctx.respond(message, view=PickerComponent(type))
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await ctx.respond("An error occurred while executing the command.", ephemeral=True)
 
     @user_commands.command(name="clicker_counts", description="how many times did i click at you?")
@@ -817,7 +817,7 @@ class UserCommands(discord.Cog):
                 await ctx.respond(f"a total of {click_data['total']} clicks has been done at you :3\n"
                                   f"-# from user not found in db", ephemeral=not public)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await ctx.respond("an error occurred while executing the command.", ephemeral=True)
 
     @user_commands.command(name="read_receipt", description="Send read receipt message which allows well accepting a read receipt")
@@ -829,7 +829,7 @@ class UserCommands(discord.Cog):
 
             await ctx.respond(message, view=ReadReceiptComponent())
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await ctx.respond("An error occurred while executing the command.", ephemeral=True)
 
     @user_commands.command(name="time", description="Get time for Lunya :3")
@@ -850,7 +850,7 @@ class UserCommands(discord.Cog):
                               f"Server clock: {utc_time.strftime('%a %d %b %Y, %H:%M:%S %Z (%z)')}\n"
                               f"Your time: <t:{int(utc_time.timestamp())}:F>", view=RefreshTimeView())
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await ctx.respond("An error occurred while executing the command.", ephemeral=True)
 
     fedi_group = discord.SlashCommandGroup(name="fedi", description="Fedi commands",
@@ -875,7 +875,7 @@ class UserCommands(discord.Cog):
 
             await ctx.respond(embeds=emb)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await ctx.respond("Error when looking up!", ephemeral=True)
 
     @fedi_group.command(name="search", description="Search on fedi",
@@ -902,7 +902,7 @@ class UserCommands(discord.Cog):
 
             await ctx.followup.send(embeds=emb[0], content=f"Searched 3,089,841+ notes within {emb[1]} ms")
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await ctx.followup.send(f"Error! Server error: {e=}")
 
     @fedi_group.command(name="note", description="Create a note on fedi",
@@ -924,7 +924,7 @@ class UserCommands(discord.Cog):
                         await ctx.respond("Non-OK response from server!", ephemeral=True)
                         text = await resp.text()
 
-                        sentry_sdk.capture_message(f"Non-OK response {resp.status} from server: {text}")
+                        ai_logger.warning(f"Non-OK response {resp.status} from server: {text}")
                         return
 
                     data = await resp.json()
@@ -932,7 +932,7 @@ class UserCommands(discord.Cog):
                     await ctx.respond(f"Note created! https://{FEDI_INSTANCE}/notes/{data['createdNote']['id']}",
                                       ephemeral=not public_response)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await ctx.respond("Failed to create note!", ephemeral=True)
 
     forgejo_commands = discord.SlashCommandGroup(name="forgejo", description=f"Forgejo ({FORGEJO_INSTANCE}) related commands",
@@ -958,7 +958,7 @@ class UserCommands(discord.Cog):
             await ctx.respond("Issue created successfully!\n"
                               f"https://{FORGEJO_INSTANCE}/{user}/{project}/issues/{res_b['number']}", ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await ctx.respond("Failed to create new issue!", ephemeral=True)
 
     @forgejo_commands.command(name="new_issue_button", description="Send a button allow submitting of issues to repository", integration_types=[discord.IntegrationType.user_install])
@@ -969,7 +969,7 @@ class UserCommands(discord.Cog):
 
             await ctx.respond(message, view=ForgejoCreateIssueButton(user, project))
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await ctx.respond("Failed to create new issue!", ephemeral=True)
 
     @user_commands.command(name='ban_from_lunya', description='Ban user from Lunya\'s Discord server',
@@ -1004,7 +1004,7 @@ class UserCommands(discord.Cog):
 
             await ctx.respond("Member was banned successfully!", ephemeral=True)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
             await ctx.respond("An error occured banning this user.", ephemeral=True)
 
     @user_commands.command(name="uwwwu", description="UwUify text",
@@ -1025,7 +1025,7 @@ class UserCommands(discord.Cog):
             await ctx.respond(uwuified, ephemeral=not private)
         except Exception as e:
             await ctx.respond(f"An error occured! {e=}", ephemeral=True)
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
 
     @discord.slash_command(name="uwuify", description="UwUify text")
     @commands.cooldown(1, 5, commands.BucketType.user)
@@ -1047,7 +1047,7 @@ class UserCommands(discord.Cog):
             await ctx.respond(uwuified, ephemeral=True)
         except Exception as e:
             await ctx.respond(f"An error occured! {e=}", ephemeral=True)
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
 
     @discord.message_command(name='Borrow Meme',
                              description='Repost the message inside of the memes channel of Lunya\'s Discord server',
@@ -1076,7 +1076,7 @@ class UserCommands(discord.Cog):
             await ctx.respond("Meme reposted in Lunya server successfully!", ephemeral=True)
         except Exception as e:
             await ctx.respond("Error!", ephemeral=True)
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
 
     @discord.slash_command(name="version", description="Print bot version")
     async def version(self, ctx: discord.ApplicationContext):
@@ -1084,12 +1084,11 @@ class UserCommands(discord.Cog):
             await ctx.respond(f"# 愛OS (AiOS) version {VERSION}\n\n"
                               f"Python {sys.version} on {sys.platform}\n"
                               f"py-cord {discord.__version__}\n"
-                              f"sentry_sdk {sentry_sdk.VERSION}\n"
                               f"yt_dlp {yt_dlp.version.__version__} {yt_dlp.version.CHANNEL}\n\n"
                               f"Licensed under GNU AGPL v3.0. Software's source code is [here](<https://git.lunya.pet/Lunya/Ai>)", ephemeral=True)
         except Exception as e:
             await ctx.respond("Error!", ephemeral=True)
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
 
     @tasks.loop(seconds=5)
     async def handle_queue(self):
@@ -1104,4 +1103,4 @@ class UserCommands(discord.Cog):
 
             dm_cache.clear()
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")

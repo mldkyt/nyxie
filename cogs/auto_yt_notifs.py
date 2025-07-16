@@ -1,14 +1,14 @@
 import asyncio
-import datetime
+import logging
 
 import discord
-import sentry_sdk
 import yt_dlp
 from discord.ext import tasks
 
 from constants import CHANNEL_NEW_VIDEOS, ROLE_VIDEOS, YT_LINK
 from util.storage import get_data, set_data
 
+ai_logger = logging.getLogger("ai")
 
 async def get_all_latest_post_info():
     try:
@@ -32,7 +32,7 @@ async def get_all_latest_post_info():
 
         return output
     except Exception as e:
-        sentry_sdk.capture_exception(e)
+        ai_logger.exception("An error occurred:")
         return []
 
 
@@ -114,5 +114,5 @@ class AutoYouTubeNotifications(discord.Cog):
 
             set_data("yt_notifications", existing_data)
         except Exception as e:
-            sentry_sdk.capture_exception(e)
+            ai_logger.exception("An error occurred:")
 
