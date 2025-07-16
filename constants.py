@@ -1,6 +1,5 @@
+import logging
 import os
-
-import sentry_sdk
 
 VERSION = "2025.06.02"
 
@@ -40,11 +39,13 @@ TT_LINK = os.getenv("TT_LINK")
 WEB_SERVER_URL = os.getenv("WEB_SERVER_URL")
 WEB_SERVER_CODE = os.getenv("WEB_SERVER_CODE")
 
+ai_logger = logging.getLogger("ai")
+
 def validate_values(l: dict[str, str | None]):
     for k, v in l.items():
         if v is None:
             print(f"CONSTANTS: The constant value for {k} is NOT set!")
-            sentry_sdk.capture_message(f"CONSTANTS: The constant value for {k} is NOT set!")
+            ai_logger.warning(f"CONSTANTS: The constant value for {k} is NOT set!")
 
 validate_values({
     'DISCORD_TOKEN': DISCORD_TOKEN,
