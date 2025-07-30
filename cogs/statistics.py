@@ -74,7 +74,6 @@ class ServerStatistics(discord.Cog):
     def __init__(self, bot: discord.Bot):
         super().__init__()
         self.bot = bot
-        self.send_statistics_to_server.start()
 
     @discord.slash_command(name="statistics", description="Shows server statistics")
     async def statistics(self, ctx: discord.ApplicationContext):
@@ -97,26 +96,4 @@ Meows: {meows}, :3's {colon_threes}
 {activity}""")
         except Exception as e:
             await ctx.respond("An error occured UwU", ephemeral=True)
-            ai_logger.exception("An error occurred:")
-
-    @tasks.loop(hours=1)
-    async def send_statistics_to_server(self):
-        try:
-            data = get_data("bot_cache")
-
-            total, meows, colon_threes = calculate_basic_analytics(data)
-            activity = generate_last_7_days(data)
-
-            requests.post(f"{WEB_SERVER_URL}/api/admin/robot/send-discord-stats", json={
-                'code': WEB_SERVER_CODE,
-                'totalMessages': total,
-                'meows': meows,
-                'catfaces': colon_threes,
-                'activity': [{
-                    'date': date,
-                    'messageCount': messages
-                } for (date, messages) in activity[:3]]
-            }).raise_for_status()
-
-        except Exception as e:
             ai_logger.exception("An error occurred:")
