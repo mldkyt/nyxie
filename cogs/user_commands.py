@@ -436,7 +436,7 @@ def generate_user_embed(account: Account):
     return emb
 
 
-async def lookup_user(mastodon: Mastodon, user_name: str, user_inst: str | None, disable_pinned: bool = False, pinned_count: int = 3) -> \
+def lookup_user(mastodon: Mastodon, user_name: str, user_inst: str | None, disable_pinned: bool = False, pinned_count: int = 3) -> \
         list[discord.Embed] | None:
     
     accounts = mastodon.account_search(f'{user_name}@{user_inst}')
@@ -517,7 +517,7 @@ def generate_note_embed(note: Status):
     return emb
 
 
-async def lookup_note_id(mastodon: Mastodon, note_id: str) -> list[discord.Embed] | None:
+def lookup_note_id(mastodon: Mastodon, note_id: str) -> list[discord.Embed] | None:
     status = mastodon.search_v2(note_id, result_type="statuses")
     
     if len(status.statuses) == 0:
@@ -528,7 +528,7 @@ async def lookup_note_id(mastodon: Mastodon, note_id: str) -> list[discord.Embed
     return [emb]
 
 
-async def get_posts_under_hashtags(mastodon: Mastodon, lookup_str) -> list[discord.Embed] | None:
+def get_posts_under_hashtags(mastodon: Mastodon, lookup_str) -> list[discord.Embed] | None:
     # Lookup_str: #art for example
     embeds = []
 
@@ -547,23 +547,25 @@ async def get_posts_under_hashtags(mastodon: Mastodon, lookup_str) -> list[disco
     return embeds
 
 
-async def lookup_by_str(mastodon: Mastodon, lookup_str: str, disable_pinned: bool = False, pinned_count: int = 3) -> list[
+def lookup_by_str(mastodon: Mastodon, lookup_str: str, disable_pinned: bool = False, pinned_count: int = 3) -> list[
                                                                                                      discord.Embed] | None:
-    user_mention = lookup_str.split("@")
-    if len(user_mention) == 2:
-        # Local user lookup
-        return await lookup_user(mastodon, user_mention[1], None, disable_pinned=disable_pinned, pinned_count=pinned_count)
-    elif len(user_mention) == 3:
-        # Remote user lookup
-        return await lookup_user(mastodon, user_mention[1], user_mention[2], disable_pinned=disable_pinned,
-                                 pinned_count=pinned_count)
+    if lookup_str.startswith("@"):
+        user_mention = lookup_str.split("@")
+        if len(user_mention) == 2:
+            # Local user lookup
+            return lookup_user(mastodon, user_mention[1], None, disable_pinned=disable_pinned,
+                                     pinned_count=pinned_count)
+        elif len(user_mention) == 3:
+            # Remote user lookup
+            return lookup_user(mastodon, user_mention[1], user_mention[2], disable_pinned=disable_pinned,
+                                     pinned_count=pinned_count)
 
     # Check hashtag
     if re.match(r"#[a-zA-Z0-9]+", lookup_str):
-        return await get_posts_under_hashtags(mastodon, lookup_str)
+        return get_posts_under_hashtags(mastodon, lookup_str)
 
     # Lookup note by MisskeyID
-    return await lookup_note_id(mastodon, lookup_str)
+    return lookup_note_id(mastodon, lookup_str)
 
 
 def get_poll_str(poll: dict | None) -> str:
@@ -836,7 +838,7 @@ class UserCommands(discord.Cog):
                 return
 
             # Let's attempt generate embed based on lookup function
-            emb = await lookup_by_str(self.mastodon, lookup_str, disable_pinned=disable_pinned, pinned_count=pinned_count)
+            emb = lookup_by_str(self.mastodon, lookup_str, disable_pinned=disable_pinned, pinned_count=pinned_count)
 
             if emb is None:
                 await ctx.respond("Failed to lookup!", ephemeral=True)
