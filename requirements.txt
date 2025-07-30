@@ -5,3 +5,4 @@ requests
 pytz
 Mastodon.py
 python-dotenv
+BeautifulSoup4
