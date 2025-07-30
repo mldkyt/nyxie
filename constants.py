@@ -4,7 +4,7 @@ import dotenv
 
 dotenv.load_dotenv()
 
-VERSION = "2025.06.03"
+VERSION = "2025.07.01"
 
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 
