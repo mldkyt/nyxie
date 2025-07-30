@@ -8,17 +8,21 @@ import string
 import subprocess
 import sys
 import time
+from html import unescape
 
 import aiohttp
 import discord
 import pytz
 import requests
 import yt_dlp.version
+from bs4 import BeautifulSoup
 from dateutil.parser import isoparse
 from discord import Interaction
 from discord.ext import tasks, commands
+from mastodon import Mastodon
+from mastodon.return_types import Account, Status
 
-from constants import OWNER, FEDI_INSTANCE, GUILD, CHANNEL_MODERATION, FEDI_TOKEN, CHANNEL_MEMES, VERSION, FEDI_USER_ID, \
+from constants import OWNER, GUILD, CHANNEL_MODERATION, CHANNEL_MEMES, VERSION, \
     FORGEJO_INSTANCE, FORGEJO_DEFAULT_USER, FORGEJO_TOKEN
 from util.keysmash_generator import keysmash_ai
 from util.storage import get_data, set_data
@@ -104,8 +108,9 @@ class ReadReceiptComponent(discord.ui.View):
 
 
 class PickerComponent(discord.ui.View):
-    def __init__(self, type: str):
+    def __init__(self, type: str, mastodon: Mastodon | None = None):
         super().__init__(timeout=None)
+        self.mastodon = mastodon
 
         if type == "meow":
             meow_btn = discord.ui.Button(style=discord.ButtonStyle.primary, label="Meow", custom_id="picker_meow")
@@ -205,20 +210,10 @@ class PickerComponent(discord.ui.View):
             meow = generate_meow()
             await interaction.respond(f"✅ Message sent\n{meow} :3", ephemeral=True)
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(f"https://{FEDI_INSTANCE}/api/notes/create", json={
-                    'text': f'@mld {meow} by {interaction.user.display_name} :3',
-                    'visibility': 'specified',
-                    'visibleUserIds': [
-                        FEDI_USER_ID
-                    ]
-                }, headers={
-                    'Authorization': f'Bearer {FEDI_TOKEN}'
-                }) as req:
-
-                    if not req.ok:
-                        message = await req.text()
-                        raise ValueError(f"Fedi Meow failed with code {req.status}: {req.reason} {message}")
+            if self.mastodon is None:
+                return
+            
+            self.mastodon.status_post(f"@Lunya {meow} by {interaction.user.display_name} :3", visibility='direct')
         except Exception as e:
             ai_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
@@ -237,19 +232,10 @@ class PickerComponent(discord.ui.View):
             colon_three = ':' + '3' * random.randint(4, 12)
             await interaction.respond(f"✅ Message sent\n{colon_three} :3", ephemeral=True)
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(f"https://{FEDI_INSTANCE}/api/notes/create", json={
-                    'text': f'@mld {colon_three} by {interaction.user.display_name} :3',
-                    'visibility': 'specified',
-                    'visibleUserIds': [
-                        FEDI_USER_ID
-                    ]
-                }, headers={
-                    'Authorization': f'Bearer {FEDI_TOKEN}'
-                }) as req:
-                    if not req.ok:
-                        message = await req.text()
-                        raise ValueError(f"Fedi Meow failed with code {req.status}: {req.reason} {message}")
+            if self.mastodon is None:
+                return
+            
+            self.mastodon.status_post(f'@mld {colon_three} by {interaction.user.display_name} :3', visibility='direct')
         except Exception as e:
             ai_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
@@ -409,110 +395,118 @@ class ForgejoCreateIssueButton(discord.ui.View):
             ai_logger.exception("An error occurred:")
             await interaction.respond("an error occurred", ephemeral=True)
 
-def generate_user_embed(resp_body):
-    host = FEDI_INSTANCE if resp_body["host"] is None else resp_body["host"]
-    desc = resp_body["description"][:1500]
-    if desc != resp_body["description"]:
+NON_BREAKING_ELEMENTS = ['a', 'abbr', 'acronym', 'audio', 'b', 'bdi', 'bdo', 'big', 'button',
+    'canvas', 'cite', 'code', 'data', 'datalist', 'del', 'dfn', 'em', 'embed', 'i', 'iframe',
+    'img', 'input', 'ins', 'kbd', 'label', 'map', 'mark', 'meter', 'noscript', 'object', 'output',
+    'picture', 'progress', 'q', 'ruby', 's', 'samp', 'script', 'select', 'slot', 'small', 'span',
+    'strong', 'sub', 'sup', 'svg', 'template', 'textarea', 'time', 'u', 'tt', 'var', 'video', 'wbr']
+
+def html_to_text(markup, preserve_new_lines=True, strip_tags=None):
+    if strip_tags is None:
+        strip_tags = ['style', 'script', 'code']
+    soup = BeautifulSoup(unescape(markup), "html.parser")
+    for element in soup(strip_tags): element.extract()
+    if preserve_new_lines:
+        for element in soup.find_all():
+            if element.name not in NON_BREAKING_ELEMENTS:
+                element.append('\n') if element.name == 'br' else element.append('\n\n')
+    return soup.get_text(separator=" ")
+
+
+def generate_user_embed(account: Account):
+    bio = html_to_text(account.note)
+    desc = bio[:1500]
+    if desc != bio:
         desc = desc + '...'
 
     emb = discord.Embed(
-        title=f"{resp_body['name']} (@{resp_body['username']}@{host})",
+        title=f"{account.display_name} (@{account.acct})",
         description=desc,
-        thumbnail=resp_body["avatarUrl"],
+        thumbnail=account.avatar,
         fields=[
-            discord.EmbedField(name="Notes", value=resp_body["notesCount"], inline=True),
-            discord.EmbedField(name="Followers", value=resp_body["followersCount"], inline=True),
-            discord.EmbedField(name="Following", value=resp_body["followingCount"], inline=True)
+            discord.EmbedField(name="Notes", value=str(account.statuses_count), inline=True)
         ],
-        url=f'https://{FEDI_INSTANCE}/@{resp_body["username"]}@{host}',
+        url=account.url,
         color=discord.Color.from_rgb(255, 119, 255)
     )
 
-    if resp_body["host"] is not None:
+    if '@' in account.acct:
         emb.set_footer(text="The information may not be accurate as it comes from a remote instance.")
 
     return emb
 
 
-async def lookup_user(user_name: str, user_inst: str | None, disable_pinned: bool = False, pinned_count: int = 3) -> \
+async def lookup_user(mastodon: Mastodon, user_name: str, user_inst: str | None, disable_pinned: bool = False, pinned_count: int = 3) -> \
         list[discord.Embed] | None:
-    async with aiohttp.ClientSession() as session:
-        body = {
-            "username": user_name,
-        }
+    
+    accounts = mastodon.account_search(f'{user_name}@{user_inst}')
+    if accounts is None or len(accounts) == 0:
+        return []
 
-        if user_inst is not None:
-            body["host"] = user_inst
+    emb = generate_user_embed(accounts[0])
 
-        async with session.post(f"https://{FEDI_INSTANCE}/api/users/show", json=body) as resp:
-            if resp.status != 200:
-                return None
+    if disable_pinned:
+        return [emb]
 
-            resp_body = await resp.json()
+    pinned_notes = []
+    i = 0
+    for post in mastodon.account_statuses(accounts[0], pinned=True):
+        i = i + 1
+        if i > pinned_count:
+            break
 
-            emb = generate_user_embed(resp_body)
+        pinned_notes.append(generate_note_embed(post))
 
-            if disable_pinned:
-                return [emb]
-
-            pinned_notes = []
-            i = 0
-            for post in resp_body["pinnedNotes"]:
-                i = i + 1
-                if i > pinned_count:
-                    break
-
-                pinned_notes.append(generate_note_embed(post, pinned=True))
-
-            return [emb, *pinned_notes]
+    return [emb, *pinned_notes]
 
 
-def generate_note_embed(note, pinned=False):
-    image_url = note["files"][0]["url"] if len(note["files"]) > 0 and note[
-        'cw'] is None else None
+def generate_note_embed(note: Status):
+    if note.account is None:
+        return None
+    
+    account: Account = note.account
+
+    image_url = note.media_attachments[0] if len(note.media_attachments) > 0 else None
 
     reaction_string = ""
 
-    if note["repliesCount"] > 0:
-        reaction_string = f'{note["repliesCount"]} replies | '
+    if note.replies_count > 0:
+        reaction_string = f'{note.replies_count} replies | '
 
-    if note['renoteCount'] > 0:
-        reaction_string = f'{note["renoteCount"]} renotes | '
+    if note.reblogs_count > 0:
+        reaction_string = f'{note.reblogs_count} renotes | '
 
-    for k, v in note["reactions"].items():
-        if len(k.split("@")) > 1:
-            k = f'{k.split("@")[0]}:'
-
-        reaction_string += f'{v}x {k} | '
+    if note.favourites_count > 0:
+        reaction_string = f'{note.favourites_count} likes | '
 
     reaction_string = reaction_string[:-3]
 
-    host = FEDI_INSTANCE if note['user']['host'] is None else note['user']['host']
+    pinned_post = "Pinned note by " if note.pinned else ""
 
-    pinned_post = "Pinned note by " if pinned else ""
+    content = html_to_text(note.content)
 
-    desc = note["text"] if note["cw"] is None else f'CW: {note["cw"]}\n\n'
+    desc = content if len(note.spoiler_text) == 0 else f'CW: {note.spoiler_text}\n\n'
 
-    if note['cw'] is not None:
-        if len(note['files']) > 0 and len(note['text']) > 0:
+    if len(note.spoiler_text) > 0:
+        if len(note.media_attachments) > 0 and len(content) > 0:
             desc += "(Open the link in order to view the text and media)"
-        elif len(note['files']) > 0 and len(note['text']) == 0:
+        elif len(note.media_attachments) > 0 and len(content) == 0:
             desc += "(Open the link in order to view the media)"
         else:
             desc += "(Open the link in order to view the text)"
 
-    if 'poll' in note and note['poll'] is not None and note['cw'] is None:
+    if note.poll is not None and len(note.spoiler_text) == 0:
         desc += get_poll_str(note['poll'])
 
     emb = discord.Embed(
-        title=f"{'Pinned ' if pinned else ''}Note by {note['user']['name']} (@{note['user']['username']}@{host})",
-        url=f"https://{FEDI_INSTANCE}/notes/{note['id']}",
+        title=f"{'Pinned ' if note.pinned else ''}Note by {account.display_name} (@{account.acct})",
+        url=note.url,
         description=desc,
         image=image_url,
         author=discord.EmbedAuthor(
-            name=f"{pinned_post}{note['user']['name']} (@{note['user']['username']}@{host})",
-            icon_url=note["user"]["avatarUrl"],
-            url=f'https://{FEDI_INSTANCE}/@{note["user"]["username"]}@{host}'
+            name=f"{pinned_post}{account.display_name} (@{account.acct})",
+            icon_url=account.avatar,
+            url=account.url
         ),
         color=discord.Color.from_rgb(255, 119, 255),
         footer=discord.EmbedFooter(
@@ -523,77 +517,53 @@ def generate_note_embed(note, pinned=False):
     return emb
 
 
-async def lookup_note_id(note_id: str, pinned: bool = False) -> list[discord.Embed] | None:
-    async with aiohttp.ClientSession() as session:
-        async with session.post(f"https://{FEDI_INSTANCE}/api/notes/show", json={
-            "noteId": note_id
-        }) as resp:
-            if resp.status != 200:
-                return None
+async def lookup_note_id(mastodon: Mastodon, note_id: str) -> list[discord.Embed] | None:
+    status = mastodon.search_v2(note_id, result_type="statuses")
+    
+    if len(status.statuses) == 0:
+        return []
 
-            resp_body = await resp.json()
+    emb = generate_note_embed(status.statuses[0])
 
-            emb = generate_note_embed(resp_body, pinned)
-
-            return [emb]
+    return [emb]
 
 
-async def get_posts_under_hashtags(lookup_str) -> list[discord.Embed] | None:
+async def get_posts_under_hashtags(mastodon: Mastodon, lookup_str) -> list[discord.Embed] | None:
     # Lookup_str: #art for example
     embeds = []
 
-    async with aiohttp.ClientSession() as session:
-        async with session.post(f"https://{FEDI_INSTANCE}/api/hashtags/show", json={
-            'tag': lookup_str[1:]
-        }) as resp:
-            if resp.status != 200:
-                return None
+    embeds.append(
+        discord.Embed(
+            title=f"Hashtag: {lookup_str}",
+            color=discord.Color.from_rgb(255, 119, 255)
+        )
+    )
 
-            body = await resp.json()
+    statuses = mastodon.timeline_hashtag(lookup_str[1:])
 
-            embeds.append(
-                discord.Embed(
-                    title=f"Hashtag: {lookup_str}",
-                    fields=[
-                        discord.EmbedField(name="Posts", value=str(body['attachedUsersCount'])),
-                        discord.EmbedField(name="User Mentions", value=str(body['mentionedUsersCount']))
-                    ],
-                    color=discord.Color.from_rgb(255, 119, 255)
-                )
-            )
-
-        async with session.post(f"https://{FEDI_INSTANCE}/api/notes/search-by-tag", json={
-            'limit': 10,
-            'tag': lookup_str[1:]
-        }) as resp:
-            if resp.status != 200:
-                return None
-
-            body = await resp.json()
-
-            for i in body[:3]:
-                embeds.append(generate_note_embed(i))
+    for i in statuses[:3]:
+        embeds.append(generate_note_embed(i))
 
     return embeds
 
 
-async def lookup_by_str(lookup_str: str, disable_pinned: bool = False, pinned_count: int = 3) -> list[
+async def lookup_by_str(mastodon: Mastodon, lookup_str: str, disable_pinned: bool = False, pinned_count: int = 3) -> list[
                                                                                                      discord.Embed] | None:
     user_mention = lookup_str.split("@")
     if len(user_mention) == 2:
         # Local user lookup
-        return await lookup_user(user_mention[1], None, disable_pinned=disable_pinned, pinned_count=pinned_count)
+        return await lookup_user(mastodon, user_mention[1], None, disable_pinned=disable_pinned, pinned_count=pinned_count)
     elif len(user_mention) == 3:
         # Remote user lookup
-        return await lookup_user(user_mention[1], user_mention[2], disable_pinned=disable_pinned,
+        return await lookup_user(mastodon, user_mention[1], user_mention[2], disable_pinned=disable_pinned,
                                  pinned_count=pinned_count)
 
     # Check hashtag
     if re.match(r"#[a-zA-Z0-9]+", lookup_str):
-        return await get_posts_under_hashtags(lookup_str)
+        return await get_posts_under_hashtags(mastodon, lookup_str)
 
     # Lookup note by MisskeyID
-    return await lookup_note_id(lookup_str)
+    return await lookup_note_id(mastodon, lookup_str)
 
 
 def get_poll_str(poll: dict | None) -> str:
@@ -620,79 +590,66 @@ def get_poll_str(poll: dict | None) -> str:
     return message.rstrip()
 
 
-async def search(query: str, content_type: str, media_type: str, count: int) -> tuple[list[discord.Embed], int] | None:
+def search(mastodon: Mastodon, query: str, content_type: str, media_type: str, count: int) -> tuple[list[discord.Embed], int] | None:
     start_time = time.time()
-    async with aiohttp.ClientSession() as session:
-        if content_type == 'notes':
-            return await search_notes(query, media_type, session, start_time, count)
-        elif content_type == 'users':
-            return await search_users(query, session, start_time, count)
+    if content_type == 'notes':
+        return search_notes(mastodon, query, media_type, start_time, count)
+    elif content_type == 'users':
+        return search_users(mastodon, query, start_time, count)
 
-        raise ValueError(f"content_type is out of range: {content_type} is not a valid value")
-
-
-async def search_users(query, session, start_time, count):
-    async with session.post(f"https://{FEDI_INSTANCE}/api/users/search", json={
-        'limit': 10,
-        'query': query
-    }) as resp:
-        if resp.status != 200:
-            return None
-
-        resp_body = await resp.json()
-
-        embeds = []
-
-        for i in resp_body:
-            emb = generate_user_embed(i)
-
-            if emb is None:
-                continue
-
-            embeds.append(emb)
-
-            if len(embeds) >= count:
-                break
-
-        end_time = time.time()
-        diff = round((end_time - start_time) * 1000)
-        return (embeds, diff) if len(embeds) > 0 else None
+    raise ValueError(f"content_type is out of range: {content_type} is not a valid value")
 
 
-async def search_notes(query, media_type, session, start_time, count):
-    body = {
-        "query": query,
-        "limit": 25
-    }
+def search_users(mastodon: Mastodon, query, start_time, count):
+    accounts = mastodon.account_search(query)
 
-    if media_type != "all" and media_type in ["image", "video"]:
-        body["filetype"] = media_type
+    embeds = []
 
-    async with session.post(f"https://{FEDI_INSTANCE}/api/notes/search", json=body) as resp:
-        if resp.status != 200:
-            return None
+    for i in accounts:
+        emb = generate_user_embed(i)
 
-        resp_body = await resp.json()
+        if emb is None:
+            continue
 
-        embeds = []
+        embeds.append(emb)
 
-        for i in resp_body:
-            if i["cw"] is not None:
-                continue
+        if len(embeds) >= count:
+            break
 
-            emb = generate_note_embed(i)
+    end_time = time.time()
+    diff = round((end_time - start_time) * 1000)
+    return (embeds, diff) if len(embeds) > 0 else None
 
-            if emb is None:
-                continue
 
-            embeds.append(emb)
+def search_notes(mastodon: Mastodon, query, media_type, start_time, count):
 
-            if len(embeds) >= count:
-                break
+    statuses = mastodon.search_v2(query, result_type='statuses').statuses
 
-        end_time = time.time()
-        diff = round((end_time - start_time) * 1000)
-        return (embeds[:count], diff) if len(embeds) > 0 else None
+    embeds = []
+
+    for i in statuses:
+        if len(i.spoiler_text) > 0:
+            continue
+
+        if media_type != 'all' and len(i.media_attachments) == 0:
+            continue
+
+        if media_type != 'all' and i.media_attachments[0].type != media_type:
+            continue
+
+        emb = generate_note_embed(i)
+
+        if emb is None:
+            continue
+
+        embeds.append(emb)
+
+        if len(embeds) >= count:
+            break
+
+    end_time = time.time()
+    diff = round((end_time - start_time) * 1000)
+    return (embeds[:count], diff) if len(embeds) > 0 else None
 
 
 async def uwuify(text: str) -> str | None:
@@ -718,12 +675,24 @@ class UserCommands(discord.Cog):
     def __init__(self, bot: discord.Bot):
         self.bot = bot
 
+        Mastodon.create_app(
+            'Ai',
+            api_base_url='https://ice.lunya.pet',
+            to_file='mastodon/clientcred.secret'
+        )
+
+        if os.path.exists("mastodon/usercred.secret"):
+            self.mastodon = Mastodon(access_token="mastodon/usercred.secret")
+        else:
+            print("please authorize mastodon")
+            exit(1)
+
     @discord.Cog.listener()
     async def on_ready(self):
         self.bot.add_view(PickerComponent("meow"))
-        self.bot.add_view(PickerComponent("fedi meow"))
+        self.bot.add_view(PickerComponent("fedi meow", mastodon=self.mastodon))
         self.bot.add_view(PickerComponent(":3"))
-        self.bot.add_view(PickerComponent("fedi :3"))
+        self.bot.add_view(PickerComponent("fedi :3", mastodon=self.mastodon))
         self.bot.add_view(PickerComponent("compliments"))
         self.bot.add_view(PickerComponent("meowat"))
         self.bot.add_view(PickerComponent("purrr"))
@@ -867,7 +836,7 @@ class UserCommands(discord.Cog):
                 return
 
             # Let's attempt generate embed based on lookup function
-            emb = await lookup_by_str(lookup_str, disable_pinned=disable_pinned, pinned_count=pinned_count)
+            emb = await lookup_by_str(self.mastodon, lookup_str, disable_pinned=disable_pinned, pinned_count=pinned_count)
 
             if emb is None:
                 await ctx.respond("Failed to lookup!", ephemeral=True)
@@ -894,13 +863,13 @@ class UserCommands(discord.Cog):
             await ctx.defer()
 
             # Let's attempt to generate embed based on search function
-            emb = await search(q, content_type, media_type, count)
+            emb = search(self.mastodon, q, content_type, media_type, count)
 
             if emb is None:
                 await ctx.followup.send("Error! No result")
                 return
 
-            await ctx.followup.send(embeds=emb[0], content=f"Searched 3,089,841+ notes within {emb[1]} ms")
+            await ctx.followup.send(embeds=emb[0], content=f"Searched on fedi within {emb[1]} ms")
         except Exception as e:
             ai_logger.exception("An error occurred:")
             await ctx.followup.send(f"Error! Server error: {e=}")
@@ -911,26 +880,8 @@ class UserCommands(discord.Cog):
     async def note(self, ctx: discord.ApplicationContext, text: str, cw: str = "", visibility: str = "public",
                    public_response: bool = False):
         try:
-            # Try create a note
-            data = {'text': text, 'visibility': visibility}
-            if len(cw.strip()) > 0:
-                data['cw'] = cw.strip()
-
-            async with aiohttp.ClientSession() as session:
-                async with session.post(f"https://{FEDI_INSTANCE}/api/notes/create", json=data, headers={
-                    'Authorization': f'Bearer {FEDI_TOKEN}'
-                }) as resp:
-                    if resp.status != 200:
-                        await ctx.respond("Non-OK response from server!", ephemeral=True)
-                        text = await resp.text()
-
-                        ai_logger.warning(f"Non-OK response {resp.status} from server: {text}")
-                        return
-
-                    data = await resp.json()
-
-                    await ctx.respond(f"Note created! https://{FEDI_INSTANCE}/notes/{data['createdNote']['id']}",
-                                      ephemeral=not public_response)
+            toot = self.mastodon.status_post(text, spoiler_text=cw, visibility=visibility)
+            await ctx.respond(toot.url, ephemeral=not public_response)
         except Exception as e:
             ai_logger.exception("An error occurred:")
             await ctx.respond("Failed to create note!", ephemeral=True)
