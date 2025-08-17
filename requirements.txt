@@ -3,5 +3,3 @@ yt-dlp
 python-dateutil
 requests
 pytz
-Mastodon.py
-python-dotenv
