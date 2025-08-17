@@ -466,7 +466,7 @@ def generate_note_embed(note: Status):
     
     account: Account = note.account
 
-    image_url = (note.media_attachments[0].remote_url or note.media_attachments[0].url) if len(note.media_attachments) > 0 else None
+    image_url = note.media_attachments[0] if len(note.media_attachments) > 0 else None
 
     reaction_string = ""
 
