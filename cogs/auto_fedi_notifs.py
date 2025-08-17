@@ -1,41 +1,33 @@
 import asyncio
-import os
 
+import aiohttp
 import discord
 from discord.ext import tasks
 
-from constants import CHANNEL_NEW_FEDI, ROLE_FEDI
+from constants import CHANNEL_NEW_FEDI, ROLE_FEDI, FEDI_INSTANCE, FEDI_USER_ID
 from util.storage import get_data, set_data
-from mastodon import Mastodon
-from mastodon.return_types import Status
 
-def get_latest_posts(mastodon: Mastodon) -> list[Status]:
-    me = mastodon.me()
-    statuses = mastodon.account_statuses(me)
 
-    statuses = [i for i in statuses if len(i.spoiler_text) == 0]                      # posts without cw
-    statuses = [i for i in statuses if i.visibility == "public"]                      # public only
-    statuses = [i for i in statuses if i.in_reply_to_id is None]                      # only replies
-    statuses = [i for i in statuses if i.reblog is None]                              # only renotes
+async def get_latest_posts():
+    async with aiohttp.ClientSession() as session:
+        async with await session.post(f"https://{FEDI_INSTANCE}/api/users/notes",
+                                      json={"limit": 10, "userId": FEDI_USER_ID}) as resp:
+            js = await resp.json()
 
-    return statuses
+            posts = js
+            posts = [i for i in posts if i['cw'] is None or len(i['cw']) == 0]         # posts without cw
+            posts = [i for i in posts if i['visibility'] == "public"]                  # public posts only
+            posts = [i for i in posts if 'reply' not in i or i['reply'] is None]       # no replies
+            posts = [i for i in posts if 'renote' not in i or i['renote'] is None]     # no boosts
+
+            return [i["id"] for i in posts]
+
+    return []
 
 
 class AutoFediNotifications(discord.Cog):
     def __init__(self, bot: discord.Bot):
         self.bot = bot
-
-        Mastodon.create_app(
-            'Ai',
-            api_base_url='https://ice.lunya.pet',
-            to_file='mastodon/clientcred.secret'
-        )
-
-        if os.path.exists("mastodon/usercred.secret"):
-            self.mastodon = Mastodon(access_token="mastodon/usercred.secret")
-        else:
-            print("please authorize mastodon")
-            exit(1)
 
     @discord.Cog.listener()
     async def on_ready(self):
@@ -50,8 +42,8 @@ class AutoFediNotifications(discord.Cog):
         existing_data["initialized"] = True
         existing_data["posted_posts"] = []
 
-        statuses = get_latest_posts(self.mastodon)
-        existing_data["posted_posts"].extend([i.id for i in statuses])
+        posts = await get_latest_posts()
+        existing_data["posted_posts"].extend(posts)
 
         set_data("fedi_notifications", existing_data)
 
@@ -60,7 +52,7 @@ class AutoFediNotifications(discord.Cog):
     @tasks.loop(minutes=1)
     async def fetch_new_posts(self):
         # Fetch new fediverse posts
-        statuses = get_latest_posts(self.mastodon)
+        posts = await get_latest_posts()
 
         channel = self.bot.get_channel(int(CHANNEL_NEW_FEDI))
         if channel is None:
@@ -68,15 +60,15 @@ class AutoFediNotifications(discord.Cog):
 
         existing_data = get_data("fedi_notifications")
 
-        for i in statuses:
-            if i.id in existing_data["posted_posts"]:
+        for i in posts:
+            if i in existing_data["posted_posts"]:
                 continue
 
             asyncio.get_event_loop().create_task(
                 channel.send(
-                    f"<@&{ROLE_FEDI}> Lunya posted a new note on fedi~! Go check it out~ {i.url}")
+                    f"<@&{ROLE_FEDI}> Lunya posted a new note on fedi~! Go check it out~ https://{FEDI_INSTANCE}/notes/{i}")
             )
 
-            existing_data["posted_posts"].append(i.id)
+            existing_data["posted_posts"].append(i)
 
         set_data("fedi_notifications", existing_data)
