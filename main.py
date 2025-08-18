@@ -14,7 +14,6 @@ from cogs.init_cache import InitCache
 from cogs.media_threads import MediaThreads
 from cogs.message_reporting import MessageReporting
 from cogs.nsfw_verification import NsfwVerification
-from cogs.statistics import ServerStatistics
 from cogs.user_commands import UserCommands
 from constants import DISCORD_TOKEN
 
@@ -95,7 +94,6 @@ bot.add_cog(GeneralCleaner(bot))
 bot.add_cog(MediaThreads(bot))
 bot.add_cog(FunnyAutoResponse(bot))
 bot.add_cog(InitCache(bot))
-bot.add_cog(ServerStatistics(bot))
 bot.add_cog(NsfwVerification(bot))
 
 bot.run(DISCORD_TOKEN)
