@@ -3,3 +3,5 @@ yt-dlp
 python-dateutil
 requests
 pytz
+word2number
+python-dotenv
