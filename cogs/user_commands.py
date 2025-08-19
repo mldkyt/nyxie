@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import logging
 import os.path
@@ -1000,13 +1001,13 @@ class UserCommands(discord.Cog):
 
             # Ban user
 
-            await guild.ban(user, reason=reason, delete_message_seconds=7 * 24 * 3600)
+            a = guild.ban(user, reason=reason, delete_message_seconds=7 * 24 * 3600)
 
             # Log message
 
             logs_channel = guild.get_channel(int(CHANNEL_MODERATION))
 
-            await logs_channel.send(embed=discord.Embed(
+            b = logs_channel.send(embed=discord.Embed(
                 title="Member Banned Externally",
                 description=f"The member {user.mention} was banned here because Lunya issued a ban command from a different server.",
                 fields=[
@@ -1015,7 +1016,9 @@ class UserCommands(discord.Cog):
                 ]
             ))
 
-            await ctx.respond("Member was banned successfully!", ephemeral=True)
+            c = ctx.respond("Member was banned successfully!", ephemeral=True)
+
+            await asyncio.gather(a, b, c)
         except Exception as e:
             ai_logger.exception("An error occurred:")
             await ctx.respond("An error occured banning this user.", ephemeral=True)
@@ -1070,6 +1073,8 @@ class UserCommands(discord.Cog):
             if ctx.user.id != int(OWNER):
                 await ctx.respond("You are not authorized to use this command!", ephemeral=True)
 
+            await ctx.respond("Meme will repost in Lunya server", ephemeral=True)
+
             # Download all attachments
             if not os.path.exists("temp"):
                 os.mkdir("temp")
@@ -1085,8 +1090,6 @@ class UserCommands(discord.Cog):
 
             # Delete
             shutil.rmtree("temp")
-
-            await ctx.respond("Meme reposted in Lunya server successfully!", ephemeral=True)
         except Exception as e:
             await ctx.respond("Error!", ephemeral=True)
             ai_logger.exception("An error occurred:")
@@ -1094,7 +1097,7 @@ class UserCommands(discord.Cog):
     @discord.slash_command(name="version", description="Print bot version")
     async def version(self, ctx: discord.ApplicationContext):
         try:
-            await ctx.respond(f"# 愛OS (AiOS) version {VERSION}\n\n"
+            await ctx.respond(f"# Ai version {VERSION}\n\n"
                               f"Python {sys.version} on {sys.platform}\n"
                               f"py-cord {discord.__version__}\n"
                               f"yt_dlp {yt_dlp.version.__version__} {yt_dlp.version.CHANNEL}\n\n"
