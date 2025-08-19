@@ -1094,6 +1094,7 @@ class UserCommands(discord.Cog):
         try:
             if ctx.user.id != int(OWNER):
                 await ctx.respond("You are not authorized to use this command!", ephemeral=True)
+                return
 
             await ctx.respond("Meme will repost in Lunya server", ephemeral=True)
 
@@ -1142,12 +1143,20 @@ class UserCommands(discord.Cog):
 
     @discord.slash_command(name="targetlang", description="Set target language for translator", integration_types=[discord.IntegrationType.user_install])
     async def set_target_language(self, ctx: discord.ApplicationContext, lang: str):
+        if ctx.user.id != int(OWNER):
+            await ctx.respond("You are not authorized to use this command!", ephemeral=True)
+            return
+
         self.target_language = lang
         await ctx.respond(f"targetlang = {lang}", ephemeral=True)
 
     @discord.message_command(name="Translate Message", description="Translate message to target language", integration_types=[discord.IntegrationType.user_install])
     async def translate(self, ctx: discord.ApplicationContext, message: discord.Message):
         try:
+            if ctx.user.id != int(OWNER):
+                await ctx.respond("You are not authorized to use this command!", ephemeral=True)
+                return
+
             await ctx.defer()
 
             original = message.clean_content
