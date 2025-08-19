@@ -18,6 +18,7 @@ import yt_dlp.version
 from dateutil.parser import isoparse
 from discord import Interaction
 from discord.ext import tasks, commands
+from discord.ext.commands import cooldown, BucketType
 
 from constants import OWNER, FEDI_INSTANCE, GUILD, CHANNEL_MODERATION, FEDI_TOKEN, CHANNEL_MEMES, VERSION, FEDI_USER_ID, \
     FORGEJO_INSTANCE, FORGEJO_DEFAULT_USER, FORGEJO_TOKEN
@@ -728,6 +729,22 @@ async def uwuify(text: str) -> str | None:
             return res["uwu"]
 
 
+class MoreYuriView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="more", style=discord.ButtonStyle.primary, custom_id="more_yuri_pwease_uwu")
+    async def more_yuri(self, button: discord.ui.Button, interaction: discord.Interaction):
+        try:
+            items = os.listdir("data/yuri")
+            item = random.choice(items)
+
+            await interaction.respond(file=discord.File(f"data/yuri/{item}", filename="yuri.webp"), view=MoreYuriView())
+        except Exception as e:
+            await interaction.respond(f"Error: {str(e)}", ephemeral=True)
+            ai_logger.exception("An error occured:")
+
+
 class UserCommands(discord.Cog):
     def __init__(self, bot: discord.Bot):
         self.bot = bot
@@ -747,6 +764,7 @@ class UserCommands(discord.Cog):
         self.bot.add_view(PickerComponent("click"))
         self.bot.add_view(ReadReceiptComponent())
         self.bot.add_view(RefreshTimeView())
+        self.bot.add_view(MoreYuriView())
         self.handle_queue.start()
 
     user_commands = discord.SlashCommandGroup(name='user', description='User commands',
@@ -1105,6 +1123,18 @@ class UserCommands(discord.Cog):
         except Exception as e:
             await ctx.respond("Error!", ephemeral=True)
             ai_logger.exception("An error occurred:")
+
+    @discord.slash_command(name="yuri", description="girls,,,, womeb,,,,", integration_types=[discord.IntegrationType.user_install, discord.IntegrationType.guild_install])
+    @cooldown(1, 10, BucketType.default)
+    async def yuri(self, ctx: discord.ApplicationContext):
+        try:
+            items = os.listdir("data/yuri")
+            item = random.choice(items)
+
+            await ctx.respond(file=discord.File(f"data/yuri/{item}", filename="yuri.webp"), view=MoreYuriView())
+        except Exception as e:
+            await ctx.respond(f"Error: {str(e)}", ephemeral=True)
+            ai_logger.exception("An error occured:")
 
     @tasks.loop(seconds=5)
     async def handle_queue(self):
