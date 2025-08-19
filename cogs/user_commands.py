@@ -12,6 +12,7 @@ import time
 
 import aiohttp
 import discord
+import libretranslatepy
 import pytz
 import requests
 import yt_dlp.version
@@ -21,13 +22,15 @@ from discord.ext import tasks, commands
 from discord.ext.commands import cooldown, BucketType
 
 from constants import OWNER, FEDI_INSTANCE, GUILD, CHANNEL_MODERATION, FEDI_TOKEN, CHANNEL_MEMES, VERSION, FEDI_USER_ID, \
-    FORGEJO_INSTANCE, FORGEJO_DEFAULT_USER, FORGEJO_TOKEN
+    FORGEJO_INSTANCE, FORGEJO_DEFAULT_USER, FORGEJO_TOKEN, LIBRETRANSLATE_URL, LIBRETRANSLATE_API_KEY
 from util.keysmash_generator import keysmash_ai
 from util.storage import get_data, set_data
 
 dm_cache = []
 
 ai_logger = logging.getLogger("ai")
+
+libretranslate = libretranslatepy.LibreTranslateAPI(LIBRETRANSLATE_URL, LIBRETRANSLATE_API_KEY)
 
 def generate_meow():
     meow = random.choice(["meow", "nya", "mraow", "mwrmmwra"])
@@ -748,6 +751,7 @@ class MoreYuriView(discord.ui.View):
 class UserCommands(discord.Cog):
     def __init__(self, bot: discord.Bot):
         self.bot = bot
+        self.target_language = "en"
 
     @discord.Cog.listener()
     async def on_ready(self):
@@ -1134,6 +1138,29 @@ class UserCommands(discord.Cog):
             await ctx.respond(file=discord.File(f"data/yuri/{item}", filename="yuri.webp"), view=MoreYuriView())
         except Exception as e:
             await ctx.respond(f"Error: {str(e)}", ephemeral=True)
+            ai_logger.exception("An error occured:")
+
+    @discord.slash_command(name="targetlang", description="Set target language for translator", integration_types=[discord.IntegrationType.user_install])
+    async def set_target_language(self, ctx: discord.ApplicationContext, lang: str):
+        self.target_language = lang
+        await ctx.respond(f"targetlang = {lang}", ephemeral=True)
+
+    @discord.message_command(name="Translate Message", description="Translate message to target language", integration_types=[discord.IntegrationType.user_install])
+    async def translate(self, ctx: discord.ApplicationContext, message: discord.Message):
+        try:
+            await ctx.defer()
+
+            original = message.clean_content
+            source_lang = libretranslate.detect(original)
+            if len(source_lang) == 0:
+                await ctx.respond("Language not detected successfully")
+                return
+
+            translated = libretranslate.translate(original, source_lang[0]['language'], self.target_language)
+
+            await ctx.respond(f"{translated}\n\n-# Powered by LibreTranslate (language={source_lang[0]['language']};confidence={source_lang[0]['confidence']})")
+        except Exception as e:
+            await ctx.respond("An error occurred")
             ai_logger.exception("An error occured:")
 
     @tasks.loop(seconds=5)
