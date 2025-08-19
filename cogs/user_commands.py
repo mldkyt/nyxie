@@ -188,6 +188,11 @@ class PickerComponent(discord.ui.View):
                                              custom_id="picker_click")
             self.click_button.callback = self.click
             self.add_item(self.click_button)
+        elif type == "beep":
+            self.click_button = discord.ui.Button(style=discord.ButtonStyle.primary, label="beeeeep",
+                                                  custom_id="picker_beep")
+            self.click_button.callback = self.beep
+            self.add_item(self.click_button)
         else:
             raise ValueError("Invalid type")
 
@@ -330,6 +335,14 @@ class PickerComponent(discord.ui.View):
         try:
             await interaction.respond("✅ *paws at Lunya*", ephemeral=True)
             dm_cache.append(f"{interaction.user.mention} *paws at you* :3")
+        except Exception as e:
+            ai_logger.exception("An error occurred:")
+            await interaction.respond("An error occurred", ephemeral=True)
+
+    async def beep(self, interaction: discord.Interaction):
+        try:
+            await interaction.respond("✅ beeeeep", ephemeral=True)
+            dm_cache.append(f"{interaction.user.mention} beeped at you :3")
         except Exception as e:
             ai_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
@@ -782,7 +795,7 @@ class UserCommands(discord.Cog):
                      message: str,
                      type: discord.Option(str,
                                           choices=["meow", "fedi meow", ":3", "fedi :3", "compliments", "meowat", "purrr", "girlkiss", "boop",
-                                                   "paws", "click"])):
+                                                   "paws", "click", "beep"])):
         try:
             if ctx.user.id != int(OWNER):
                 await ctx.respond("You are not authorized to use this command!", ephemeral=True)
