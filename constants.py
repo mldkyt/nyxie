@@ -1,7 +1,7 @@
 import logging
 import os
 
-VERSION = "2025.06.02"
+VERSION = "2025.08.19"
 
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 SENTRY_DSN = os.getenv("SENTRY_DSN")
