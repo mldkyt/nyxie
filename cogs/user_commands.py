@@ -1172,6 +1172,10 @@ class UserCommands(discord.Cog):
             await ctx.respond("An error occurred")
             ai_logger.exception("An error occured:")
 
+    @discord.slash_command(name="sotruebestie", description="So true bestie", integration_types=[discord.IntegrationType.user_install])
+    async def so_true_bestie(self, ctx: discord.ApplicationContext):
+        await ctx.respond(file=discord.File("rom/sotruebestie.gif"))
+
     @tasks.loop(seconds=5)
     async def handle_queue(self):
         try:
