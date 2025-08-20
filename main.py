@@ -5,7 +5,6 @@ import discord
 from discord.ext import commands
 
 from cogs.auto_fedi_notifs import AutoFediNotifications
-from cogs.auto_tiktok_notifs import AutoTikTokNotifications
 from cogs.auto_yt_notifs import AutoYouTubeNotifications
 from cogs.dev_commands import DevCommands
 from cogs.funny_auto_response import FunnyAutoResponse
@@ -88,7 +87,6 @@ bot.add_cog(DevCommands(bot))
 bot.add_cog(UserCommands(bot))
 bot.add_cog(AutoFediNotifications(bot))
 bot.add_cog(AutoYouTubeNotifications(bot))
-bot.add_cog(AutoTikTokNotifications(bot))
 bot.add_cog(MessageReporting(bot))
 bot.add_cog(GeneralCleaner(bot))
 bot.add_cog(MediaThreads(bot))
