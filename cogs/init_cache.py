@@ -178,6 +178,9 @@ class InitCache(discord.Cog):
         if message.channel.type == discord.ChannelType.private:
             return
 
+        if message.channel.id != int(CHANNEL_COUNTING):
+            return
+
         self.cache_message(message)
 
     @discord.Cog.listener()

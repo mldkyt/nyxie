@@ -4,7 +4,7 @@ import re
 
 import discord
 
-from constants import GUILD
+from constants import GUILD, CHANNEL_COUNTING
 
 ai_logger = logging.getLogger("ai")
 
@@ -91,6 +91,9 @@ class FunnyAutoResponse(discord.Cog):
                 return
 
             if message.guild.id != int(GUILD):
+                return
+
+            if message.channel.id != int(CHANNEL_COUNTING):
                 return
 
             if "so true" in message.content or "so real" in message.content:
