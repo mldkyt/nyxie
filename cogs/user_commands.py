@@ -742,7 +742,10 @@ class MoreYuriView(discord.ui.View):
             items = os.listdir("data/yuri")
             item = random.choice(items)
 
-            await interaction.respond(file=discord.File(f"data/yuri/{item}", filename="yuri.webp"), view=MoreYuriView())
+            index = items.index(item)
+
+            await interaction.respond(f"yuri!\nfile {index}/{len(items)} [/~lunya/girls,,,,/{item}](https://f.lunya.pet/~lunya/girls%252C%252C%252C/{item[:-4]}jpg) [(browse)](https://f.lunya.pet/~lunya/girls%252C%252C%252C/)",
+                view=MoreYuriView())
         except Exception as e:
             await interaction.respond(f"Error: {str(e)}", ephemeral=True)
             ai_logger.exception("An error occured:")
@@ -1135,8 +1138,12 @@ class UserCommands(discord.Cog):
         try:
             items = os.listdir("data/yuri")
             item = random.choice(items)
+            print(item)
 
-            await ctx.respond(file=discord.File(f"data/yuri/{item}", filename="yuri.webp"), view=MoreYuriView())
+            index = items.index(item)
+
+            await ctx.respond(f"yuri!\nfile {index}/{len(items)} [/~lunya/girls,,,/{item}](https://f.lunya.pet/~lunya/girls,,,/{item[:-4]}jpg) [(browse)](https://f.lunya.pet/~lunya/girls,,,/)",
+                view=MoreYuriView())
         except Exception as e:
             await ctx.respond(f"Error: {str(e)}", ephemeral=True)
             ai_logger.exception("An error occured:")
