@@ -36,7 +36,11 @@ def generate_meow():
 
 def handle_meow(message: discord.Message):
     # count meows
-    count = len(re.findall(r"(m[mraeow]{3,}|nya+)", message.content.lower()))
+    count = 0
+
+    for i in message.content.split(" "):
+        print("element in chat", i, flush=True)
+        count += len(re.findall(r"(^m[mraeowp]{3,}$|^nya+$)", i.lower()))
 
     if count == 0:
         return ""
@@ -84,6 +88,7 @@ class FunnyAutoResponse(discord.Cog):
     @discord.Cog.listener()
     async def on_message(self, message: discord.Message):
         try:
+            print(message)
             if message.guild is None:
                 return
 
@@ -93,7 +98,7 @@ class FunnyAutoResponse(discord.Cog):
             if message.guild.id != int(GUILD):
                 return
 
-            if message.channel.id != int(CHANNEL_COUNTING):
+            if message.channel.id == int(CHANNEL_COUNTING):
                 return
 
             if "so true" in message.content or "so real" in message.content:
