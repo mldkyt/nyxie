@@ -1,13 +1,10 @@
 import asyncio
 import logging
-from re import NOFLAG
 
 import discord
 import sqlite3
 
 from constants import GUILD, CHANNEL_MODERATION, CHANNEL_COUNTING
-from util.storage import set_data, get_data
-from discord.ext import tasks
 
 ai_logger = logging.getLogger("ai")
 
