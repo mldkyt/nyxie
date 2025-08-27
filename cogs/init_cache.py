@@ -1,7 +1,9 @@
 import asyncio
 import logging
+from re import NOFLAG
 
 import discord
+import sqlite3
 
 from constants import GUILD, CHANNEL_MODERATION, CHANNEL_COUNTING
 from util.storage import set_data, get_data
@@ -9,12 +11,98 @@ from discord.ext import tasks
 
 ai_logger = logging.getLogger("ai")
 
-def compare_embeds(cached: list[dict], embeds: list[discord.Embed]):
-    cached: list[discord.Embed] = [discord.Embed.from_dict(i) for i in cached]
+database = sqlite3.connect("data/cache.sqlite3")
+
+def init_db():
+    cur = database.cursor()
+
+    cur.execute("""CREATE TABLE IF NOT EXISTS channel (
+    	id INTEGER PRIMARY KEY AUTOINCREMENT,
+    	channelid TEXT NOT NULL,
+    	name TEXT NOT NULL,
+    	topic TEXT NOT NULL,
+    	announcement INTEGER DEFAULT (0) NOT NULL,
+    	nsfw INTEGER DEFAULT (0) NOT NULL
+    );""")
+
+    cur.execute("""CREATE TABLE IF NOT EXISTS "user" (
+    	id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    	userid TEXT NOT NULL,
+    	username TEXT NOT NULL,
+    	displayname TEXT NOT NULL,
+    	avatar TEXT NOT NULL,
+    	bot INTEGER DEFAULT (0) NOT NULL
+    );""")
+
+    cur.execute("""CREATE TABLE IF NOT EXISTS message (
+    	id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    	messageid TEXT NOT NULL,
+    	channelid INTEGER NOT NULL,
+    	authorid INTEGER NOT NULL,
+    	content TEXT NOT NULL,
+    	sentat TEXT NOT NULL,
+    	CONSTRAINT message_channel_FK FOREIGN KEY (channelid) REFERENCES channel(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    	CONSTRAINT message_user_FK FOREIGN KEY (authorid) REFERENCES "user"(id) ON DELETE CASCADE ON UPDATE CASCADE
+    );""")
+
+    cur.execute("""CREATE TABLE IF NOT EXISTS reactions (
+    	id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    	messageid INTEGER NOT NULL,
+    	emojiname TEXT NOT NULL,
+    	emojiid TEXT,
+    	emojiurl TEXT,
+    	count INTEGER DEFAULT (0) NOT NULL,
+    	CONSTRAINT reactions_message_FK FOREIGN KEY (messageid) REFERENCES message(id)
+    );""")
+
+    cur.execute("""CREATE TABLE IF NOT EXISTS embed (
+    	id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    	messageid INTEGER NOT NULL,
+    	title TEXT NOT NULL,
+    	description TEXT NOT NULL,
+    	authorname TEXT,
+    	authoravatar TEXT,
+    	footertext TEXT,
+    	CONSTRAINT embed_message_FK FOREIGN KEY (messageid) REFERENCES message(id)
+    );""")
+
+    cur.execute("""CREATE TABLE IF NOT EXISTS embedfield (
+    	id INTEGER PRIMARY KEY AUTOINCREMENT,
+    	embedid INTEGER NOT NULL,
+    	name TEXT NOT NULL,
+    	value TEXT NOT NULL,
+    	CONSTRAINT embedfield_embed_FK FOREIGN KEY (embedid) REFERENCES embed(id)
+    );""")
+
+    cur.close()
+    database.commit()
+
+def compare_embeds(cached: int, embeds: list[discord.Embed]):
+    cur = database.cursor()
+    cur.execute("SELECT * FROM embed WHERE messageid = (SELECT id FROM message WHERE messageid = ?);", (str(cached),))
+
+    cached_embeds: list[discord.Embed] = []
+
+    for i in cur.fetchall():
+        cur.execute("SELECT * FROM embedfield WHERE embedid = ?;", (i[0],))
+        fields = cur.fetchall()
+
+        cached_embeds.append(discord.Embed(
+            title=i[2],
+            description=i[3],
+            author=discord.EmbedAuthor(
+                name=i[4],
+                icon_url=i[5]
+            ),
+            footer=discord.EmbedFooter(
+                text=i[6]
+            ),
+            fields=[discord.EmbedField(name=j[2], value=j[3]) for j in fields]
+        ))
 
     differences: list[tuple[str, str, str]] = []
 
-    for (i, v) in enumerate(zip(cached, embeds)):
+    for (i, v) in enumerate(zip(cached_embeds, embeds)):
         if v[0].title != v[1].title:
             differences.append((f"Embed {i + 1} Title", v[0].title, v[1].title))
         if v[0].description != v[1].description:
@@ -57,17 +145,8 @@ def get_reaction_dict(react: discord.Reaction):
 class InitCache(discord.Cog):
     def __init__(self, bot: discord.Bot):
         super().__init__()
+        init_db()
         self.bot = bot
-        self.cached_messages: list[dict] = []
-        self.cached_users: list[dict] = []
-        self.cached_channels: list[dict] = []
-        self.cached_emojis: list[dict] = []
-        self.load()
-        self.saving_task.start()
-
-    @tasks.loop(minutes=30)
-    async def saving_task(self):
-        self.save()
 
     async def init_channel(self, channel: discord.TextChannel):
         try:
@@ -94,91 +173,115 @@ class InitCache(discord.Cog):
             await asyncio.gather(
                 *[self.init_channel(i) for i in guild.text_channels]
             )
-
-            self.save()
-            ai_logger.info(f"Created cache for %d messages and %d users", len(self.cached_messages),
-                         len(self.cached_users))
         except Exception as e:
             ai_logger.exception("An error occurred:")
 
     def message_is_cached(self, message: discord.Message) -> bool:
-        return any([i['id'] == message.id for i in self.cached_messages])
+        cur = database.cursor()
+        cur.execute("SELECT id FROM message WHERE messageid = ?;", (str(message.id),))
+        a = cur.fetchone()
+        cur.close()
+
+        return a is not None
 
     def cache_message(self, message: discord.Message):
-        if not any([i['id'] == message.id for i in self.cached_messages]):
-            self.cached_messages.append({
-                "id": message.id,
-                "channelID": message.channel.id,
-                "authorID": message.author.id,
-                "content": message.content,
-                "reactions": [get_reaction_dict(i) for i in message.reactions],
-                "embeds": [i.to_dict() for i in message.embeds],
-                "sentat": message.created_at.isoformat(timespec="minutes")
-            })
+        cur = database.cursor()
 
-        # Remove user if missing information
-        b = [i for i in self.cached_users if i["id"] == message.author.id]
-        if len(b) > 0 and "bot" not in b[0]:
-            self.cached_users = [i for i in self.cached_users if i["id"] != message.author.id]
+        # Cache user if not cached
+        cur.execute("SELECT id FROM \"user\" WHERE userid = ?;", (str(message.author.id),))
+        if cur.fetchone() is None:
+            cur.execute("INSERT INTO \"user\" (userid, username, displayname, avatar, bot) VALUES(?, ?, ?, ?, ?);",
+                (str(message.author.id), message.author.name, message.author.display_name, message.author.display_avatar.url, 1 if message.author.bot else 0))
+        else:
+            cur.execute("UPDATE \"user\" SET username = ?, displayname = ?, avatar = ?, bot = ? WHERE userid = ?;",
+                (message.author.name, message.author.display_name, message.author.display_avatar.url, 1 if message.author.bot else 0, str(message.author.id)))
+        cur.execute("SELECT id FROM \"user\" WHERE userid = ?;", (str(message.author.id),))
+        user_id = cur.fetchone()[0]
 
-        if not any(i['id'] == message.author.id for i in self.cached_users):
-            self.cached_users.append({
-                "id": message.author.id,
-                "username": message.author.name,
-                "displayname": message.author.display_name,
-                "avatar": message.author.display_avatar.url,
-                "bot": message.author.bot
-            })
+        # Cache channel if not cached
+        cur.execute("SELECT id FROM channel WHERE channelid = ?;", (str(message.channel.id),))
+        if cur.fetchone() is None:
+            cur.execute("INSERT INTO channel (channelid, name, topic, announcement, nsfw) VALUES(?, ?, ?, ?, ?);",
+                (str(message.channel.id), message.channel.name, "" if message.channel.topic is None else message.channel.topic, 1 if message.channel.type == discord.ChannelType.news else 0,
+                    1 if message.channel.nsfw else 0))
+        else:
+            cur.execute("UPDATE channel SET name = ?, topic = ?, announcement = ?, nsfw = ? WHERE channelid = ?;", (message.channel.name, "" if message.channel.topic is None else message.channel.topic, 1 if message.channel.type == discord.ChannelType.news else 0,
+                1 if message.channel.nsfw else 0, str(message.channel.id)))
+        cur.execute("SELECT id FROM channel WHERE channelid = ?;", (str(message.channel.id),))
+        channel_id = cur.fetchone()[0]
 
-        if not any(i['id'] == message.channel.id for i in self.cached_channels):
-            self.cached_channels.append({
-                "id": message.channel.id,
-                "name": message.channel.name,
-                "topic": message.channel.topic,
-                "announcement": message.channel.is_news(),
-                "nsfw": message.channel.is_nsfw()
-            })
+        # Cache message if not cached
+        cur.execute("SELECT id FROM message WHERE messageid = ?;", (str(message.id),))
+        if cur.fetchone() is None:
+            cur.execute("INSERT INTO message (messageid, channelid, authorid, content, sentat) VALUES(?, ?, ?, ?, ?);",
+                (str(message.id), channel_id, user_id, message.content, message.created_at.isoformat()))
+        else:
+            cur.execute("UPDATE message SET content = ? WHERE messageid = ?;", (message.content, str(message.id)))
+        cur.execute("SELECT id FROM message WHERE messageid = ?;", (str(message.id),))
+        message_id = cur.fetchone()[0]
 
-    def update_cached_message(self, message: discord.Message):
-        self.cached_messages = [i for i in self.cached_messages if i['id'] != message.id]
-        self.cached_users = [i for i in self.cached_users if i['id'] != message.author.id]
-        self.cache_message(message)
+        # Cache reactions
+        for reaction in message.reactions:
+            cur.execute("SELECT id FROM reactions WHERE messageid = ? AND emojiname = ?;", (str(message.id), reaction.emoji.id if isinstance(reaction.emoji, (discord.Emoji, discord.PartialEmoji)) else str(reaction.emoji)))
+            if cur.fetchone() is None:
+                cur.execute("INSERT INTO reactions (messageid, emojiname, emojiid, emojiurl, count) VALUES (?, ?, ?, ?, ?);",
+                    (message_id, str(reaction.emoji), reaction.emoji.id if isinstance(reaction.emoji, (discord.Emoji, discord.PartialEmoji)) else reaction.emoji,
+                        reaction.emoji.url if isinstance(reaction.emoji, (discord.Emoji, discord.PartialEmoji)) else None, reaction.count))
+            else:
+                cur.execute("UPDATE reactions SET emojiurl = ?, count = ? WHERE messageid = ? AND emojiid = ?",
+                    (reaction.emoji.url if isinstance(reaction.emoji, (discord.Emoji, discord.PartialEmoji)) else None, reaction.count,
+                        message_id, reaction.emoji.id if isinstance(reaction.emoji, (discord.Emoji, discord.PartialEmoji)) else reaction.emoji))
 
-    def get_cached_message(self, message_id: int):
-        a = [i for i in self.cached_messages if i['id'] == message_id]
-        return None if len(a) == 0 else a[0]
+        # Cache embeds
+        for embed in message.embeds:
+            cur.execute("DELETE FROM embed WHERE messageid = ?;", (str(message.id),))
+            cur.execute(
+                "INSERT INTO embed (messageid, title, description, authorname, authoravatar, footertext) VALUES(?, ?, ?, ?, ?, ?);",
+                (message_id,
+                    embed.title if embed.title else "",
+                    embed.description if embed.description else "",
+                    embed.author.name if embed.author else None,
+                    embed.author.icon_url if embed.author and embed.author.icon_url else None,
+                    embed.footer.text if embed.footer else None))
+            embed_id = cur.lastrowid
 
-    def get_cached_user(self, user_id: int):
-        a = [i for i in self.cached_users if i['id'] == user_id]
-        return None if len(a) == 0 else a[0]
+            # Clear existing fields to prevent duplication
+            cur.execute("DELETE FROM embedfield WHERE embedid = ?", (embed_id,))
 
-    def save(self):
-        ai_logger.info("Writing bot_cache")
-        set_data("bot_cache", {
-            "messages": self.cached_messages,
-            "users": self.cached_users,
-            "channels": self.cached_channels
-        })
-        ai_logger.info("Written bot_cache")
+            for field in embed.fields:
+                cur.execute(
+                    "INSERT OR REPLACE INTO embedfield (embedid, name, value) VALUES(?, ?, ?);",
+                    (embed_id, field.name, field.value))
 
-    def load(self):
-        ai_logger.info("Loading bot_cache")
-        data = get_data("bot_cache")
+        database.commit()
+        cur.close()
 
-        if "messages" in data:
-            self.cached_messages = data["messages"]
-        if "users" in data:
-            self.cached_users = data["users"]
-        if "channels" in data:
-            self.cached_channels = data["channels"]
-        ai_logger.info("Loaded bot_cache")
+    def get_cached_message(self, message_id: int) -> tuple[str, str, str, str, str]:
+        cur = database.cursor()
+        cur.execute("""SELECT messageid, channel.channelid, \"user\".userid, content, sentat
+            FROM message
+            JOIN channel ON channel.id = message.channelid
+            JOIN \"user\" ON \"user\".id = message.authorid
+            WHERE messageid = ?;""", (str(message_id),))
+        a = cur.fetchone()
+        cur.close()
+        return a
+
+    def get_cached_user(self, user_id: int) -> tuple[str, str, str, str, int]:
+        cur = database.cursor()
+        cur.execute("""SELECT userid, username, displayname, avatar, bot
+            FROM \"user\"
+            WHERE userid = ?;""", (str(user_id),))
+        a = cur.fetchone()
+        cur.close()
+        return a
 
     @discord.Cog.listener()
     async def on_message(self, message: discord.Message):
         if message.channel.type == discord.ChannelType.private:
             return
 
-        if message.channel.id != int(CHANNEL_COUNTING):
+        if message.channel.id == int(CHANNEL_COUNTING):
             return
 
         self.cache_message(message)
@@ -186,25 +289,24 @@ class InitCache(discord.Cog):
     @discord.Cog.listener()
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent):
         try:
-
             changes = []
 
             cached = self.get_cached_message(payload.message_id)
             if not cached:
                 return
-            cached_author = self.get_cached_user(cached["authorID"])
+            cached_author = self.get_cached_user(int(cached[2]))
             if not cached_author:
                 return
 
-            if "bot" in cached_author and cached_author["bot"]:
+            if cached_author[4] == 1:
                 return
 
             fetched = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
 
-            if cached["content"] != fetched.content:
-                changes.append(("Content", cached["content"], fetched.content))
+            if cached[3] != fetched.content:
+                changes.append(("Content", cached[3], fetched.content))
 
-            changes.extend(compare_embeds(cached["embeds"], fetched.embeds))
+            changes.extend(compare_embeds(int(cached[0]), fetched.embeds))
 
             if len(changes) == 0:
                 return
@@ -219,7 +321,7 @@ class InitCache(discord.Cog):
                         discord.EmbedField(name="Link", value=f"[Jump]({fetched.jump_url})")]
             ))
 
-            self.update_cached_message(fetched)
+            self.cache_message(fetched)
         except Exception as e:
             ai_logger.exception("An error occurred:")
 
@@ -229,19 +331,22 @@ class InitCache(discord.Cog):
             cached = self.get_cached_message(payload.message_id)
 
             if not cached:
+                ai_logger.warning("Message not cached")
                 return
 
-            cached_author = self.get_cached_user(cached["authorID"])
+            cached_author = self.get_cached_user(int(cached[2]))
             if not cached_author:
+                ai_logger.warning("Message author not found")
                 return
-            if "bot" in cached_author and cached_author["bot"]:
+            if cached_author[4] == 1:
+                ai_logger.warning("Bot message")
                 return
 
             # Explicitly skip number messages in the counting channel
             if int(payload.channel_id) == int(CHANNEL_COUNTING) \
-                    and 'content' in cached \
-                    and isinstance(cached['content'], str) \
-                    and cached['content'].isnumeric():
+                    and isinstance(cached[3], str) \
+                    and cached[3].isnumeric():
+                ai_logger.warning("Counting channel")
                 return
 
             log_channel = self.bot.get_channel(int(CHANNEL_MODERATION))
@@ -250,7 +355,7 @@ class InitCache(discord.Cog):
                 title="Message Deleted",
                 color=discord.Color.red(),
                 description="A message has been deleted.\n\n"
-                            f"{cached['content']}",
+                            f"{cached[3]}",
                 fields=[
                     discord.EmbedField(name="Link", value=f"[Jump](https://discord.com/channels/{payload.guild_id}/{payload.channel_id}/{payload.message_id})")
                 ]

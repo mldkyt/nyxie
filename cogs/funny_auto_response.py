@@ -39,7 +39,6 @@ def handle_meow(message: discord.Message):
     count = 0
 
     for i in message.content.split(" "):
-        print("element in chat", i, flush=True)
         count += len(re.findall(r"(^m[mraeowp]{3,}$|^nya+$)", i.lower()))
 
     if count == 0:
@@ -88,7 +87,6 @@ class FunnyAutoResponse(discord.Cog):
     @discord.Cog.listener()
     async def on_message(self, message: discord.Message):
         try:
-            print(message)
             if message.guild is None:
                 return
 
