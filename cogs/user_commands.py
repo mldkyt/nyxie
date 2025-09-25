@@ -396,12 +396,16 @@ class ForgejoCreateIssueModal(discord.ui.Modal):
 
     async def callback(self, interaction: Interaction):
         try:
+            if interaction.user is None:
+                await interaction.respond("user is null for some godforsaken reason", ephemeral=True)
+                return
+
             res = requests.post(f"https://{FORGEJO_INSTANCE}/api/v1/repos/{self.user}/{self.repo}/issues", headers={
                 'Authorization': f"Bearer {FORGEJO_TOKEN}",
                 'Content-Type': 'application/json'
             }, json={
                 'title': self.field_title.value,
-                'body': self.field_body.value
+                'body': f'User {interaction.user.display_name} ({interaction.user.name}, {interaction.user.id}) submitted the following:\n\n{self.field_body.value}'
             })
 
             res.raise_for_status()
