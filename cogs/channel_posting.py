@@ -8,7 +8,7 @@ from discord.ext.tasks import loop
 
 from constants import GUILD, CHANNEL_YURI, FEDI_INSTANCE, CHANNEL_YAOI, CHANNEL_MEOW
 
-DEBUG = True
+DEBUG = False
 
 async def post_yuri(bot: Bot):
     guild = bot.get_guild(int(GUILD))
