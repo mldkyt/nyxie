@@ -7,6 +7,7 @@ from discord.ext import commands
 from cogs.auto_fedi_notifs import AutoFediNotifications
 from cogs.auto_goodmorning_goodnight import AutoGoodMorningGoodNight
 from cogs.auto_yt_notifs import AutoYouTubeNotifications
+from cogs.channel_posting import ChannelPosting
 from cogs.dev_commands import DevCommands
 from cogs.funny_auto_response import FunnyAutoResponse
 from cogs.general_cleaner import GeneralCleaner
@@ -95,5 +96,6 @@ bot.add_cog(FunnyAutoResponse(bot))
 bot.add_cog(InitCache(bot))
 bot.add_cog(NsfwVerification(bot))
 bot.add_cog(AutoGoodMorningGoodNight(bot))
+bot.add_cog(ChannelPosting(bot))
 
 bot.run(DISCORD_TOKEN)
