@@ -4,7 +4,6 @@ import os
 VERSION = "2025.08.19"
 
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
-SENTRY_DSN = os.getenv("SENTRY_DSN")
 
 GUILD = os.getenv("GUILD")
 OWNER = os.getenv("OWNER")
@@ -52,7 +51,6 @@ def validate_values(l: dict[str, str | None]):
 
 validate_values({
     'DISCORD_TOKEN': DISCORD_TOKEN,
-    'SENTRY_DSN': SENTRY_DSN,
     'GUILD': GUILD,
     'OWNER': OWNER,
     'ROLE_VIDEOS': ROLE_VIDEOS,
