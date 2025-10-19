@@ -63,17 +63,17 @@ class WriteGoodMorningMessage(Modal):
 
 class ViewGoodMorning(View):
     def __init__(self):
-        super().__init__()
+        super().__init__(timeout=None)
 
-    @button(label="Send good morning")
+    @button(label="Send good morning", custom_id="goodmorning")
     async def good_morning(self, btn: Button, inter: Interaction):
         await inter.response.send_modal(WriteGoodMorningMessage())
 
 class ViewGoodNight(View):
     def __init__(self):
-        super().__init__()
+        super().__init__(timeout=None)
 
-    @button(label="Send good night")
+    @button(label="Send good night", custom_id="goodnight")
     async def good_morning(self, btn: Button, inter: Interaction):
         await inter.response.send_modal(WriteGoodNightMessage())
 
@@ -86,6 +86,9 @@ class AutoGoodMorningGoodNight(Cog):
     @Cog.listener()
     async def on_ready(self):
         self.check_time.start()
+
+        self.bot.add_view(ViewGoodMorning())
+        self.bot.add_view(ViewGoodNight())
 
     @loop(minutes=1)
     async def check_time(self):
