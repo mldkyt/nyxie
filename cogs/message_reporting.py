@@ -1,7 +1,7 @@
 import logging
 
 import discord
-from discord import Interaction
+from discord import Interaction, Bot
 
 from constants import CHANNEL_MODERATION
 from util.storage import get_data, set_data
@@ -229,3 +229,6 @@ class MessageReporting(discord.Cog):
     async def report_message(self, ctx: discord.ApplicationContext, message: discord.Message):
         await ctx.response.send_modal(
             EnterReportDetailsDialog(message.channel.id, message.id, message.author.id))
+
+def setup(bot: Bot):
+    bot.add_cog(MessageReporting(bot))

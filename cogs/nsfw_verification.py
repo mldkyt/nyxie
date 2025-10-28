@@ -3,6 +3,7 @@ import logging
 import time
 
 import discord
+from discord import Bot
 from discord.ext import commands
 
 from constants import ROLE_NSFW, GUILD
@@ -143,3 +144,5 @@ class NsfwVerification(commands.Cog):
             ai_logger.exception("An error occurred:")
             await ctx.respond("an error occured :(", ephemeral=True)
 
+def setup(bot: Bot):
+    bot.add_cog(NsfwVerification(bot))

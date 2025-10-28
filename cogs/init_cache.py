@@ -4,6 +4,8 @@ import logging
 import discord
 import sqlite3
 
+from discord import Bot
+
 from constants import GUILD, CHANNEL_MODERATION, CHANNEL_COUNTING
 
 ai_logger = logging.getLogger("ai")
@@ -359,3 +361,6 @@ class InitCache(discord.Cog):
             ))
         except Exception as e:
             ai_logger.exception("An error occurred:")
+
+def setup(bot: Bot):
+    bot.add_cog(InitCache(bot))

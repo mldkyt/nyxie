@@ -104,3 +104,5 @@ class AutoGoodMorningGoodNight(Cog):
         if (now.hour == 6 and now.minute == 0) or DEBUG_MORNING:
             await owner.send("Say a good meowning to fedi :3", view=ViewGoodMorning())
 
+def setup(bot: Bot):
+    bot.add_cog(AutoGoodMorningGoodNight(bot))

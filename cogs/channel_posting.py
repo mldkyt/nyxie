@@ -89,3 +89,6 @@ class ChannelPosting(Cog):
                 post_yaoi(self.bot),
                 post_meow(self.bot)
             )
+
+def setup(bot: Bot):
+    bot.add_cog(ChannelPosting(bot))

@@ -3,6 +3,7 @@ import logging
 
 import discord
 import yt_dlp
+from discord import Bot
 from discord.ext import tasks
 
 from constants import CHANNEL_NEW_VIDEOS, ROLE_VIDEOS, YT_LINK
@@ -116,3 +117,5 @@ class AutoYouTubeNotifications(discord.Cog):
         except Exception as e:
             ai_logger.exception("An error occurred:")
 
+def setup(bot: Bot):
+    bot.add_cog(AutoYouTubeNotifications(bot))

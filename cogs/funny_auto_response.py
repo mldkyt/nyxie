@@ -3,6 +3,7 @@ import random
 import re
 
 import discord
+from discord import Bot
 
 from constants import GUILD, CHANNEL_COUNTING
 
@@ -116,3 +117,6 @@ class FunnyAutoResponse(discord.Cog):
                 await message.channel.send(message_reply)
         except Exception as e:
             ai_logger.exception("An error occurred:")
+
+def setup(bot: Bot):
+    bot.add_cog(FunnyAutoResponse(bot))
