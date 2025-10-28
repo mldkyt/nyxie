@@ -1,7 +1,0 @@
-py-cord[speed]
-yt-dlp
-python-dateutil
-requests
-pytz
-libretranslatepy
-aiohttp

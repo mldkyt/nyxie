@@ -1,6 +1,7 @@
 import logging
 
 import discord
+from discord import Bot
 
 from cogs.nsfw_verification import NsfwRolePicker
 from constants import OWNER, GUILD
@@ -88,3 +89,6 @@ class DevCommands(discord.Cog):
         except Exception as e:
             ai_logger.exception("An error occurred:")
             await ctx.respond("an error occured", ephemeral=True)
+
+def setup(bot: Bot):
+    bot.add_cog(DevCommands(bot))

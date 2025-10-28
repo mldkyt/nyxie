@@ -17,7 +17,7 @@ import pytz
 import requests
 import yt_dlp.version
 from dateutil.parser import isoparse
-from discord import Interaction
+from discord import Interaction, Bot
 from discord.ext import tasks, commands
 from discord.ext.commands import cooldown, BucketType
 
@@ -1201,3 +1201,6 @@ class UserCommands(discord.Cog):
             dm_cache.clear()
         except Exception as e:
             ai_logger.exception("An error occurred:")
+
+def setup(bot: Bot):
+    bot.add_cog(UserCommands(bot))

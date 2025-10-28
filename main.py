@@ -4,18 +4,6 @@ import os
 import discord
 from discord.ext import commands
 
-from cogs.auto_fedi_notifs import AutoFediNotifications
-from cogs.auto_goodmorning_goodnight import AutoGoodMorningGoodNight
-from cogs.auto_yt_notifs import AutoYouTubeNotifications
-from cogs.channel_posting import ChannelPosting
-from cogs.dev_commands import DevCommands
-from cogs.funny_auto_response import FunnyAutoResponse
-from cogs.general_cleaner import GeneralCleaner
-from cogs.init_cache import InitCache
-from cogs.media_threads import MediaThreads
-from cogs.message_reporting import MessageReporting
-from cogs.nsfw_verification import NsfwVerification
-from cogs.user_commands import UserCommands
 from constants import DISCORD_TOKEN
 
 ai_logger = logging.getLogger("ai")
@@ -38,6 +26,10 @@ ai_logger.addHandler(file_handler)
 ai_logger.addHandler(console_handler)
 
 bot = discord.Bot(intents=discord.Intents.all())
+
+for filename in os.listdir('cogs'):
+    if filename.endswith('.py'):
+        bot.load_extension(f'cogs.{filename[:-3]}')
 
 @bot.event
 async def on_ready():
@@ -84,18 +76,5 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error):
     except Exception as e:
         pass
     raise error
-
-bot.add_cog(DevCommands(bot))
-bot.add_cog(UserCommands(bot))
-bot.add_cog(AutoFediNotifications(bot))
-bot.add_cog(AutoYouTubeNotifications(bot))
-bot.add_cog(MessageReporting(bot))
-bot.add_cog(GeneralCleaner(bot))
-bot.add_cog(MediaThreads(bot))
-bot.add_cog(FunnyAutoResponse(bot))
-bot.add_cog(InitCache(bot))
-bot.add_cog(NsfwVerification(bot))
-bot.add_cog(AutoGoodMorningGoodNight(bot))
-bot.add_cog(ChannelPosting(bot))
 
 bot.run(DISCORD_TOKEN)

@@ -1,6 +1,7 @@
 import datetime
 
 import discord
+from discord import Bot
 
 from constants import CHANNEL_GENERAL, CHANNEL_MEDIA
 
@@ -47,3 +48,6 @@ class GeneralCleaner(discord.Cog):
             # If exceeded, remind the user that the media channel exists
             self.data[message.author.id]['sent'] = True
             await message.reply(f"Please use the <#{CHANNEL_MEDIA}> channel for posting media~ Thank you!")
+
+def setup(bot: Bot):
+    bot.add_cog(GeneralCleaner(bot))

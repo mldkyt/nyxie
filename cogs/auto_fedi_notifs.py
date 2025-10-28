@@ -2,6 +2,7 @@ import asyncio
 
 import aiohttp
 import discord
+from discord import Bot
 from discord.ext import tasks
 
 from constants import CHANNEL_NEW_FEDI, ROLE_FEDI, FEDI_INSTANCE, FEDI_USER_ID
@@ -72,3 +73,6 @@ class AutoFediNotifications(discord.Cog):
             existing_data["posted_posts"].append(i)
 
         set_data("fedi_notifications", existing_data)
+
+def setup(bot: Bot):
+    bot.add_cog(AutoFediNotifications(bot))
