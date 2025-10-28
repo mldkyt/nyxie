@@ -13,4 +13,4 @@ COPY rom/ rom/.
 COPY cogs/ cogs/.
 COPY util/ util/.
 
-ENTRYPOINT ["python3", "main.py"]
+ENTRYPOINT ["uv", "run", "main.py"]
