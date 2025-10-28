@@ -72,7 +72,7 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error):
     ai_logger.exception("An error occurred:")
     try:
         # respond
-        await ctx.respond("An error occured with this command, please ask Lunya to fix it :(", ephemeral=True)
+        await ctx.respond("An error occurred with this command, please ask Lunya to fix it :(", ephemeral=True)
     except Exception as e:
         pass
     raise error
