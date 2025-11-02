@@ -48,6 +48,45 @@ def handle_meow(message: discord.Message):
     return " ".join([generate_meow() for _ in range(count)]) + " :3"
 
 
+def generate_woof():
+    a = random.choice([0, 1])
+
+    if a == 0:
+        is_a = random.choice([0, 1])
+
+        return ("a" if is_a else "") + "wru" + "f" * random.randint(1, 3)
+    elif a == 1:
+        return "woof"
+    else:
+        return "waf"
+
+
+def handle_woof(message: discord.Message):
+    # count woofs
+    count = 0
+
+    for i in message.content.split(" "):
+        count += len(re.findall(r"(^[awruf]?[wrouf]+)$", i.lower()))
+
+    if count == 0:
+        return ""
+
+    return " ".join([generate_woof() for _ in range(count)])
+
+
+def handle_waf(message: discord.Message):
+    count = 0
+
+    for i in message.content.split(" "):
+        if i.lower() == "waf":
+            count += 1
+
+    if count == 0:
+        return ""
+
+    return " ".join(["waf" for _ in range(count)])
+
+
 def handle_owo(message: discord.Message):
     # count OwOs and UwUs
     count = len(re.findall(r"([ou>]w[<ou])", message.content.lower()))
@@ -108,7 +147,9 @@ class FunnyAutoResponse(discord.Cog):
                 handle_colon_three(message),
                 handle_owo(message),
                 handle_gex(message),
-                handle_awawa(message)
+                handle_awawa(message),
+                handle_woof(message),
+                handle_waf(message)
             ])
 
             message_reply = message_reply.replace("  ", " ")
