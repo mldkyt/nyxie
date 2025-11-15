@@ -1,11 +1,10 @@
-FROM python:3.11-alpine
+FROM python:3.10
 
 WORKDIR /app
 
-COPY pyproject.toml .
+COPY requirements.txt .
 
-RUN pip3 install --upgrade uv
-RUN uv sync
+RUN pip3 install -r requirements.txt
 
 COPY main.py .
 COPY constants.py .

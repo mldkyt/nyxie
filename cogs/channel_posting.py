@@ -5,28 +5,47 @@ from random import choice, randint
 from aiohttp import ClientSession
 from discord import Cog, Bot
 from discord.ext.tasks import loop
-from mastodon import Mastodon
 
 from constants import GUILD, CHANNEL_YURI, FEDI_INSTANCE, CHANNEL_YAOI, CHANNEL_MEOW
 
 DEBUG = False
 
-mastodon = Mastodon(access_token='data/usercred', api_base_url=f'https://{FEDI_INSTANCE}')
-
 async def post_yuri(bot: Bot):
     guild = bot.get_guild(int(GUILD))
     chan = guild.get_channel(int(CHANNEL_YURI))
 
-    acct = mastodon.account_statuses('AzXuGODH6RxPt5iFjE', only_media=True)
-    await chan.send(f'https://{FEDI_INSTANCE}/notice/{choice(acct).id}')
+    async with ClientSession() as session:
+        async with session.post(f'https://{FEDI_INSTANCE}/api/users/notes', json={
+            'userId': 'a813qsmgrm',
+            'limit': 48
+        }) as req:
+            if not req.ok:
+                return
+
+            req = await req.json()
+            req = [i['id'] for i in req]
+            req = choice(req)
+
+            await chan.send(f"https://{FEDI_INSTANCE}/notes/{req}")
 
 
 async def post_yaoi(bot: Bot):
     guild = bot.get_guild(int(GUILD))
     chan = guild.get_channel(int(CHANNEL_YAOI))
 
-    acct = mastodon.account_statuses('AzdWSJWKCcaguRcvwG', only_media=True)
-    await chan.send(f'https://{FEDI_INSTANCE}/notice/{choice(acct).id}')
+    async with ClientSession() as session:
+        async with session.post(f'https://{FEDI_INSTANCE}/api/users/notes', json={
+            'userId': 'a814xa4c81',
+            'limit': 48
+        }) as req:
+            if not req.ok:
+                return
+
+            req = await req.json()
+            req = [i['id'] for i in req]
+            req = choice(req)
+
+            await chan.send(f"https://{FEDI_INSTANCE}/notes/{req}")
 
 
 def generate_meow():
