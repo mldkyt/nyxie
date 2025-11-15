@@ -66,7 +66,7 @@ def handle_woof(message: discord.Message):
     count = 0
 
     for i in message.content.split(" "):
-        count += len(re.findall(r"(^[awruf]?[wrouf]+)$", i.lower()))
+        count += len(re.findall(r"(^[awruf]?[wrouf]{3,})$", i.lower()))
 
     if count == 0:
         return ""
