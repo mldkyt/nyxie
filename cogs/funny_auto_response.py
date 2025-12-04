@@ -5,9 +5,10 @@ import re
 import discord
 from discord import Bot
 
-from constants import GUILD, CHANNEL_COUNTING
+from constants import CHANNEL_COUNTING, GUILD
 
 ai_logger = logging.getLogger("ai")
+
 
 def handle_colon_three(message: discord.Message):
     # count :3 in message
@@ -19,6 +20,7 @@ def handle_colon_three(message: discord.Message):
         return ""
 
     return ":3 " * count
+
 
 def generate_meow():
     meow = random.choice(["meow", "nya", "mraow", "mwrmmwra"])
@@ -66,7 +68,7 @@ def handle_woof(message: discord.Message):
     count = 0
 
     for i in message.content.split(" "):
-        count += len(re.findall(r"(^[awruf]?[wrouf]{3,})$", i.lower()))
+        count += len(re.findall(r"^([awruf]?[wruf]{3,})$", i.lower()))
 
     if count == 0:
         return ""
@@ -94,7 +96,9 @@ def handle_owo(message: discord.Message):
     if count == 0:
         return ""
 
-    return " ".join(random.choices(["OwO", "owo", "UwU", "uwu", ">w<"], k=count)) + " :3"
+    return (
+        " ".join(random.choices(["OwO", "owo", "UwU", "uwu", ">w<"], k=count)) + " :3"
+    )
 
 
 def handle_gex(message: discord.Message):
@@ -104,6 +108,7 @@ def handle_gex(message: discord.Message):
     resp = "say gex " * count_say_gex
     resp += "sesbian lex " * count_sesbian_lex
     return resp.strip()
+
 
 def handle_awawa(message: discord.Message):
     count_awawa = 0
@@ -142,15 +147,17 @@ class FunnyAutoResponse(discord.Cog):
             if "so true" in message.content or "so real" in message.content:
                 await message.reply(file=discord.File("rom/sotruebestie.gif"))
 
-            message_reply = " ".join([
-                handle_meow(message),
-                handle_colon_three(message),
-                handle_owo(message),
-                handle_gex(message),
-                handle_awawa(message),
-                handle_woof(message),
-                handle_waf(message)
-            ])
+            message_reply = " ".join(
+                [
+                    handle_meow(message),
+                    handle_colon_three(message),
+                    handle_owo(message),
+                    handle_gex(message),
+                    handle_awawa(message),
+                    handle_woof(message),
+                    handle_waf(message),
+                ]
+            )
 
             message_reply = message_reply.replace("  ", " ")
 
@@ -158,6 +165,7 @@ class FunnyAutoResponse(discord.Cog):
                 await message.channel.send(message_reply)
         except Exception as e:
             ai_logger.exception("An error occurred:")
+
 
 def setup(bot: Bot):
     bot.add_cog(FunnyAutoResponse(bot))
