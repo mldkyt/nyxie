@@ -432,6 +432,18 @@ wheels = [
 ]
 
 [[package]]
+name = "deepl"
+version = "1.25.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e8/9d/4cb65e741ef552c45687a25db2e4e1f619b9c2fb3d3458252a4a2016fcdc/deepl-1.25.0.tar.gz", hash = "sha256:9c5be635056e83a7334840a8adecfd962c5cb85579f21b15c10643e9d77c238a", size = 50554, upload-time = "2025-11-12T19:08:30.372Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6d/8c/136035269930d365fbb47ccf92cb6bc9be60edb5b4fa84d591ba9c212030/deepl-1.25.0-py3-none-any.whl", hash = "sha256:071f929a1b80252f16922e84748f7635db110746cada00b2cf2de7d2080cbbcf", size = 45772, upload-time = "2025-11-12T19:08:28.187Z" },
+]
+
+[[package]]
 name = "frozenlist"
 version = "1.6.0"
 source = { registry = "https://pypi.org/simple" }
@@ -518,20 +530,11 @@ wheels = [
 ]
 
 [[package]]
-name = "libretranslatepy"
-version = "2.1.4"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/ad/d3/dd02a586e021d088c8de7eba641dedca54f71ca81c913e390d2f45068c2c/libretranslatepy-2.1.4.tar.gz", hash = "sha256:800e902eed1b8b32d310ec72b204c6cfdcf3e4aa7cda5bfbcb7bbce8933e6369", size = 3446, upload-time = "2024-04-16T21:48:06.256Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/16/d0/02e0d5c591bdb6cb8431c94b26f5b62e4b1a3b8f72eec35f18f82ecd10b2/libretranslatepy-2.1.4-py3-none-any.whl", hash = "sha256:84fd16181e021e87c2d34351d928c01d66dba36e01814500aee8731dd138b822", size = 3525, upload-time = "2024-04-16T21:48:02.188Z" },
-]
-
-[[package]]
 name = "lunya-ai"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "libretranslatepy" },
+    { name = "deepl" },
     { name = "py-cord", extra = ["speed"] },
     { name = "python-dateutil" },
     { name = "pytz" },
@@ -541,7 +544,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "libretranslatepy", specifier = ">=2.1.4" },
+    { name = "deepl", specifier = ">=1.25.0" },
     { name = "py-cord", extras = ["speed"], specifier = ">=2.6.1" },
     { name = "python-dateutil", specifier = ">=2.9.0.post0" },
     { name = "pytz", specifier = ">=2025.2" },
