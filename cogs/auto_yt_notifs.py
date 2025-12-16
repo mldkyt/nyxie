@@ -3,10 +3,11 @@ import logging
 
 import discord
 import yt_dlp
+from aiohttp import ClientSession
 from discord import Bot
 from discord.ext import tasks
 
-from constants import CHANNEL_NEW_VIDEOS, ROLE_VIDEOS, YT_LINK
+from constants import CHANNEL_NEW_VIDEOS, ROLE_VIDEOS, YT_LINK, FEDI_INSTANCE, FEDI_TOKEN
 from util.storage import get_data, set_data
 
 ai_logger = logging.getLogger("ai")
@@ -36,6 +37,19 @@ async def get_all_latest_post_info():
         ai_logger.exception("An error occurred:")
         return []
 
+
+async def post_on_fedi(text: str):
+    if not isinstance(text, str):
+        return
+
+    async with ClientSession() as session:
+        async with session.post(f"https://{FEDI_INSTANCE}/api/notes/create", json={
+            "text": text
+        }, headers={
+            'Authorization': f'Bearer {FEDI_TOKEN}'
+        }) as req:
+            if not req.ok:
+                ai_logger.error("Failed to post %s on fedi", text)
 
 class AutoYouTubeNotifications(discord.Cog):
     def __init__(self, bot: discord.Bot):
@@ -89,6 +103,9 @@ class AutoYouTubeNotifications(discord.Cog):
 
                 asyncio.get_event_loop().create_task(
                     channel.send(f"<@&{ROLE_VIDEOS}> Lunya posted a new video~!\nClick the title of the embed or click this link~ https://youtube.com/watch?v={i['id']}", embed=emb)
+                )
+                asyncio.get_event_loop().create_task(
+                    post_on_fedi(f"[{i['title']}](https://youtube.com/watch?v={i['id']})")
                 )
 
                 existing_data["posted_ids"].append(i["id"])
