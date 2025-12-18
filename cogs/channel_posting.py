@@ -6,7 +6,7 @@ from aiohttp import ClientSession
 from discord import Cog, Bot
 from discord.ext.tasks import loop
 
-from constants import GUILD, CHANNEL_YURI, FEDI_INSTANCE, CHANNEL_YAOI, CHANNEL_MEOW
+from constants import GUILD, CHANNEL_YURI, FEDI_INSTANCE, CHANNEL_YAOI, CHANNEL_MEOW, FEDI_YURIBOT_ID, FEDI_YAOIBOT_ID
 
 DEBUG = False
 
@@ -16,7 +16,7 @@ async def post_yuri(bot: Bot):
 
     async with ClientSession() as session:
         async with session.post(f'https://{FEDI_INSTANCE}/api/users/notes', json={
-            'userId': 'a813qsmgrm',
+            'userId': FEDI_YURIBOT_ID,
             'limit': 48
         }) as req:
             if not req.ok:
@@ -35,7 +35,7 @@ async def post_yaoi(bot: Bot):
 
     async with ClientSession() as session:
         async with session.post(f'https://{FEDI_INSTANCE}/api/users/notes', json={
-            'userId': 'a814xa4c81',
+            'userId': FEDI_YAOIBOT_ID,
             'limit': 48
         }) as req:
             if not req.ok:
