@@ -10,4 +10,5 @@ dependencies = [
     "py-cord[speed]>=2.6.1",
     "python-dateutil>=2.9.0.post0",
     "deepl>=1.25.0",
+    "python-dotenv>=1.2.1",
 ]

@@ -3,14 +3,20 @@ import logging
 
 import discord
 import yt_dlp
-from aiohttp import ClientSession
 from discord import Bot
 from discord.ext import tasks
 
-from constants import CHANNEL_NEW_VIDEOS, ROLE_VIDEOS, YT_LINK, FEDI_INSTANCE, FEDI_TOKEN
+from constants import (
+    CHANNEL_NEW_VIDEOS,
+    FEDI_TOKEN,
+    ROLE_VIDEOS,
+    YT_LINK,
+)
+from util.sharkey import sharkey_cache
 from util.storage import get_data, set_data
 
 ai_logger = logging.getLogger("ai")
+
 
 async def get_all_latest_post_info():
     try:
@@ -20,36 +26,25 @@ async def get_all_latest_post_info():
         i = 0
         output = []
         for j in info["entries"]:
-            output.append({
-                "id": j["id"],
-                "title": j["title"],
-                "description": j["description"],
-                "thumbnail": j["thumbnails"][-1]["url"],
-                "view_count": j["view_count"]
-            })
+            output.append(
+                {
+                    "id": j["id"],
+                    "title": j["title"],
+                    "description": j["description"],
+                    "thumbnail": j["thumbnails"][-1]["url"],
+                    "view_count": j["view_count"],
+                }
+            )
 
             i = i + 1
             if i > 10:
                 break
 
         return output
-    except Exception as e:
+    except Exception:
         ai_logger.exception("An error occurred:")
         return []
 
-
-async def post_on_fedi(text: str):
-    if not isinstance(text, str):
-        return
-
-    async with ClientSession() as session:
-        async with session.post(f"https://{FEDI_INSTANCE}/api/notes/create", json={
-            "text": text
-        }, headers={
-            'Authorization': f'Bearer {FEDI_TOKEN}'
-        }) as req:
-            if not req.ok:
-                ai_logger.error("Failed to post %s on fedi", text)
 
 class AutoYouTubeNotifications(discord.Cog):
     def __init__(self, bot: discord.Bot):
@@ -78,7 +73,6 @@ class AutoYouTubeNotifications(discord.Cog):
 
     @tasks.loop(hours=1)
     async def check_latest_videos(self):
-
         try:
             existing_data = get_data("yt_notifications")
 
@@ -97,15 +91,20 @@ class AutoYouTubeNotifications(discord.Cog):
                     url=f"https://youtube.com/watch?v={i['id']}",
                     image=i["thumbnail"],
                     fields=[
-                        discord.EmbedField(name="Views", value=i["view_count"], inline=True)
-                    ]
+                        discord.EmbedField(
+                            name="Views", value=i["view_count"], inline=True
+                        )
+                    ],
                 )
 
                 asyncio.get_event_loop().create_task(
-                    channel.send(f"<@&{ROLE_VIDEOS}> Lunya posted a new video~!\nClick the title of the embed or click this link~ https://youtube.com/watch?v={i['id']}", embed=emb)
+                    channel.send(
+                        f"<@&{ROLE_VIDEOS}> Lunya posted a new video~!\nClick the title of the embed or click this link~ https://youtube.com/watch?v={i['id']}",
+                        embed=emb,
+                    )
                 )
-                asyncio.get_event_loop().create_task(
-                    post_on_fedi(f"[{i['title']}](https://youtube.com/watch?v={i['id']})")
+                sharkey_cache.post(
+                    FEDI_TOKEN, f"[{i['title']}](https://youtube.com/watch?v={i['id']})"
                 )
 
                 existing_data["posted_ids"].append(i["id"])
@@ -123,16 +122,18 @@ class AutoYouTubeNotifications(discord.Cog):
                             url=f"https://youtube.com/watch?v={i['id']}",
                             image=i["thumbnail"],
                             fields=[
-                                discord.EmbedField(name="Views", value=i["view_count"], inline=True)
-                            ]
+                                discord.EmbedField(
+                                    name="Views", value=i["view_count"], inline=True
+                                )
+                            ],
                         )
-
 
                         asyncio.get_event_loop().create_task(msg.edit(embed=emb))
 
             set_data("yt_notifications", existing_data)
-        except Exception as e:
+        except Exception:
             ai_logger.exception("An error occurred:")
+
 
 def setup(bot: Bot):
     bot.add_cog(AutoYouTubeNotifications(bot))

@@ -3,49 +3,50 @@ from datetime import datetime
 from random import choice, randint
 
 from aiohttp import ClientSession
-from discord import Cog, Bot
+from discord import Bot, Cog, Guild, TextChannel
 from discord.ext.tasks import loop
 
-from constants import GUILD, CHANNEL_YURI, FEDI_INSTANCE, CHANNEL_YAOI, CHANNEL_MEOW, FEDI_YURIBOT_ID, FEDI_YAOIBOT_ID
+from constants import (
+    CHANNEL_MEOW,
+    CHANNEL_YAOI,
+    CHANNEL_YURI,
+    FEDI_INSTANCE,
+    GUILD,
+)
+from util.sharkey import sharkey_cache
 
 DEBUG = False
 
+
 async def post_yuri(bot: Bot):
     guild = bot.get_guild(int(GUILD))
+    if not isinstance(guild, Guild):
+        return
+
     chan = guild.get_channel(int(CHANNEL_YURI))
+    if not isinstance(chan, TextChannel):
+        return
 
-    async with ClientSession() as session:
-        async with session.post(f'https://{FEDI_INSTANCE}/api/users/notes', json={
-            'userId': FEDI_YURIBOT_ID,
-            'limit': 48
-        }) as req:
-            if not req.ok:
-                return
+    yuri = await sharkey_cache.get_yuribot_post()
+    if yuri is None:
+        return  # :(
 
-            req = await req.json()
-            req = [i['id'] for i in req]
-            req = choice(req)
-
-            await chan.send(f"https://{FEDI_INSTANCE}/notes/{req}")
+    await chan.send(f"https://{FEDI_INSTANCE}/notes/{yuri['id']}")
 
 
 async def post_yaoi(bot: Bot):
     guild = bot.get_guild(int(GUILD))
+    if not isinstance(guild, Guild):
+        return
     chan = guild.get_channel(int(CHANNEL_YAOI))
+    if not isinstance(chan, TextChannel):
+        return
 
-    async with ClientSession() as session:
-        async with session.post(f'https://{FEDI_INSTANCE}/api/users/notes', json={
-            'userId': FEDI_YAOIBOT_ID,
-            'limit': 48
-        }) as req:
-            if not req.ok:
-                return
+    yaoi = await sharkey_cache.get_yaoibot_post()
+    if yaoi is None:
+        return  # :(
 
-            req = await req.json()
-            req = [i['id'] for i in req]
-            req = choice(req)
-
-            await chan.send(f"https://{FEDI_INSTANCE}/notes/{req}")
+    await chan.send(f"https://{FEDI_INSTANCE}/notes/{yaoi['id']}")
 
 
 def generate_meow():
@@ -65,7 +66,11 @@ def generate_meow():
 
 async def post_meow(bot: Bot):
     guild = bot.get_guild(int(GUILD))
+    if not isinstance(guild, Guild):
+        return
     chan = guild.get_channel(int(CHANNEL_MEOW))
+    if not isinstance(chan, TextChannel):
+        return
 
     await chan.send(generate_meow() + " :3")
 
@@ -84,11 +89,8 @@ class ChannelPosting(Cog):
         now = datetime.now()
 
         if (now.hour == 0 and now.minute == 0) or DEBUG:
-            await gather(
-                post_yuri(self.bot),
-                post_yaoi(self.bot),
-                post_meow(self.bot)
-            )
+            await gather(post_yuri(self.bot), post_yaoi(self.bot), post_meow(self.bot))
+
 
 def setup(bot: Bot):
     bot.add_cog(ChannelPosting(bot))
