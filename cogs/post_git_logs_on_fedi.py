@@ -1,7 +1,7 @@
-import aiohttp
-from discord import Cog, Bot, Message
+from discord import Bot, Cog, Message
 
-from constants import FORGEJO_CHANNEL, FEDI_INSTANCE, FORGEJO_FEDI_TOKEN
+from constants import FORGEJO_CHANNEL, FORGEJO_FEDI_TOKEN
+from util.sharkey import sharkey_cache
 
 
 class PostGitLogsOnFedi(Cog):
@@ -14,15 +14,13 @@ class PostGitLogsOnFedi(Cog):
             return
 
         for embed in message.embeds:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(f"https://{FEDI_INSTANCE}/api/notes/create", headers={
-                    "Authorization": f"Bearer {FORGEJO_FEDI_TOKEN}"
-                }, json={
-                    "text": f"""{f"[{embed.title.replace('[', '').replace(']', ' - ')}]({embed.url})" if embed.url else f"{embed.title}"}
+            sharkey_cache.post(
+                FORGEJO_FEDI_TOKEN,
+                f"""{f"[{embed.title.replace('[', '').replace(']', ' - ')}]({embed.url})" if embed.url else f"{embed.title}"}
 
-{embed.description or ""}"""
-                }):
-                    pass
+{embed.description or ""}""",
+            )
+
 
 def setup(bot: Bot):
     bot.add_cog(PostGitLogsOnFedi(bot))
