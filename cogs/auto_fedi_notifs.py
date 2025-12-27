@@ -1,13 +1,14 @@
 import asyncio
-import pprint
+import os
 
 import discord
 from discord import Bot, TextChannel
 from discord.ext import tasks
+from sqlalchemy import delete, insert, select
 
-from constants import CHANNEL_NEW_FEDI, FEDI_INSTANCE, ROLE_FEDI
+from constants import CHANNEL_NEW_FEDI, FEDI_INSTANCE, ROLE_FEDI, ai_logger
+from database import engine, fedi_notifications_ids
 from util.sharkey import sharkey_cache
-from util.storage import get_data, set_data
 
 
 async def get_latest_posts():
@@ -29,22 +30,27 @@ class AutoFediNotifications(discord.Cog):
 
     @discord.Cog.listener()
     async def on_ready(self):
-        # Fetch existing data
-        existing_data = get_data("fedi_notifications")
-
         # Check if the module was initialized
-        if existing_data.get("initialized", False):
+        if os.path.exists("data/fedi_notifications_initialized"):
+            ai_logger.debug(
+                "Fedi notifications are already initialized, starting fetch_new_posts..."
+            )
             self.fetch_new_posts.start()
             return
 
-        existing_data["initialized"] = True
-        existing_data["posted_posts"] = []
+        with open("data/fedi_notifications_initialized", "w") as f:
+            f.write("")
+
+        ai_logger.warning("Initializing fedi notifs...")
 
         posts = await get_latest_posts()
-        existing_data["posted_posts"].extend(posts)
+        with engine.begin() as cur:
+            cur.execute(delete(fedi_notifications_ids))
 
-        set_data("fedi_notifications", existing_data)
+            for i in posts:
+                cur.execute(insert(fedi_notifications_ids).values(aid=i))
 
+        ai_logger.debug("Initializing fedi notifs is done. Starting...")
         self.fetch_new_posts.start()
 
     @tasks.loop(minutes=1)
@@ -59,21 +65,23 @@ class AutoFediNotifications(discord.Cog):
         if channel is None or not isinstance(channel, TextChannel):
             return
 
-        existing_data = get_data("fedi_notifications")
+        with engine.begin() as cur:
+            existing_data = [
+                i[0]
+                for i in cur.execute(select(fedi_notifications_ids.c.aid)).fetchall()
+            ]
 
-        for i in posts:
-            if i in existing_data["posted_posts"]:
-                continue
+            for i in posts:
+                if i in existing_data:
+                    continue
 
-            asyncio.get_event_loop().create_task(
-                channel.send(
-                    f"<@&{ROLE_FEDI}> Lunya posted a new note on fedi~! Go check it out~ https://{FEDI_INSTANCE}/notes/{i}"
+                asyncio.get_event_loop().create_task(
+                    channel.send(
+                        f"<@&{ROLE_FEDI}> Lunya posted a new note on fedi~! Go check it out~ https://{FEDI_INSTANCE}/notes/{i}"
+                    )
                 )
-            )
 
-            existing_data["posted_posts"].append(i)
-
-        set_data("fedi_notifications", existing_data)
+                cur.execute(insert(fedi_notifications_ids).values(aid=i))
 
 
 def setup(bot: Bot):
