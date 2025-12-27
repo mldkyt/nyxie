@@ -1,10 +1,12 @@
 import asyncio
 import logging
+import os
 
 import discord
 import yt_dlp
 from discord import Bot
 from discord.ext import tasks
+from sqlalchemy import delete, insert, select
 
 from constants import (
     CHANNEL_NEW_VIDEOS,
@@ -12,8 +14,8 @@ from constants import (
     ROLE_VIDEOS,
     YT_LINK,
 )
+from database import engine, yt_notifications_ids
 from util.sharkey import sharkey_cache
-from util.storage import get_data, set_data
 
 ai_logger = logging.getLogger("ai")
 
@@ -52,63 +54,70 @@ class AutoYouTubeNotifications(discord.Cog):
 
     @discord.Cog.listener()
     async def on_ready(self):
-        existing_data = get_data("yt_notifications")
-
         # Check if the module was initialized
-        if existing_data.get("initialized", False):
+        if os.path.exists("data/yt_notifications_initialized"):
+            ai_logger.debug(
+                "YT notifications are already initialized, starting fetch_new_posts..."
+            )
             self.check_latest_videos.start()
             return
 
-        existing_data["initialized"] = True
-        existing_data["posted_ids"] = []
-        existing_data["posted_data"] = []
+        with open("data/yt_notifications_initialized", "w") as f:
+            f.write("")
 
+        ai_logger.warning("Initializing YT notifs...")
         posts = await get_all_latest_post_info()
-        existing_data["posted_ids"].extend([i["id"] for i in posts])
-        existing_data["posted_data"].extend(posts)
+        with engine.begin() as cur:
+            cur.execute(delete(yt_notifications_ids))
 
-        set_data("yt_notifications", existing_data)
+            for i in posts:
+                cur.execute(insert(yt_notifications_ids).values(ytid=i["id"]))
 
+        ai_logger.debug("Initializing YT notifs is done. Starting...")
         self.check_latest_videos.start()
 
     @tasks.loop(hours=1)
     async def check_latest_videos(self):
         try:
-            existing_data = get_data("yt_notifications")
-
             posts = await get_all_latest_post_info()
 
             channel = self.bot.get_channel(int(CHANNEL_NEW_VIDEOS))
 
-            for i in posts:
-                if i["id"] in existing_data["posted_ids"]:
-                    continue
+            with engine.begin() as cur:
+                existing_posts = [
+                    i[0]
+                    for i in cur.execute(select(yt_notifications_ids.c.ytid)).fetchall()
+                ]
 
-                emb = discord.Embed(
-                    title=i["title"],
-                    description=i["description"],
-                    color=discord.Color.red(),
-                    url=f"https://youtube.com/watch?v={i['id']}",
-                    image=i["thumbnail"],
-                    fields=[
-                        discord.EmbedField(
-                            name="Views", value=i["view_count"], inline=True
-                        )
-                    ],
-                )
+                for i in posts:
+                    if i["id"] in existing_posts:
+                        continue
 
-                asyncio.get_event_loop().create_task(
-                    channel.send(
-                        f"<@&{ROLE_VIDEOS}> Lunya posted a new video~!\nClick the title of the embed or click this link~ https://youtube.com/watch?v={i['id']}",
-                        embed=emb,
+                    emb = discord.Embed(
+                        title=i["title"],
+                        description=i["description"],
+                        color=discord.Color.red(),
+                        url=f"https://youtube.com/watch?v={i['id']}",
+                        image=i["thumbnail"],
+                        fields=[
+                            discord.EmbedField(
+                                name="Views", value=i["view_count"], inline=True
+                            )
+                        ],
                     )
-                )
-                sharkey_cache.post(
-                    FEDI_TOKEN, f"[{i['title']}](https://youtube.com/watch?v={i['id']})"
-                )
 
-                existing_data["posted_ids"].append(i["id"])
-                existing_data["posted_data"].append(i)
+                    asyncio.get_event_loop().create_task(
+                        channel.send(
+                            f"<@&{ROLE_VIDEOS}> Lunya posted a new video~!\nClick the title of the embed or click this link~ https://youtube.com/watch?v={i['id']}",
+                            embed=emb,
+                        )
+                    )
+                    sharkey_cache.post(
+                        FEDI_TOKEN,
+                        f"[{i['title']}](https://youtube.com/watch?v={i['id']})",
+                    )
+
+                    cur.execute(insert(yt_notifications_ids).values(ytid=i["id"]))
 
             # Go through the history of messages and update the embeds based on information fetched
             async for msg in channel.history():
@@ -129,8 +138,6 @@ class AutoYouTubeNotifications(discord.Cog):
                         )
 
                         asyncio.get_event_loop().create_task(msg.edit(embed=emb))
-
-            set_data("yt_notifications", existing_data)
         except Exception:
             ai_logger.exception("An error occurred:")
 
