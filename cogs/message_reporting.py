@@ -6,8 +6,7 @@ from sqlalchemy import insert, select
 
 from constants import CHANNEL_MODERATION
 from database import engine, reports
-
-ai_logger = logging.getLogger("ai")
+from logger import ai_logger
 
 
 class ReportMessageOptions(discord.ui.View):

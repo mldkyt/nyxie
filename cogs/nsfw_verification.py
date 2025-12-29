@@ -6,29 +6,34 @@ import discord
 from discord import Bot
 from discord.ext import commands
 
-from constants import ROLE_NSFW, GUILD
+from constants import GUILD, ROLE_NSFW
+from logger import ai_logger
 from util.storage import get_data, set_data
 
-ai_logger = logging.getLogger("ai")
 
 class NsfwView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=1800)
         self.start_timer = time.time()
 
-    @discord.ui.button(label="i agree, gib access uwu", style=discord.ButtonStyle.primary)
+    @discord.ui.button(
+        label="i agree, gib access uwu", style=discord.ButtonStyle.primary
+    )
     async def agree(self, button: discord.ui.Button, interaction: discord.Interaction):
         try:
             end_timer = time.time()
             diff = end_timer - self.start_timer
 
             if diff < 10:
-                await interaction.respond("you didn't read the disclaimer! please read it before continuing", ephemeral=True)
+                await interaction.respond(
+                    "you didn't read the disclaimer! please read it before continuing",
+                    ephemeral=True,
+                )
                 return
 
             # double check
             nsfw_bans = get_data("nsfw_bans")
-            if 'list' in nsfw_bans and str(interaction.user.id) in nsfw_bans['list']:
+            if "list" in nsfw_bans and str(interaction.user.id) in nsfw_bans["list"]:
                 await interaction.respond("sorry, you're banned.", ephemeral=True)
                 return
 
@@ -42,15 +47,17 @@ class NsfwView(discord.ui.View):
                 interaction.edit(view=self),
                 interaction.respond(
                     "you have been added to the nsfw section. if you don't see it, please check Channels and Roles.",
-                    ephemeral=True)
+                    ephemeral=True,
+                ),
             )
         except Exception as e:
             ai_logger.exception("An error occurred:")
             await interaction.respond("an error occured :(", ephemeral=True)
 
-
     @discord.ui.button(label="nvm", style=discord.ButtonStyle.secondary)
-    async def disagree(self, button: discord.ui.Button, interaction: discord.Interaction):
+    async def disagree(
+        self, button: discord.ui.Button, interaction: discord.Interaction
+    ):
         try:
             self.stop()
             self.disable_all_items()
@@ -59,26 +66,36 @@ class NsfwView(discord.ui.View):
             ai_logger.exception("An error occurred:")
             await interaction.respond("an error occured :(", ephemeral=True)
 
+
 class NsfwRolePicker(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="nsfw access", style=discord.ButtonStyle.danger, custom_id="role_nsfw_access")
-    async def nsfw_access(self, button: discord.ui.Button, interaction: discord.Interaction):
-
+    @discord.ui.button(
+        label="nsfw access",
+        style=discord.ButtonStyle.danger,
+        custom_id="role_nsfw_access",
+    )
+    async def nsfw_access(
+        self, button: discord.ui.Button, interaction: discord.Interaction
+    ):
         nsfw_bans = get_data("nsfw_bans")
-        if 'list' in nsfw_bans and str(interaction.user.id) in nsfw_bans['list']:
+        if "list" in nsfw_bans and str(interaction.user.id) in nsfw_bans["list"]:
             await interaction.respond("sorry, you're banned.", ephemeral=True)
             return
 
-        await interaction.respond("""# nsfw access
-        
+        await interaction.respond(
+            """# nsfw access
+
 in order to access the nsfw section on this server, **please read the following carefully**:
 - the nsfw section is 18+. any users that are under 18 will be **permanently banned** from the nsfw chats.
 - you aren't allowed to post violent and gorey content. this will result in a ban.
 - if you're ever banned from the nsfw section, you cannot return, even after being 18 or saying sorry.
 
-understand? if yes, please continue below.""", ephemeral=True, view=NsfwView())
+understand? if yes, please continue below.""",
+            ephemeral=True,
+            view=NsfwView(),
+        )
 
 
 class NsfwVerification(commands.Cog):
@@ -106,11 +123,11 @@ class NsfwVerification(commands.Cog):
 
             # add to ban list
             ban_list = get_data("nsfw_bans")
-            if 'list' not in ban_list:
-                ban_list['list'] = []
+            if "list" not in ban_list:
+                ban_list["list"] = []
 
             if str(message.author.id) not in ban_list:
-                ban_list['list'].append(str(message.author.id))
+                ban_list["list"].append(str(message.author.id))
 
             set_data("nsfw_bans", ban_list)
 
@@ -131,11 +148,11 @@ class NsfwVerification(commands.Cog):
 
             # remove from ban list
             ban_list = get_data("nsfw_bans")
-            if 'list' not in ban_list:
-                ban_list['list'] = []
+            if "list" not in ban_list:
+                ban_list["list"] = []
 
-            if str(user.id) in ban_list['list']:
-                ban_list['list'].remove(str(user.id))
+            if str(user.id) in ban_list["list"]:
+                ban_list["list"].remove(str(user.id))
 
             set_data("nsfw_bans", ban_list)
 
@@ -143,6 +160,7 @@ class NsfwVerification(commands.Cog):
         except Exception as e:
             ai_logger.exception("An error occurred:")
             await ctx.respond("an error occured :(", ephemeral=True)
+
 
 def setup(bot: Bot):
     bot.add_cog(NsfwVerification(bot))
