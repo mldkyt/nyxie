@@ -9,8 +9,8 @@ from constants import (
     FEDI_USER_ID,
     FEDI_YAOIBOT_ID,
     FEDI_YURIBOT_ID,
-    ai_logger,
 )
+from logger import ai_logger
 
 
 class SharkeyCache:
@@ -22,8 +22,6 @@ class SharkeyCache:
 
     latest_yuribot_posts = []
     latest_yaoibot_posts = []
-
-    post_queue = []
 
     async def get_latest_posts(self):
         if (
@@ -99,38 +97,6 @@ class SharkeyCache:
         ]
 
         return random_post
-
-    def post(self, user_token: str, post_text: str):
-        self.post_queue.append(
-            {"id": uuid4(), "token": user_token, "post": post_text, "attempt": 0}
-        )
-
-    async def send_next_post(self):
-        if len(self.post_queue) == 0:
-            return
-
-        post = self.post_queue[0]
-
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                f"https://{FEDI_INSTANCE}/api/notes/create",
-                json={"text": post["post"]},
-                headers={"Authorization": f"Bearer {post['token']}"},
-            ) as req:
-                self.post_queue = [
-                    i for i in self.post_queue if i["id"] != post["id"]
-                ]  # Remove job
-                if not req.ok:
-                    post["attempt"] += 1  # Increase attempts
-                    self.post_queue.append(
-                        post
-                    )  # Attempt job again (this will attempt it later in case of multiple jobs)
-
-    def get_job_stats(self):
-        jobs = len(self.post_queue)
-        delayed = len([i for i in self.post_queue if i["attempt"] > 0])
-
-        return f"job queue: Sharkey, queued jobs={jobs}, delayed jobs={delayed}"
 
 
 sharkey_cache = SharkeyCache()
