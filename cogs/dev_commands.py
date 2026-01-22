@@ -4,10 +4,10 @@ import discord
 from discord import Bot
 
 from cogs.nsfw_verification import NsfwRolePicker
-from constants import OWNER, GUILD
+from constants import GUILD, OWNER
+from logger import ai_logger
 from util.storage import get_data, set_data
 
-ai_logger = logging.getLogger("ai")
 
 class DevCommands(discord.Cog):
     def __init__(self, bot: discord.Bot):
@@ -15,7 +15,7 @@ class DevCommands(discord.Cog):
 
     @discord.Cog.listener()
     async def on_ready(self):
-        print("Dev Commands Cog is ready!")
+        ai_logger.info("Dev Commands Cog is ready!")
 
         # Set status if in configuration file
         status_data = get_data("status")
@@ -30,26 +30,34 @@ class DevCommands(discord.Cog):
             elif status_data["mode"] == "listening":
                 activity_type = discord.ActivityType.listening
 
-            activity = discord.Activity(
-                type=activity_type,
-                name=status_data["status"]
-            )
+            activity = discord.Activity(type=activity_type, name=status_data["status"])
 
             await self.bot.change_presence(activity=activity)
 
-    dev_group = discord.SlashCommandGroup(name="dev", description="Developer commands", guild_ids=[int(GUILD)],
-        default_member_permissions=discord.Permissions(administrator=True), )
+    dev_group = discord.SlashCommandGroup(
+        name="dev",
+        description="Developer commands",
+        guild_ids=[int(GUILD)],
+        default_member_permissions=discord.Permissions(administrator=True),
+    )
 
     @dev_group.command(name="debug")
     async def debug_cmd(self, ctx: discord.ApplicationContext):
         await ctx.respond("Debug command", ephemeral=True)
 
     @dev_group.command(name="set_status")
-    @discord.option(name="mode", description="The mode to set the status to", type=str, choices=["watching", "streaming", "playing", "competing", "listening"])
+    @discord.option(
+        name="mode",
+        description="The mode to set the status to",
+        type=str,
+        choices=["watching", "streaming", "playing", "competing", "listening"],
+    )
     async def set_status(self, ctx: discord.ApplicationContext, mode: str, status: str):
         try:
             if ctx.user.id != int(OWNER):
-                await ctx.respond("You are not authorized to use this command!", ephemeral=True)
+                await ctx.respond(
+                    "You are not authorized to use this command!", ephemeral=True
+                )
                 return
 
             existing_data = get_data("status")
@@ -67,10 +75,7 @@ class DevCommands(discord.Cog):
             elif mode == "listening":
                 activity_type = discord.ActivityType.listening
 
-            activity = discord.Activity(
-                type=activity_type,
-                name=status
-            )
+            activity = discord.Activity(type=activity_type, name=status)
 
             await self.bot.change_presence(activity=activity)
             await ctx.respond(f"Status set to {mode}: {status}!", ephemeral=True)
@@ -81,14 +86,20 @@ class DevCommands(discord.Cog):
     async def drop_nsfw_role_picker(self, ctx: discord.ApplicationContext):
         try:
             if ctx.user.id != int(OWNER):
-                await ctx.respond("You are not authorized to use this command!", ephemeral=True)
+                await ctx.respond(
+                    "You are not authorized to use this command!", ephemeral=True
+                )
                 return
 
-            await ctx.channel.send("use the button below to get access to nsfw channels", view=NsfwRolePicker())
+            await ctx.channel.send(
+                "use the button below to get access to nsfw channels",
+                view=NsfwRolePicker(),
+            )
             await ctx.respond("sent", ephemeral=True)
         except Exception as e:
             ai_logger.exception("An error occurred:")
             await ctx.respond("an error occured", ephemeral=True)
+
 
 def setup(bot: Bot):
     bot.add_cog(DevCommands(bot))

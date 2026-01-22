@@ -13,6 +13,7 @@ from typing import Sequence, Union
 import sqlalchemy as sa
 
 from alembic import op
+from logger import ai_logger
 
 # revision identifiers, used by Alembic.
 revision: str = "93e9206c00ec"
@@ -33,7 +34,7 @@ def upgrade() -> None:
     )
 
     if os.path.exists("data/yt_notifications.json"):
-        print("Found: data/yt_notifications.json, migrating...")
+        ai_logger.info("Found: data/yt_notifications.json, migrating...")
 
         with open("data/yt_notifications.json") as f:
             data = json.load(f)

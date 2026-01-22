@@ -1,23 +1,24 @@
 import asyncio
-import logging
 import os
 
+import aiohttp
 import discord
 import yt_dlp
+from atproto import client_utils
 from discord import Bot
 from discord.ext import tasks
 from sqlalchemy import delete, insert, select
 
 from constants import (
     CHANNEL_NEW_VIDEOS,
+    FEDI_INSTANCE,
     FEDI_TOKEN,
     ROLE_VIDEOS,
     YT_LINK,
 )
 from database import engine, yt_notifications_ids
-from util.sharkey import sharkey_cache
-
-ai_logger = logging.getLogger("ai")
+from logger import ai_logger
+from util.bluesky import bluesky
 
 
 async def get_all_latest_post_info():
@@ -112,10 +113,26 @@ class AutoYouTubeNotifications(discord.Cog):
                             embed=emb,
                         )
                     )
-                    sharkey_cache.post(
-                        FEDI_TOKEN,
-                        f"[{i['title']}](https://youtube.com/watch?v={i['id']})",
+                    asyncio.get_event_loop().create_task(
+                        bluesky.account.send_post(
+                            client_utils.TextBuilder().link(
+                                i["title"], f"https://youtube.com/watch?v={i['id']}"
+                            )
+                        )
                     )
+                    async with aiohttp.ClientSession() as session:
+                        async with session.post(
+                            f"https://{FEDI_INSTANCE}/api/notes/create",
+                            json={
+                                "text": f"[{i['title']}](https://youtube.com/watch?v={i['id']})"
+                            },
+                            headers={"Authorization": f"Bearer {FEDI_TOKEN}"},
+                        ) as req:
+                            if not req.ok:
+                                ai_logger.warning(
+                                    "Request is not an OK status! Status returned: %s",
+                                    str(req.status),
+                                )
 
                     cur.execute(insert(yt_notifications_ids).values(ytid=i["id"]))
 

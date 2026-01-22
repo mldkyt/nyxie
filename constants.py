@@ -1,7 +1,8 @@
-import logging
 import os
 
 from dotenv import load_dotenv
+
+from logger import ai_logger
 
 load_dotenv()
 
@@ -50,15 +51,16 @@ TT_LINK = os.getenv("TT_LINK")
 WEB_SERVER_URL = os.getenv("WEB_SERVER_URL")
 WEB_SERVER_CODE = os.getenv("WEB_SERVER_CODE")
 
-DEEPL_API_KEY = os.getenv("DEEPL_API_KEY")
+ATPROTO_EMAIL = os.getenv("ATPROTO_EMAIL")
+ATPROTO_PASSWORD = os.getenv("ATPROTO_PASSWORD")
+ATPROTO_CHANNEL = os.getenv("ATPROTO_CHANNEL")
 
-ai_logger = logging.getLogger("ai")
+DEEPL_API_KEY = os.getenv("DEEPL_API_KEY")
 
 
 def validate_values(l: dict[str, str | None]):
     for k, v in l.items():
         if v is None:
-            print(f"CONSTANTS: The constant value for {k} is NOT set!")
             ai_logger.warning(f"CONSTANTS: The constant value for {k} is NOT set!")
 
 
@@ -94,6 +96,9 @@ validate_values(
         "TT_LINK": TT_LINK,
         "WEB_SERVER_URL": WEB_SERVER_URL,
         "WEB_SERVER_CODE": WEB_SERVER_CODE,
+        "ATPROTO_EMAIL": ATPROTO_EMAIL,
+        "ATPROTO_PASSWORD": ATPROTO_PASSWORD,
+        "ATPROTO_CHANNEL": ATPROTO_CHANNEL,
         "DEEPL_API_KEY": DEEPL_API_KEY,
     }
 )
