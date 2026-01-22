@@ -14,8 +14,7 @@ from database import (
     cache_user,
     engine,
 )
-
-ai_logger = logging.getLogger("ai")
+from logger import ai_logger
 
 
 def compare_embeds(cached: int, embeds: list[discord.Embed]):
@@ -116,7 +115,6 @@ class InitCache(discord.Cog):
 
                 self.cache_message(message)
 
-            ai_logger.info("Caching channel #%s finished.", channel.name)
         except Exception:
             ai_logger.exception("An error occurred:")
 

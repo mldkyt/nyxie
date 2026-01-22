@@ -6,8 +6,7 @@ import discord
 from discord import Bot
 
 from constants import CHANNEL_COUNTING, GUILD
-
-ai_logger = logging.getLogger("ai")
+from logger import ai_logger
 
 
 def handle_colon_three(message: discord.Message):
