@@ -1,6 +1,5 @@
 import asyncio
 import datetime
-import logging
 import os.path
 import random
 import shutil
@@ -402,7 +401,7 @@ class MoreYuriView(discord.ui.View):
     @discord.ui.button(label="more", style=discord.ButtonStyle.primary, custom_id="more_yuri_pwease_uwu")
     async def more_yuri(self, button: discord.ui.Button, interaction: discord.Interaction):
         try:
-            items = os.listdir("data/yuri")
+            items = os.listdir("rom/yuri")
             item = random.choice(items)
 
             index = items.index(item)
@@ -722,7 +721,7 @@ class UserCommands(discord.Cog):
     @cooldown(1, 10, BucketType.default)
     async def yuri(self, ctx: discord.ApplicationContext):
         try:
-            items = os.listdir("data/yuri")
+            items = os.listdir("rom/yuri")
             item = random.choice(items)
             print(item)
 
