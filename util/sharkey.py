@@ -10,7 +10,7 @@ from constants import (
     FEDI_YAOIBOT_ID,
     FEDI_YURIBOT_ID,
 )
-from logger import ai_logger
+from logger import obsidian_logger
 
 
 class SharkeyCache:
@@ -35,7 +35,7 @@ class SharkeyCache:
                 json={"limit": 10, "userId": FEDI_USER_ID},
             ) as resp:
                 if not resp.ok:
-                    ai_logger.error(
+                    obsidian_logger.error(
                         "Failed to fetch latest posts. Status %s was unexpected.",
                         str(resp.status),
                     )

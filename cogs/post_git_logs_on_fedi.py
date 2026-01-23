@@ -2,7 +2,7 @@ import aiohttp
 from discord import Bot, Cog, Message
 
 from constants import FEDI_INSTANCE, FORGEJO_CHANNEL, FORGEJO_FEDI_TOKEN
-from logger import ai_logger
+from logger import obsidian_logger
 
 
 class PostGitLogsOnFedi(Cog):
@@ -29,7 +29,7 @@ class PostGitLogsOnFedi(Cog):
                     headers={"Authorization": f"Bearer {FORGEJO_FEDI_TOKEN}"},
                 ) as req:
                     if not req.ok:
-                        ai_logger.warning(
+                        obsidian_logger.warning(
                             "Request is not an OK status! Status returned: %s",
                             str(req.status),
                         )

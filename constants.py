@@ -2,7 +2,7 @@ import os
 
 from dotenv import load_dotenv
 
-from logger import ai_logger
+from logger import obsidian_logger
 
 load_dotenv()
 
@@ -61,7 +61,7 @@ DEEPL_API_KEY = os.getenv("DEEPL_API_KEY")
 def validate_values(l: dict[str, str | None]):
     for k, v in l.items():
         if v is None:
-            ai_logger.warning(f"CONSTANTS: The constant value for {k} is NOT set!")
+            obsidian_logger.warning(f"CONSTANTS: The constant value for {k} is NOT set!")
 
 
 validate_values(

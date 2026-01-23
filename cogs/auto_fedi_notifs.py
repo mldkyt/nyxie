@@ -10,7 +10,7 @@ from sqlalchemy import delete, insert, select
 
 from constants import CHANNEL_NEW_FEDI, FEDI_INSTANCE, ROLE_FEDI
 from database import bsky_posted, engine, fedi_notifications_ids
-from logger import ai_logger
+from logger import obsidian_logger
 from util.bluesky import bluesky
 from util.sharkey import sharkey_cache
 
@@ -64,7 +64,7 @@ class AutoFediNotifications(discord.Cog):
     async def on_ready_discord(self):
         # Check if the module was initialized
         if os.path.exists("data/fedi_notifications_initialized"):
-            ai_logger.debug(
+            obsidian_logger.debug(
                 "Fedi notifications are already initialized, starting fetch_new_posts..."
             )
             self.fetch_new_posts.start()
@@ -73,7 +73,7 @@ class AutoFediNotifications(discord.Cog):
         with open("data/fedi_notifications_initialized", "w") as f:
             f.write("")
 
-        ai_logger.warning("Initializing fedi notifs...")
+        obsidian_logger.warning("Initializing fedi notifs...")
 
         posts = await get_latest_posts()
         with engine.begin() as cur:
@@ -82,13 +82,13 @@ class AutoFediNotifications(discord.Cog):
             for i in posts:
                 cur.execute(insert(fedi_notifications_ids).values(aid=i))
 
-        ai_logger.debug("Initializing fedi notifs is done. Starting...")
+        obsidian_logger.debug("Initializing fedi notifs is done. Starting...")
         self.fetch_new_posts.start()
 
     async def on_ready_bsky(self):
         # Check if the module was initialized
         if os.path.exists("data/fedi_notifications_bsky_initialized"):
-            ai_logger.debug(
+            obsidian_logger.debug(
                 "Bsky posting is already initialized, starting fetch_new_posts_bsky..."
             )
             self.fetch_new_posts_bsky.start()
@@ -97,7 +97,7 @@ class AutoFediNotifications(discord.Cog):
         with open("data/fedi_notifications_bsky_initialized", "w") as f:
             f.write("")
 
-        ai_logger.warning("Initializing bsky posting...")
+        obsidian_logger.warning("Initializing bsky posting...")
 
         posts = await get_latest_posts()
         with engine.begin() as cur:
@@ -106,7 +106,7 @@ class AutoFediNotifications(discord.Cog):
             for i in posts:
                 cur.execute(insert(bsky_posted).values(aid=i))
 
-        ai_logger.debug("Initializing bsky posting is done. Starting...")
+        obsidian_logger.debug("Initializing bsky posting is done. Starting...")
         self.fetch_new_posts_bsky.start()
 
     @tasks.loop(minutes=1)
@@ -197,7 +197,7 @@ class AutoFediNotifications(discord.Cog):
 
                     # Wait for login
                     while not bluesky.logged_in:
-                        ai_logger.debug("[Fedi>Bluesky Posts]Waiting for login")
+                        obsidian_logger.debug("[Fedi>Bluesky Posts]Waiting for login")
                         await asyncio.sleep(1)
 
                     # Post
@@ -211,12 +211,12 @@ class AutoFediNotifications(discord.Cog):
                         await bluesky.account.send_images(
                             text=i["text"], images=images, image_alts=alt_texts
                         )
-                    ai_logger.debug("[Fedi>Bluesky Posts]Posted %s to fedi", i["id"])
+                    obsidian_logger.debug("[Fedi>Bluesky Posts]Posted %s to fedi", i["id"])
 
                     c.execute(insert(bsky_posted).values(aid=i["id"]))
 
             except Exception:
-                ai_logger.exception("Exception while posting on Bluesky")
+                obsidian_logger.exception("Exception while posting on Bluesky")
 
             await asyncio.sleep(5)
 

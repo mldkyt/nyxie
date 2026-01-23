@@ -7,7 +7,7 @@ from discord import Bot
 from discord.ext import commands
 
 from constants import GUILD, ROLE_NSFW
-from logger import ai_logger
+from logger import obsidian_logger
 from util.storage import get_data, set_data
 
 
@@ -51,7 +51,7 @@ class NsfwView(discord.ui.View):
                 ),
             )
         except Exception as e:
-            ai_logger.exception("An error occurred:")
+            obsidian_logger.exception("An error occurred:")
             await interaction.respond("an error occured :(", ephemeral=True)
 
     @discord.ui.button(label="nvm", style=discord.ButtonStyle.secondary)
@@ -63,7 +63,7 @@ class NsfwView(discord.ui.View):
             self.disable_all_items()
             await interaction.edit(view=self)
         except Exception as e:
-            ai_logger.exception("An error occurred:")
+            obsidian_logger.exception("An error occurred:")
             await interaction.respond("an error occured :(", ephemeral=True)
 
 
@@ -133,7 +133,7 @@ class NsfwVerification(commands.Cog):
 
             await ctx.respond(f"banned {message.author.name}", ephemeral=True)
         except Exception as e:
-            ai_logger.exception("An error occurred:")
+            obsidian_logger.exception("An error occurred:")
             await ctx.respond("an error occured :(", ephemeral=True)
 
     @discord.command(name="unban_nsfw", description="unban user from nsfw")
@@ -158,7 +158,7 @@ class NsfwVerification(commands.Cog):
 
             await ctx.respond(f"unbanned {user.name}", ephemeral=True)
         except Exception as e:
-            ai_logger.exception("An error occurred:")
+            obsidian_logger.exception("An error occurred:")
             await ctx.respond("an error occured :(", ephemeral=True)
 
 

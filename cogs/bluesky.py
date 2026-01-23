@@ -17,7 +17,7 @@ from sqlalchemy import insert, select
 
 from constants import ATPROTO_CHANNEL, GUILD
 from database import bsky_posts, engine
-from logger import ai_logger
+from logger import obsidian_logger
 from util.bluesky import bluesky
 
 
@@ -34,7 +34,7 @@ class Bluesky(Cog):
     @Cog.listener()
     async def on_message(self, message: Message):
         if not isinstance(message.guild, Guild):
-            ai_logger.debug("Bluesky notifs Guild does not exist")
+            obsidian_logger.debug("Bluesky notifs Guild does not exist")
             return
 
         if message.channel.id != int(ATPROTO_CHANNEL):
@@ -118,13 +118,13 @@ class Bluesky(Cog):
                     at.rkey, profile_identify=at.host
                 )
             except Exception:
-                ai_logger.error(
+                obsidian_logger.error(
                     "Unable to like post %s on bsky, error fetching post", at.rkey
                 )
                 return
 
             if post_to_reply_to.cid is None:
-                ai_logger.error(
+                obsidian_logger.error(
                     "Unable to like post %s on bsky, HOW THE FUCK CAN AN ID BE NULL??????",
                     at.rkey,
                 )
@@ -139,21 +139,21 @@ class Bluesky(Cog):
                     uri=post_to_reply_to.uri, cid=post_to_reply_to.cid
                 )
         except Exception:
-            ai_logger.exception("Failed to like bsky post: ")
+            obsidian_logger.exception("Failed to like bsky post: ")
 
     @loop(seconds=120)
     async def check_notifications(self):
         guild = self.bot.get_guild(int(GUILD))
         if not isinstance(guild, Guild):
-            ai_logger.debug("Bluesky notifs Guild does not exist")
+            obsidian_logger.debug("Bluesky notifs Guild does not exist")
             return
 
         channel = guild.get_channel(int(ATPROTO_CHANNEL))
         if not isinstance(channel, TextChannel):
-            ai_logger.debug("Bluesky notifs ATproto channel is not valid")
+            obsidian_logger.debug("Bluesky notifs ATproto channel is not valid")
             return
 
-        ai_logger.debug("Bluesky notifs Checking...")
+        obsidian_logger.debug("Bluesky notifs Checking...")
         notifs = await bluesky.account.app.bsky.notification.list_notifications(
             {"reasons": ["reply", "mention"]}
         )
@@ -162,10 +162,10 @@ class Bluesky(Cog):
             if not notif.is_read:
                 if notif.reason == "reply":
                     if not isinstance(notif.record, Record):
-                        ai_logger.debug("Bluesky notifs Skipping reply: Record is null")
+                        obsidian_logger.debug("Bluesky notifs Skipping reply: Record is null")
                         return
                     if not isinstance(notif.record.reply, ReplyRef):
-                        ai_logger.debug("Bluesky notifs Skipping reply: Reply is null")
+                        obsidian_logger.debug("Bluesky notifs Skipping reply: Reply is null")
                         return
 
                     try:
@@ -173,7 +173,7 @@ class Bluesky(Cog):
                             AtUri.from_str(notif.record.reply.parent.uri).rkey
                         )
                     except Exception:
-                        ai_logger.debug(
+                        obsidian_logger.debug(
                             "Bluesky notifs Skipping reply: Unable to fetch reply"
                         )
                         return
@@ -202,12 +202,12 @@ class Bluesky(Cog):
                             )
                         )
 
-        ai_logger.debug("Bluesky notifs Setting replies read")
+        obsidian_logger.debug("Bluesky notifs Setting replies read")
         await bluesky.account.app.bsky.notification.update_seen(
             {"seen_at": bluesky.account.get_current_time_iso()}
         )
 
-        ai_logger.debug("Bluesky notifs OK")
+        obsidian_logger.debug("Bluesky notifs OK")
 
 
 def setup(bot: Bot):

@@ -6,7 +6,7 @@ from sqlalchemy import insert, select
 
 from constants import CHANNEL_MODERATION
 from database import engine, reports
-from logger import ai_logger
+from logger import obsidian_logger
 
 
 class ReportMessageOptions(discord.ui.View):
@@ -45,7 +45,7 @@ class ReportMessageOptions(discord.ui.View):
 
             await reporter.send(embed=emb)
         except Exception as e:
-            ai_logger.exception("An error occurred:")
+            obsidian_logger.exception("An error occurred:")
 
     async def reject_ban_reason(self, interaction: discord.Interaction, logs_id: int):
         try:
@@ -79,7 +79,7 @@ class ReportMessageOptions(discord.ui.View):
 
             await reporter.send(embed=emb)
         except Exception as e:
-            ai_logger.exception("An error occurred:")
+            obsidian_logger.exception("An error occurred:")
 
     # Buttons to report author of message
 
@@ -133,7 +133,7 @@ class ReportMessageOptions(discord.ui.View):
             )
             await self.approve_ban_reason(interaction, interaction.message.id)
         except Exception as e:
-            ai_logger.exception("An error occurred:")
+            obsidian_logger.exception("An error occurred:")
             await interaction.respond(
                 "An error occured. Report created successfully.", ephemeral=True
             )
@@ -174,7 +174,7 @@ class ReportMessageOptions(discord.ui.View):
             )
             await self.approve_ban_reason(interaction, interaction.message.id)
         except Exception as e:
-            ai_logger.exception("An error occurred:")
+            obsidian_logger.exception("An error occurred:")
             await interaction.respond(
                 "An error occured. Report created successfully.", ephemeral=True
             )
@@ -215,7 +215,7 @@ class ReportMessageOptions(discord.ui.View):
             )
             await self.approve_ban_reason(interaction, interaction.message.id)
         except Exception as e:
-            ai_logger.exception("An error occurred:")
+            obsidian_logger.exception("An error occurred:")
             await interaction.respond(
                 "An error occured. Report created successfully.", ephemeral=True
             )
@@ -256,7 +256,7 @@ class ReportMessageOptions(discord.ui.View):
             )
             await self.approve_ban_reason(interaction, interaction.message.id)
         except Exception as e:
-            ai_logger.exception("An error occurred:")
+            obsidian_logger.exception("An error occurred:")
             await interaction.respond(
                 "An error occured. Report created successfully.", ephemeral=True
             )
@@ -297,7 +297,7 @@ class ReportMessageOptions(discord.ui.View):
             )
             await self.approve_ban_reason(interaction, interaction.message.id)
         except Exception as e:
-            ai_logger.exception("An error occurred:")
+            obsidian_logger.exception("An error occurred:")
             await interaction.respond(
                 "An error occured. Report created successfully.", ephemeral=True
             )

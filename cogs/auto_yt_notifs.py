@@ -17,7 +17,7 @@ from constants import (
     YT_LINK,
 )
 from database import engine, yt_notifications_ids
-from logger import ai_logger
+from logger import obsidian_logger
 from util.bluesky import bluesky
 
 
@@ -45,7 +45,7 @@ async def get_all_latest_post_info():
 
         return output
     except Exception:
-        ai_logger.exception("An error occurred:")
+        obsidian_logger.exception("An error occurred:")
         return []
 
 
@@ -57,7 +57,7 @@ class AutoYouTubeNotifications(discord.Cog):
     async def on_ready(self):
         # Check if the module was initialized
         if os.path.exists("data/yt_notifications_initialized"):
-            ai_logger.debug(
+            obsidian_logger.debug(
                 "YT notifications are already initialized, starting fetch_new_posts..."
             )
             self.check_latest_videos.start()
@@ -66,7 +66,7 @@ class AutoYouTubeNotifications(discord.Cog):
         with open("data/yt_notifications_initialized", "w") as f:
             f.write("")
 
-        ai_logger.warning("Initializing YT notifs...")
+        obsidian_logger.warning("Initializing YT notifs...")
         posts = await get_all_latest_post_info()
         with engine.begin() as cur:
             cur.execute(delete(yt_notifications_ids))
@@ -74,7 +74,7 @@ class AutoYouTubeNotifications(discord.Cog):
             for i in posts:
                 cur.execute(insert(yt_notifications_ids).values(ytid=i["id"]))
 
-        ai_logger.debug("Initializing YT notifs is done. Starting...")
+        obsidian_logger.debug("Initializing YT notifs is done. Starting...")
         self.check_latest_videos.start()
 
     @tasks.loop(hours=1)
@@ -129,7 +129,7 @@ class AutoYouTubeNotifications(discord.Cog):
                             headers={"Authorization": f"Bearer {FEDI_TOKEN}"},
                         ) as req:
                             if not req.ok:
-                                ai_logger.warning(
+                                obsidian_logger.warning(
                                     "Request is not an OK status! Status returned: %s",
                                     str(req.status),
                                 )
@@ -156,7 +156,7 @@ class AutoYouTubeNotifications(discord.Cog):
 
                         asyncio.get_event_loop().create_task(msg.edit(embed=emb))
         except Exception:
-            ai_logger.exception("An error occurred:")
+            obsidian_logger.exception("An error occurred:")
 
 
 def setup(bot: Bot):

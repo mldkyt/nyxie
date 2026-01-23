@@ -14,7 +14,7 @@ from database import (
     cache_user,
     engine,
 )
-from logger import ai_logger
+from logger import obsidian_logger
 
 
 def compare_embeds(cached: int, embeds: list[discord.Embed]):
@@ -116,7 +116,7 @@ class InitCache(discord.Cog):
                 self.cache_message(message)
 
         except Exception:
-            ai_logger.exception("An error occurred:")
+            obsidian_logger.exception("An error occurred:")
 
     @discord.Cog.listener()
     async def on_ready(self):
@@ -126,11 +126,11 @@ class InitCache(discord.Cog):
             if guild is None:
                 return
 
-            ai_logger.info("Counting %d channels...", len(guild.text_channels))
+            obsidian_logger.info("Counting %d channels...", len(guild.text_channels))
 
             await asyncio.gather(*[self.init_channel(i) for i in guild.text_channels])
         except Exception:
-            ai_logger.exception("An error occurred:")
+            obsidian_logger.exception("An error occurred:")
 
     def message_is_cached(self, message: discord.Message) -> bool:
         with engine.begin() as cur:
@@ -376,7 +376,7 @@ class InitCache(discord.Cog):
 
             self.cache_message(fetched)
         except Exception:
-            ai_logger.exception("An error occurred:")
+            obsidian_logger.exception("An error occurred:")
 
     @discord.Cog.listener()
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
@@ -384,15 +384,15 @@ class InitCache(discord.Cog):
             cached = self.get_cached_message(payload.message_id)
 
             if not cached:
-                ai_logger.warning("Message not cached")
+                obsidian_logger.warning("Message not cached")
                 return
 
             cached_author = self.get_cached_user(int(cached[2]))
             if not cached_author:
-                ai_logger.warning("Message author not found")
+                obsidian_logger.warning("Message author not found")
                 return
             if cached_author[4] == 1:
-                ai_logger.warning("Bot message")
+                obsidian_logger.warning("Bot message")
                 return
 
             # Explicitly skip number messages in the counting channel
@@ -401,7 +401,7 @@ class InitCache(discord.Cog):
                 and isinstance(cached[3], str)
                 and cached[3].isnumeric()
             ):
-                ai_logger.warning("Counting channel")
+                obsidian_logger.warning("Counting channel")
                 return
 
             log_channel = self.bot.get_channel(int(CHANNEL_MODERATION))
@@ -420,7 +420,7 @@ class InitCache(discord.Cog):
                 )
             )
         except Exception:
-            ai_logger.exception("An error occurred:")
+            obsidian_logger.exception("An error occurred:")
 
 
 def setup(bot: Bot):
