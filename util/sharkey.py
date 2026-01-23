@@ -26,7 +26,7 @@ class SharkeyCache:
     async def get_latest_posts(self):
         if (
             datetime.datetime.now() - self.latest_lunya_posts_update
-        ).total_seconds() < 21600:
+        ).total_seconds() < 600:
             return self.latest_lunya_posts
 
         async with aiohttp.ClientSession() as session:
