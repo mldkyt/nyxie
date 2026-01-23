@@ -5,7 +5,7 @@ from discord import Bot
 
 from cogs.nsfw_verification import NsfwRolePicker
 from constants import GUILD, OWNER
-from logger import ai_logger
+from logger import obsidian_logger
 from util.storage import get_data, set_data
 
 
@@ -15,7 +15,7 @@ class DevCommands(discord.Cog):
 
     @discord.Cog.listener()
     async def on_ready(self):
-        ai_logger.info("Dev Commands Cog is ready!")
+        obsidian_logger.info("Dev Commands Cog is ready!")
 
         # Set status if in configuration file
         status_data = get_data("status")
@@ -80,7 +80,7 @@ class DevCommands(discord.Cog):
             await self.bot.change_presence(activity=activity)
             await ctx.respond(f"Status set to {mode}: {status}!", ephemeral=True)
         except Exception as e:
-            ai_logger.exception("An error occurred:")
+            obsidian_logger.exception("An error occurred:")
 
     @dev_group.command(name="drop_nsfw_role_picker")
     async def drop_nsfw_role_picker(self, ctx: discord.ApplicationContext):
@@ -97,7 +97,7 @@ class DevCommands(discord.Cog):
             )
             await ctx.respond("sent", ephemeral=True)
         except Exception as e:
-            ai_logger.exception("An error occurred:")
+            obsidian_logger.exception("An error occurred:")
             await ctx.respond("an error occured", ephemeral=True)
 
 

@@ -4,7 +4,7 @@ from uuid import uuid4
 import atproto
 
 from constants import ATPROTO_EMAIL, ATPROTO_PASSWORD
-from logger import ai_logger
+from logger import obsidian_logger
 
 # TODO: Crosspost fedi posts
 # Do not crosspost boosts, replies, quote posts, posts with a poll
@@ -21,9 +21,9 @@ class Bluesky:
     logged_in = False
 
     async def log_in(self):
-        ai_logger.info("[Bluesky]Logging in")
+        obsidian_logger.info("[Bluesky]Logging in")
         self.profile = await self.account.login(ATPROTO_EMAIL, ATPROTO_PASSWORD)
-        ai_logger.info("[Bluesky]Logged in as %s", str(self.profile.handle))
+        obsidian_logger.info("[Bluesky]Logged in as %s", str(self.profile.handle))
         self.logged_in = True
 
 

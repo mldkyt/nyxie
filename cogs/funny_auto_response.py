@@ -6,7 +6,7 @@ import discord
 from discord import Bot
 
 from constants import CHANNEL_COUNTING, GUILD
-from logger import ai_logger
+from logger import obsidian_logger
 
 
 def handle_colon_three(message: discord.Message):
@@ -163,7 +163,7 @@ class FunnyAutoResponse(discord.Cog):
             if len(message_reply.strip()) > 0:
                 await message.channel.send(message_reply)
         except Exception as e:
-            ai_logger.exception("An error occurred:")
+            obsidian_logger.exception("An error occurred:")
 
 
 def setup(bot: Bot):

@@ -26,7 +26,7 @@ class MediaThreads(discord.Cog):
             msg_in_length = msg_in_length[:61] + "..."
 
         thr = await msg.create_thread(name=msg_in_length)
-        await thr.send(content="Haii~ I created this thread on your post, comments on this media should go here~")
+        await thr.send(content="comments for this post will go here, to keep things clean and organized :3")
 
 def setup(bot: Bot):
     bot.add_cog(MediaThreads(bot))

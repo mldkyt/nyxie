@@ -47,7 +47,7 @@ class GeneralCleaner(discord.Cog):
         if self.data[message.author.id]['attachments_sent'] > 2 and not self.data[message.author.id]['sent']:
             # If exceeded, remind the user that the media channel exists
             self.data[message.author.id]['sent'] = True
-            await message.reply(f"Please use the <#{CHANNEL_MEDIA}> channel for posting media~ Thank you!")
+            await message.reply(f"please send excessive media in <#{CHANNEL_MEDIA}>! nothing will happen if it happens once, but please don't repeat this ><")
 
 def setup(bot: Bot):
     bot.add_cog(GeneralCleaner(bot))

@@ -5,7 +5,7 @@ import discord
 from discord.ext import commands
 
 from constants import DISCORD_TOKEN
-from logger import ai_logger
+from logger import obsidian_logger
 
 bot = discord.Bot(intents=discord.Intents.all())
 
@@ -19,7 +19,7 @@ async def on_ready():
     if not bot.user:
         return
 
-    ai_logger.info(f"{bot.user.display_name} has connected to Discord!")
+    obsidian_logger.info(f"{bot.user.display_name} has connected to Discord!")
 
 
 @bot.event
@@ -65,7 +65,7 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error):
         )
         return
 
-    ai_logger.exception("An error occurred:")
+    obsidian_logger.exception("An error occurred:")
     try:
         # respond
         await ctx.respond(
@@ -77,5 +77,5 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error):
     raise error
 
 
-ai_logger.info("Starting Ai")
+obsidian_logger.info("Starting Ai")
 bot.run(DISCORD_TOKEN)
