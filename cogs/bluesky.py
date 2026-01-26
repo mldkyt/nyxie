@@ -1,6 +1,5 @@
 from atproto import AtUri
 from atproto_client.models.app.bsky.feed.post import Record, ReplyRef
-from atproto_client.models.app.bsky.notification.list_notifications import Notification
 from discord import (
     Bot,
     Cog,
@@ -15,7 +14,7 @@ from discord import (
 from discord.ext.tasks import loop
 from sqlalchemy import insert, select
 
-from constants import ATPROTO_CHANNEL, GUILD
+from constants import ATPROTO_CHANNEL, GUILD, ATPROTO_EMAIL, ATPROTO_PASSWORD
 from database import bsky_posts, engine
 from logger import obsidian_logger
 from util.bluesky import bluesky
@@ -211,4 +210,7 @@ class Bluesky(Cog):
 
 
 def setup(bot: Bot):
-    bot.add_cog(Bluesky(bot))
+    if ATPROTO_EMAIL is not None and ATPROTO_PASSWORD is not None:
+        bot.add_cog(Bluesky(bot))
+    else:
+        obsidian_logger.info("skipping bluesky stuff")

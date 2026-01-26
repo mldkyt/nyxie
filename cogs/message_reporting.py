@@ -1,5 +1,3 @@
-import logging
-
 import discord
 from discord import Bot, Guild, Interaction, Member, Message, TextChannel, VoiceChannel
 from sqlalchemy import insert, select
@@ -7,6 +5,7 @@ from sqlalchemy import insert, select
 from constants import CHANNEL_MODERATION
 from database import engine, reports
 from logger import obsidian_logger
+from util.dm import dm_cache
 
 
 class ReportMessageOptions(discord.ui.View):
@@ -40,10 +39,11 @@ class ReportMessageOptions(discord.ui.View):
                 title="Report Status",
                 description="You reported a message recently. The message has violated the rules of the server and action has been taken against the content. Thank you for keeping the community safe.",
                 color=discord.Color.green(),
-                footer=discord.EmbedFooter(text="Lunya's Ai 愛"),
+                footer=discord.EmbedFooter(text="obsidian"),
             )
 
-            await reporter.send(embed=emb)
+            # await reporter.send(embed=emb)
+            dm_cache.add_dm_to_send(reporter.id, emb)
         except Exception as e:
             obsidian_logger.exception("An error occurred:")
 
@@ -74,10 +74,11 @@ class ReportMessageOptions(discord.ui.View):
                 title="Report Status",
                 description="You reported a message recently. The message has not violated the rules of the server. Thank you for your concerns, it is better to report suspicious content rather than not reporting it at all.",
                 color=discord.Color.red(),
-                footer=discord.EmbedFooter(text="Lunya's Ai 愛"),
+                footer=discord.EmbedFooter(text="obsidian"),
             )
 
-            await reporter.send(embed=emb)
+            # await reporter.send(embed=emb)
+            dm_cache.add_dm_to_send(reporter.id, emb)
         except Exception as e:
             obsidian_logger.exception("An error occurred:")
 

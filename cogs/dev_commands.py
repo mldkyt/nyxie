@@ -1,11 +1,10 @@
-import logging
-
 import discord
-from discord import Bot
+from discord import Bot, ApplicationContext, Member
 
 from cogs.nsfw_verification import NsfwRolePicker
 from constants import GUILD, OWNER
 from logger import obsidian_logger
+from util.dm import dm_cache
 from util.storage import get_data, set_data
 
 
@@ -99,6 +98,22 @@ class DevCommands(discord.Cog):
         except Exception as e:
             obsidian_logger.exception("An error occurred:")
             await ctx.respond("an error occured", ephemeral=True)
+
+    @dev_group.command(name="send_test_dm")
+    async def send_test_dm(self, ctx: ApplicationContext, user: Member, message: str):
+        try:
+            if ctx.user.id != int(OWNER):
+                await ctx.respond(
+                    "You are not authorized to use this command!", ephemeral=True
+                )
+                return
+
+            dm_cache.add_dm_to_send(user.id, message)
+            await ctx.respond("Dm will be sent", ephemeral=True)
+        except Exception:
+            obsidian_logger.exception("Error")
+            await ctx.respond("an error occured", ephemeral=True)
+
 
 
 def setup(bot: Bot):
