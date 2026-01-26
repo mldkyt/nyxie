@@ -119,3 +119,10 @@ bsky_posted = Table(
     Column("id", Integer, primary_key=True, autoincrement=True),
     Column("aid", VARCHAR, comment="Fedi ID", nullable=False),
 )
+
+dm_channels = Table(
+    "dm_channel",
+    md_obj,
+    Column("user_id", VARCHAR, primary_key=True),
+    Column("channel_id", VARCHAR, primary_key=True)
+)

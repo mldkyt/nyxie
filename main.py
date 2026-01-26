@@ -1,4 +1,3 @@
-import logging
 import os
 
 import discord
@@ -77,5 +76,5 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error):
     raise error
 
 
-obsidian_logger.info("Starting Ai")
+obsidian_logger.info("Starting obsidian")
 bot.run(DISCORD_TOKEN)

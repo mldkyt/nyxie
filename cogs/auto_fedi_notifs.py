@@ -8,7 +8,7 @@ from discord import Bot, TextChannel
 from discord.ext import tasks
 from sqlalchemy import delete, insert, select
 
-from constants import CHANNEL_NEW_FEDI, FEDI_INSTANCE, ROLE_FEDI
+from constants import CHANNEL_NEW_FEDI, FEDI_INSTANCE, ROLE_FEDI, ATPROTO_EMAIL, ATPROTO_PASSWORD, ATPROTO_CHANNEL
 from database import bsky_posted, engine, fedi_notifications_ids
 from logger import obsidian_logger
 from util.bluesky import bluesky
@@ -58,8 +58,10 @@ class AutoFediNotifications(discord.Cog):
 
     @discord.Cog.listener()
     async def on_ready(self):
+        if ATPROTO_EMAIL is not None and ATPROTO_PASSWORD is not None and ATPROTO_CHANNEL is not None:
+            await self.on_ready_bsky()
+
         await self.on_ready_discord()
-        await self.on_ready_bsky()
 
     async def on_ready_discord(self):
         # Check if the module was initialized
