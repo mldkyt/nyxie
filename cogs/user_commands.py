@@ -518,7 +518,7 @@ class MoreYuriView(discord.ui.View):
             index = items.index(item)
 
             await interaction.respond(
-                f"yuri!\nfile {index}/{len(items)} [/~lunya/girls,,,,/{item}](https://f.lunya.pet/~lunya/girls%252C%252C%252C/{item[:-4]}jpg) [(browse)](https://f.lunya.pet/~lunya/girls%252C%252C%252C/)",
+                f"yuri!\nfile {index}/{len(items)} [/~lunya/girls,,,,/{item}](https://f.lunya.pet/~lunya/girls%252C%252C%252C/{item[:-4]}.jpg) [(browse)](https://f.lunya.pet/~lunya/girls%252C%252C%252C/)",
                 view=MoreYuriView(),
             )
         except Exception as e:
@@ -1000,7 +1000,7 @@ class UserCommands(discord.Cog):
             index = items.index(item)
 
             await ctx.respond(
-                f"yuri!\nfile {index}/{len(items)} [/~lunya/girls,,,/{item}](https://f.lunya.pet/~lunya/girls,,,/{item[:-4]}jpg) [(browse)](https://f.lunya.pet/~lunya/girls,,,/)",
+                f"yuri!\nfile {index}/{len(items)} [/~lunya/girls,,,/{item}](https://f.lunya.pet/~lunya/girls,,,/{item[:-4]}.jpg) [(browse)](https://f.lunya.pet/~lunya/girls,,,/)",
                 view=MoreYuriView(),
             )
         except Exception as e:
