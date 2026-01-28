@@ -204,13 +204,13 @@ class AutoFediNotifications(discord.Cog):
 
                     # Post
                     if len(images) == 0:
-                        await bluesky.account.send_post(i["text"])
+                        bluesky.queue(i["text"])
                     elif is_video:
-                        await bluesky.account.send_video(
+                        bluesky.queue_video(
                             text=i["text"], video=images[0], video_alt=alt_texts[0]
                         )
                     else:
-                        await bluesky.account.send_images(
+                        bluesky.queue_images(
                             text=i["text"], images=images, image_alts=alt_texts
                         )
                     obsidian_logger.debug("[Fedi>Bluesky Posts]Posted %s to fedi", i["id"])
@@ -219,8 +219,6 @@ class AutoFediNotifications(discord.Cog):
 
             except Exception:
                 obsidian_logger.exception("Exception while posting on Bluesky")
-
-            await asyncio.sleep(5)
 
 
 def setup(bot: Bot):
