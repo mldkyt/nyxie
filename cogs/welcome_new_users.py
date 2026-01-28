@@ -25,7 +25,10 @@ class WelcomeNewUsers(Cog):
             footer=EmbedFooter("sent by obsidian")
         )
 
-        await general.send(embed=embed)
+        await general.send(
+            member.mention,
+            embed=embed
+        )
 
 
 def setup(bot: Bot):
