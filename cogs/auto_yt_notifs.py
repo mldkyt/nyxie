@@ -113,13 +113,13 @@ class AutoYouTubeNotifications(discord.Cog):
                             embed=emb,
                         )
                     )
-                    asyncio.get_event_loop().create_task(
-                        bluesky.account.send_post(
-                            client_utils.TextBuilder().link(
-                                i["title"], f"https://youtube.com/watch?v={i['id']}"
-                            )
+
+                    bluesky.queue(
+                        client_utils.TextBuilder().link(
+                            i["title"], f"https://youtube.com/watch?v={i['id']}"
                         )
                     )
+
                     async with aiohttp.ClientSession() as session:
                         async with session.post(
                             f"https://{FEDI_INSTANCE}/api/notes/create",

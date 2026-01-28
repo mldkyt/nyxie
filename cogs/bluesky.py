@@ -1,5 +1,4 @@
 from atproto import AtUri
-from atproto_client.models.app.bsky.feed.post import Record, ReplyRef
 from discord import (
     Bot,
     Cog,
@@ -27,8 +26,11 @@ class Bluesky(Cog):
 
     @Cog.listener()
     async def on_ready(self):
-        await bluesky.log_in()
+        bluesky_channel = await self.bot.fetch_channel(ATPROTO_CHANNEL)
+        await bluesky.log_in(bluesky_channel)
+
         self.check_notifications.start()
+        self.post_queue.start()
 
     @Cog.listener()
     async def on_message(self, message: Message):
@@ -68,21 +70,7 @@ class Bluesky(Cog):
             await message.add_reaction("❌")
             return
 
-        await bluesky.account.send_post(
-            message.content,
-            reply_to=ReplyRef.model_validate(
-                {
-                    "parent": {
-                        "uri": post_to_reply_to.uri,
-                        "cid": post_to_reply_to.cid,
-                    },
-                    "root": {
-                        "uri": post_to_reply_to.uri,
-                        "cid": post_to_reply_to.cid,
-                    },
-                }
-            ),
-        )
+        bluesky.queue_reply(message.content, post_to_reply_to.uri, post_to_reply_to.cid)
 
         await message.add_reaction("✅")
 
@@ -134,8 +122,8 @@ class Bluesky(Cog):
             ):
                 await bluesky.account.like(post_to_reply_to.uri, post_to_reply_to.cid)
             elif payload.emoji.is_unicode_emoji() and payload.emoji == "🚀":
-                await bluesky.account.repost(
-                    uri=post_to_reply_to.uri, cid=post_to_reply_to.cid
+                bluesky.queue_repost(
+                    repost_uri=post_to_reply_to.uri, repost_cid=post_to_reply_to.cid
                 )
         except Exception:
             obsidian_logger.exception("Failed to like bsky post: ")
@@ -152,62 +140,44 @@ class Bluesky(Cog):
             obsidian_logger.debug("Bluesky notifs ATproto channel is not valid")
             return
 
-        obsidian_logger.debug("Bluesky notifs Checking...")
-        notifs = await bluesky.account.app.bsky.notification.list_notifications(
-            {"reasons": ["reply", "mention"]}
-        )
+        async for notif in bluesky.notifications():
+            try:
+                post_it_replied_to = await bluesky.account.get_post(
+                    AtUri.from_str(notif.record.reply.parent.uri).rkey
+                )
+            except Exception:
+                obsidian_logger.debug(
+                    "Bluesky notifs Skipping reply: Unable to fetch reply"
+                )
+                return
 
-        for notif in notifs.notifications:
-            if not notif.is_read:
-                if notif.reason == "reply":
-                    if not isinstance(notif.record, Record):
-                        obsidian_logger.debug("Bluesky notifs Skipping reply: Record is null")
-                        return
-                    if not isinstance(notif.record.reply, ReplyRef):
-                        obsidian_logger.debug("Bluesky notifs Skipping reply: Reply is null")
-                        return
+            message_reply = await channel.send(
+                embed=Embed(
+                    fields=[
+                        EmbedField(
+                            name="Post", value=post_it_replied_to.value.text
+                        ),
+                        EmbedField(name="Reply", value=notif.record.text),
+                    ],
+                    author=EmbedAuthor(
+                        name=notif.author.display_name
+                             or str(notif.author.handle),
+                        icon_url=str(notif.author.avatar),
+                    ),
+                )
+            )
 
-                    try:
-                        post_it_replied_to = await bluesky.account.get_post(
-                            AtUri.from_str(notif.record.reply.parent.uri).rkey
-                        )
-                    except Exception:
-                        obsidian_logger.debug(
-                            "Bluesky notifs Skipping reply: Unable to fetch reply"
-                        )
-                        return
-
-                    message_reply = await channel.send(
-                        embed=Embed(
-                            fields=[
-                                EmbedField(
-                                    name="Post", value=post_it_replied_to.value.text
-                                ),
-                                EmbedField(name="Reply", value=notif.record.text),
-                            ],
-                            author=EmbedAuthor(
-                                name=notif.author.display_name
-                                or str(notif.author.handle),
-                                icon_url=str(notif.author.avatar),
-                            ),
-                        )
+            with engine.begin() as c:
+                c.execute(
+                    insert(bsky_posts).values(
+                        mid=str(message_reply.id),
+                        did=notif.uri,
                     )
+                )
 
-                    with engine.begin() as c:
-                        c.execute(
-                            insert(bsky_posts).values(
-                                mid=str(message_reply.id),
-                                did=notif.uri,
-                            )
-                        )
-
-        obsidian_logger.debug("Bluesky notifs Setting replies read")
-        await bluesky.account.app.bsky.notification.update_seen(
-            {"seen_at": bluesky.account.get_current_time_iso()}
-        )
-
-        obsidian_logger.debug("Bluesky notifs OK")
-
+    @loop(seconds=10)
+    async def post_queue(self):
+        await bluesky.post()
 
 def setup(bot: Bot):
     if ATPROTO_EMAIL is not None and ATPROTO_PASSWORD is not None:
