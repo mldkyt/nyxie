@@ -105,21 +105,6 @@ reports = Table(
     Column("reason", VARCHAR),
 )
 
-bsky_posts = Table(
-    "bluesky_posts",
-    md_obj,
-    Column("id", Integer, primary_key=True, autoincrement=True),
-    Column("mid", VARCHAR, comment="Message ID", nullable=False),
-    Column("did", VARCHAR, comment="Bluesky ID", nullable=False),
-)
-
-bsky_posted = Table(
-    "bluesky_posted",
-    md_obj,
-    Column("id", Integer, primary_key=True, autoincrement=True),
-    Column("aid", VARCHAR, comment="Fedi ID", nullable=False),
-)
-
 dm_channels = Table(
     "dm_channel",
     md_obj,

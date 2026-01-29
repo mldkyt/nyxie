@@ -4,7 +4,6 @@ import os
 import aiohttp
 import discord
 import yt_dlp
-from atproto import client_utils
 from discord import Bot
 from discord.ext import tasks
 from sqlalchemy import delete, insert, select
@@ -18,7 +17,6 @@ from constants import (
 )
 from database import engine, yt_notifications_ids
 from logger import obsidian_logger
-from util.bluesky import bluesky
 
 
 async def get_all_latest_post_info():
@@ -111,12 +109,6 @@ class AutoYouTubeNotifications(discord.Cog):
                         channel.send(
                             f"<@&{ROLE_VIDEOS}> Lunya posted a new video~!\nClick the title of the embed or click this link~ https://youtube.com/watch?v={i['id']}",
                             embed=emb,
-                        )
-                    )
-
-                    bluesky.queue(
-                        client_utils.TextBuilder().link(
-                            i["title"], f"https://youtube.com/watch?v={i['id']}"
                         )
                     )
 
