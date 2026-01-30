@@ -111,3 +111,12 @@ dm_channels = Table(
     Column("user_id", VARCHAR, primary_key=True),
     Column("channel_id", VARCHAR, primary_key=True)
 )
+
+suggestion_messages = Table(
+    "suggestion_messages",
+    md_obj,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("message_id", VARCHAR, unique=True),
+    Column("tracker_id", Integer, unique=True),
+    Column("reply_id", VARCHAR, unique=True)
+)
