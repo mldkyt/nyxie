@@ -9,6 +9,7 @@ load_dotenv()
 VERSION = "2025.11.15"
 
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+DEV_MODE = os.getenv("DEV_MODE", "0")
 
 GUILD = os.getenv("GUILD")
 OWNER = os.getenv("OWNER")
@@ -33,6 +34,7 @@ CHANNEL_NEW_TIKTOK = os.getenv("CHANNEL_NEW_TIKTOK")
 
 CHANNEL_MODERATION = os.getenv("CHANNEL_MODERATION")
 CHANNEL_ROLES = os.getenv("CHANNEL_ROLES")
+CHANNEL_SUGGESTIONS = os.getenv("CHANNEL_SUGGESTIONS")
 
 FEDI_INSTANCE = os.getenv("FEDI_INSTANCE")
 FEDI_USER_ID = os.getenv("FEDI_USER_ID")
@@ -56,6 +58,11 @@ DEEPL_API_KEY = os.getenv("DEEPL_API_KEY")
 
 
 def validate_values(l: dict[str, str | None]):
+    if DEV_MODE != "0":
+        for i in range(3):
+            obsidian_logger.warning(
+                "DEVELOPMENT MODE!!! STOP AND REMOVE DEV_MODE FROM ENV IF NOT A DEVELOPMENT ENVIRONMENT")
+
     for k, v in l.items():
         if v is None:
             obsidian_logger.warning(f"CONSTANTS: The constant value for {k} is NOT set!")
@@ -82,6 +89,7 @@ validate_values(
         "CHANNEL_NEW_TIKTOK": CHANNEL_NEW_TIKTOK,
         "CHANNEL_MODERATION": CHANNEL_MODERATION,
         "CHANNEL_ROLES": CHANNEL_ROLES,
+        "CHANNEL_SUGGESTIONS": CHANNEL_SUGGESTIONS,
         "FEDI_INSTANCE": FEDI_INSTANCE,
         "FEDI_USER_ID": FEDI_USER_ID,
         "FEDI_TOKEN": FEDI_TOKEN,
