@@ -17,9 +17,10 @@ import pytz
 import yt_dlp.version
 from dateutil.parser import isoparse
 from deepl import Language
-from discord import Bot, Message
+from discord import Bot, Message, ButtonStyle, Interaction, InteractionType
 from discord.ext import commands, tasks
 from discord.ext.commands import BucketType, cooldown
+from discord.ui import MediaGallery, Separator, Container, Section, Button, DesignerView, TextDisplay
 
 from constants import (
     CHANNEL_MEMES,
@@ -722,33 +723,6 @@ async def uwuify(text: str) -> str | None:
             return res["uwu"]
 
 
-class MoreYuriView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-
-    @discord.ui.button(
-        label="more",
-        style=discord.ButtonStyle.primary,
-        custom_id="more_yuri_pwease_uwu",
-    )
-    async def more_yuri(
-        self, button: discord.ui.Button, interaction: discord.Interaction
-    ):
-        try:
-            items = os.listdir("rom/yuri")
-            item = random.choice(items)
-
-            index = items.index(item)
-
-            await interaction.respond(
-                f"yuri!\nfile {index}/{len(items)} [/~lunya/girls,,,,/{item}](https://f.lunya.pet/~lunya/girls%252C%252C%252C/{item[:-4]}.jpg) [(browse)](https://f.lunya.pet/~lunya/girls%252C%252C%252C/)",
-                view=MoreYuriView(),
-            )
-        except Exception as e:
-            await interaction.respond(f"Error: {str(e)}", ephemeral=True)
-            obsidian_logger.exception("An error occured:")
-
-
 class UserCommands(discord.Cog):
     def __init__(self, bot: discord.Bot):
         self.bot = bot
@@ -767,8 +741,33 @@ class UserCommands(discord.Cog):
         self.bot.add_view(PickerComponent("click"))
         self.bot.add_view(ReadReceiptComponent())
         self.bot.add_view(RefreshTimeView())
-        self.bot.add_view(MoreYuriView())
         self.handle_queue.start()
+
+    @discord.Cog.listener()
+    async def on_interaction(self, interaction: Interaction):
+        if interaction.custom_id == "more_yuri_pwease_uwu" and interaction.type == InteractionType.component:
+            items = os.listdir("rom/yuri")
+            item = random.choice(items)
+
+            index = items.index(item)
+
+            gallery = MediaGallery()
+            gallery.add_item("attachment://yuri.jpg")
+
+            container = Container()
+            container.add_item(gallery)
+            container.add_item(Separator())
+            container.add_item(
+                Section(TextDisplay(
+                    f"yuri image {index + 1} out of {len(items)} | [browse](https://f.lunya.pet/~lunya/girls,,,)"),
+                    accessory=Button(label="more yuri :3", style=ButtonStyle.primary,
+                                     custom_id="more_yuri_pwease_uwu"))
+            )
+
+            await interaction.respond(
+                view=DesignerView(container),
+                files=[discord.File(f"rom/yuri/{item}", filename="yuri.jpg")]
+            )
 
     user_commands = discord.SlashCommandGroup(
         name="user",
@@ -1288,9 +1287,22 @@ class UserCommands(discord.Cog):
 
             index = items.index(item)
 
+            gallery = MediaGallery()
+            gallery.add_item("attachment://yuri.jpg")
+
+            container = Container()
+            container.add_item(gallery)
+            container.add_item(Separator())
+            container.add_item(
+                Section(TextDisplay(
+                    f"yuri image {index + 1} out of {len(items)} | [browse](https://f.lunya.pet/~lunya/girls,,,)"),
+                        accessory=Button(label="more yuri :3", style=ButtonStyle.primary,
+                                         custom_id="more_yuri_pwease_uwu"))
+            )
+
             await ctx.respond(
-                f"yuri!\nfile {index}/{len(items)} [/~lunya/girls,,,/{item}](https://f.lunya.pet/~lunya/girls,,,/{item[:-4]}.jpg) [(browse)](https://f.lunya.pet/~lunya/girls,,,/)",
-                view=MoreYuriView(),
+                view=DesignerView(container),
+                files=[discord.File(f"rom/yuri/{item}", filename="yuri.jpg")]
             )
         except Exception as e:
             obsidian_logger.exception(
