@@ -26,9 +26,6 @@ def upgrade() -> None:
                     sa.Column('tracker_id', sa.Integer(), nullable=True),
                     sa.Column('reply_id', sa.VARCHAR(), nullable=True),
                     sa.PrimaryKeyConstraint('id'),
-                    sa.UniqueConstraint('message_id'),
-                    sa.UniqueConstraint('tracker_id'),
-                    sa.UniqueConstraint('reply_id'),
                     )
     # ### end Alembic commands ###
 
