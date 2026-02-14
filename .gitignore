@@ -1,4 +1,5 @@
 .venv/
+.venv
 .env
 __pycache__/
 data/
@@ -6,3 +7,9 @@ logs/ai.log
 
 #yuri is love, yuri is life
 rom/yuri
+
+logs/
+
+.devenv/
+.devenv.flake.nix
+
