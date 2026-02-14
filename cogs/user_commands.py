@@ -1055,14 +1055,17 @@ class UserCommands(discord.Cog):
     @cooldown(1, 10, BucketType.default)
     async def note_message(self, ctx: discord.ApplicationContext, message: Message):
         try:
+            owner = self.bot.get_user(int(OWNER))
+            await ctx.respond("posting to fedi. see dms for activity", ephemeral=True)
+
             data: dict[str, Any] = {'text': message.content, 'visibility': "public"}
 
             if not os.path.exists("temp"):
                 os.mkdir("temp")
 
-            files: list[str] = []
+            files: list[dict] = []
 
-            async def get_file(a):
+            async def get_file(a: discord.Attachment):
                 async with aiohttp.ClientSession() as sess:
                     async with sess.get(a.url) as req:
                         content = await req.read()
@@ -1078,7 +1081,7 @@ class UserCommands(discord.Cog):
                                          headers={'Authorization': f'Bearer {FEDI_TOKEN}'}) as req:
                         if req.ok:
                             a = await req.json()
-                            files.append(a['id'])
+                            files.append(a)
                         else:
                             txt = await req.text()
                             obsidian_logger.warning("Failed to upload file: Response code %s: %s", str(req.status), txt)
@@ -1086,7 +1089,29 @@ class UserCommands(discord.Cog):
             await asyncio.gather(*[put_file(i.filename) for i in message.attachments])
 
             if len(files) > 0:
-                data['fileIds'] = files
+                data['fileIds'] = [i['id'] for i in files]
+                for i in files:
+                    try:
+                        await owner.send(f"Alt text for {i['name']} ({i['url']}):")
+                        resp = await self.bot.wait_for('message', check=lambda msg: msg.author == owner)
+
+                        # Update alt text
+                        async with aiohttp.ClientSession() as sess:
+                            async with sess.post(f"https://{FEDI_INSTANCE}/api/drive/files/update",
+                                                headers={'Authorization': f'Bearer {FEDI_TOKEN}'},
+                                                json={
+                                                    "fileId": i['id'],
+                                                    "comment": resp.content
+                                                }) as req:
+                                if req.ok:
+                                    a = await req.json()
+                                else:
+                                    txt = await req.text()
+                                    await owner.send(f"Failed to update comment for {i['name']}: {txt}")
+
+                        await resp.reply(f"added comment to {i['name']} file successfully")
+                    except Exception:
+                        await owner.send(f"Failed to update comment for {i['name']}")
 
             async with aiohttp.ClientSession() as session:
                 async with session.post(f"https://{FEDI_INSTANCE}/api/notes/create", json=data, headers={
@@ -1101,7 +1126,7 @@ class UserCommands(discord.Cog):
 
                     data = await resp.json()
 
-                    await ctx.respond(f"post stolen\nhttps://{FEDI_INSTANCE}/notes/{data['createdNote']['id']}")
+                    await owner.send(f"post stolen\nhttps://{FEDI_INSTANCE}/notes/{data['createdNote']['id']}")
 
             for i in message.attachments:
                 os.unlink(f"temp/{i.filename}")
