@@ -2,7 +2,7 @@
   description = "Obsidian Discord bot";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
@@ -10,16 +10,56 @@
     let 
       mkObsidian = pkgs: 
         let 
-          pythonEnv = pkgs.python310.withPackages (ps: with ps; [ #smh cat noises
+          pythonEnv = pkgs.python312.withPackages (ps: with ps; [ #smh cat noises
+            aiodns
+            aiohappyeyeballs
+            aiohttp
+            aiosignal
+            alembic
+            attrs
+            brotli
+            certifi
+            cffi
+            charset-normalizer
+            deepl
+            frozenlist
+            greenlet
+            idna
+            mako
+            markupsafe
+            msgspec
+            multidict
+            propcache
+            pycares
+            pycparser
+            python-dateutil
+            python-dotenv
             pytz
             requests
-            yt-dlp
-            "py-cord"
-            python-dateutil
-            deepl
-            python-dotenv
-            alembic
+            six
             sqlalchemy
+            typing-extensions
+            urllib3
+            yarl
+            (pkgs.python312Packages.buildPythonPackage {
+              pname = "py-cord";
+              version = "2.7.1";
+              format = "pyproject";
+              src = pkgs.fetchurl {
+                url = "https://github.com/Pycord-Development/pycord/releases/download/v2.7.1/py_cord-2.7.1.tar.gz";
+                sha256 = "EAk18353uorB4+/wsYDm1pvKwIPegdTIPUIyfZou3e4=";
+              };
+              postPatch = ''
+                substituteInPlace pyproject.toml \
+                  --replace-fail 'setuptools>=77.0.3,<=80.9.0' 'setuptools>=77.0.3' \
+                  --replace-fail 'setuptools-scm>=9.2,<=9.2.2' 'setuptools-scm>=9.0.1'
+              '';
+              nativeBuildInputs = with pkgs.python312Packages; [
+                setuptools
+                setuptools-scm
+                aiohttp
+              ];
+            })
           ]);
         in
           pkgs.stdenvNoCC.mkDerivation {
@@ -28,7 +68,6 @@
             src = self;
             
             dontBuild = true;
-
 
             installPhase = ''
               mkdir -p $out/app
