@@ -3,8 +3,10 @@ from datetime import datetime
 from random import choice, randint
 
 from aiohttp import ClientSession
-from discord import Bot, Cog, Guild, TextChannel
+from discord import Bot, ButtonStyle, Cog, Guild, MediaGalleryItem, TextChannel
 from discord.ext.tasks import loop
+from discord.types.components import TextDisplayComponent
+from discord.ui import ActionRow, Button, Container, DesignerView, MediaGallery, Separator, TextDisplay
 
 from constants import (
     CHANNEL_MEOW,
@@ -12,7 +14,9 @@ from constants import (
     CHANNEL_YURI,
     FEDI_INSTANCE,
     GUILD,
+    VERSION,
 )
+from logger import obsidian_logger
 from util.sharkey import sharkey_cache
 
 DEBUG = False
@@ -21,17 +25,36 @@ DEBUG = False
 async def post_yuri(bot: Bot):
     guild = bot.get_guild(int(GUILD))
     if not isinstance(guild, Guild):
+        obsidian_logger.warning("Guild not found")
         return
 
     chan = guild.get_channel(int(CHANNEL_YURI))
     if not isinstance(chan, TextChannel):
+        obsidian_logger.warning("Yuri channel not found :(")
         return
 
     yuri = await sharkey_cache.get_yuribot_post()
     if yuri is None:
+        obsidian_logger.warning("No yuri :(")
         return  # :(
 
-    await chan.send(f"https://{FEDI_INSTANCE}/notes/{yuri['id']}")
+    component = Container(
+        TextDisplay("# Daily Yuri"),
+        Separator(),
+        MediaGallery(
+            MediaGalleryItem(url=yuri["files"][0]["url"])
+        ),
+        TextDisplay(f"-# Tags: {yuri["files"][0]["comment"]}"),
+        Separator(),
+        ActionRow(
+            Button(label="Open yuri on fedi", style=ButtonStyle.url, url=f"https://{FEDI_INSTANCE}/notes/{yuri['id']}")
+        ),
+        TextDisplay(f"-# obsidian {VERSION}")
+    )
+
+    await chan.send(
+        view=DesignerView(component)
+    )
 
 
 async def post_yaoi(bot: Bot):
@@ -46,7 +69,22 @@ async def post_yaoi(bot: Bot):
     if yaoi is None:
         return  # :(
 
-    await chan.send(f"https://{FEDI_INSTANCE}/notes/{yaoi['id']}")
+    component = Container(
+        TextDisplay("# Daily Yaoi"),
+        Separator(),
+        MediaGallery(
+            MediaGalleryItem(url=yaoi["files"][0]["url"])
+        ),
+        Separator(),
+        ActionRow(
+            Button(label="Open yaoi on fedi", style=ButtonStyle.url, url=f"https://{FEDI_INSTANCE}/notes/{yaoi['id']}")
+        ),
+        TextDisplay(f"-# obsidian {VERSION}")
+    )
+
+    await chan.send(
+        view=DesignerView(component)
+    )
 
 
 def generate_meow():

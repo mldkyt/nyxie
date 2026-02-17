@@ -2,7 +2,8 @@ import asyncio
 import logging
 
 import discord
-from discord import Bot, DMChannel, GroupChannel, PartialMessageable, Thread
+from discord import Bot, ButtonStyle, DMChannel, GroupChannel, PartialMessageable, Thread
+from discord.ui import ActionRow, Button, Container, DesignerView, Separator, TextDisplay
 from sqlalchemy import delete, insert, select, update
 
 from constants import CHANNEL_COUNTING, CHANNEL_MODERATION, GUILD
@@ -357,22 +358,21 @@ class InitCache(discord.Cog):
 
             log_channel = self.bot.get_channel(int(CHANNEL_MODERATION))
 
-            await log_channel.send(
-                embed=discord.Embed(
-                    title="Message Edited",
-                    color=discord.Color.yellow(),
-                    description="A message has been edited.",
-                    fields=[
-                        *[
-                            discord.EmbedField(name=i[0], value=f"{i[1]} -> {i[2]}")
-                            for i in changes
-                        ],
-                        discord.EmbedField(
-                            name="Link", value=f"[Jump]({fetched.jump_url})"
-                        ),
-                    ],
+            component = Container(
+                TextDisplay("# Message Edited"),
+                Separator(),
+                TextDisplay("## Old Content\n\n" + 
+                    "\n".join(f"{i[0]} = {i[1]}" for i in changes)),
+                Separator(),
+                TextDisplay("## New Content\n\n" +
+                    "\n".join(f"{i[0]} = {i[2]}" for i in changes)),
+                Separator(),
+                ActionRow(
+                    Button(label="Jump to message", style=ButtonStyle.link, url=fetched.jump_url)
                 )
             )
+            
+            await log_channel.send(view=DesignerView(component))
 
             self.cache_message(fetched)
         except Exception:
@@ -405,20 +405,18 @@ class InitCache(discord.Cog):
                 return
 
             log_channel = self.bot.get_channel(int(CHANNEL_MODERATION))
-
-            await log_channel.send(
-                embed=discord.Embed(
-                    title="Message Deleted",
-                    color=discord.Color.red(),
-                    description=f"A message has been deleted.\n\n{cached[3]}",
-                    fields=[
-                        discord.EmbedField(
-                            name="Link",
-                            value=f"[Jump](https://discord.com/channels/{payload.guild_id}/{payload.channel_id}/{payload.message_id})",
-                        )
-                    ],
+            
+            component = Container(
+                TextDisplay("# Message Deleted"),
+                Separator(),
+                TextDisplay(f"## Content\n\n{cached[3]}"),
+                Separator(),
+                ActionRow(
+                    Button(label="Jump to message", style=ButtonStyle.link, url=f"https://discord.com/channels/{payload.guild_id}/{payload.channel_id}/{payload.message_id}")
                 )
             )
+            
+            await log_channel.send(view=DesignerView(component))
         except Exception:
             obsidian_logger.exception("An error occurred:")
 

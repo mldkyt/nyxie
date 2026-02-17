@@ -1,5 +1,6 @@
-from discord import Cog, Bot, Guild, TextChannel, PermissionOverwrite
+from discord import Cog, Bot, Embed, Guild, TextChannel, PermissionOverwrite
 from discord.ext.tasks import loop
+from discord.ui import DesignerView
 from sqlalchemy import select, insert, delete
 
 from constants import GUILD
@@ -47,8 +48,10 @@ class DM(Cog):
 
         try:
             user = await self.guild.fetch_member(user_id)
-        except Exception:
+        except Exception as e:
             obsidian_logger.exception("An error occured")
+            raise e
+
         if user is None:
             raise ValueError("User should be in the server")
 
@@ -81,7 +84,12 @@ class DM(Cog):
                 continue
 
             try:
-                await user.send(message[1])
+                if isinstance(message[1], DesignerView):
+                    await user.send(view=message[1])
+                elif isinstance(message[1], Embed):
+                    await user.send(embed=message[1])
+                else:
+                    await user.send(message[1])
             except Exception:
 
                 try:
