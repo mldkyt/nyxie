@@ -6,7 +6,15 @@ from aiohttp import ClientSession
 from discord import Bot, ButtonStyle, Cog, Guild, MediaGalleryItem, TextChannel
 from discord.ext.tasks import loop
 from discord.types.components import TextDisplayComponent
-from discord.ui import ActionRow, Button, Container, DesignerView, MediaGallery, Separator, TextDisplay
+from discord.ui import (
+    ActionRow,
+    Button,
+    Container,
+    DesignerView,
+    MediaGallery,
+    Separator,
+    TextDisplay,
+)
 
 from constants import (
     CHANNEL_MEOW,
@@ -41,20 +49,20 @@ async def post_yuri(bot: Bot):
     component = Container(
         TextDisplay("# Daily Yuri"),
         Separator(),
-        MediaGallery(
-            MediaGalleryItem(url=yuri["files"][0]["url"])
-        ),
-        TextDisplay(f"-# Tags: {yuri["files"][0]["comment"]}"),
+        MediaGallery(MediaGalleryItem(url=yuri["files"][0]["url"])),
+        TextDisplay(f"-# Tags: {yuri['files'][0]['comment']}"),
         Separator(),
         ActionRow(
-            Button(label="Open yuri on fedi", style=ButtonStyle.url, url=f"https://{FEDI_INSTANCE}/notes/{yuri['id']}")
+            Button(
+                label="Open yuri on fedi",
+                style=ButtonStyle.url,
+                url=f"https://{FEDI_INSTANCE}/notes/{yuri['id']}",
+            )
         ),
-        TextDisplay(f"-# obsidian {VERSION}")
+        TextDisplay(f"-# obsidian {VERSION}"),
     )
 
-    await chan.send(
-        view=DesignerView(component)
-    )
+    await chan.send(view=DesignerView(component))
 
 
 async def post_yaoi(bot: Bot):
@@ -72,19 +80,19 @@ async def post_yaoi(bot: Bot):
     component = Container(
         TextDisplay("# Daily Yaoi"),
         Separator(),
-        MediaGallery(
-            MediaGalleryItem(url=yaoi["files"][0]["url"])
-        ),
+        MediaGallery(MediaGalleryItem(url=yaoi["files"][0]["url"])),
         Separator(),
         ActionRow(
-            Button(label="Open yaoi on fedi", style=ButtonStyle.url, url=f"https://{FEDI_INSTANCE}/notes/{yaoi['id']}")
+            Button(
+                label="Open yaoi on fedi",
+                style=ButtonStyle.url,
+                url=f"https://{FEDI_INSTANCE}/notes/{yaoi['id']}",
+            )
         ),
-        TextDisplay(f"-# obsidian {VERSION}")
+        TextDisplay(f"-# obsidian {VERSION}"),
     )
 
-    await chan.send(
-        view=DesignerView(component)
-    )
+    await chan.send(view=DesignerView(component))
 
 
 def generate_meow():
