@@ -1,10 +1,11 @@
 import discord
-from discord import Bot, ApplicationContext, Member
+from discord import ApplicationContext, Bot, Member
 
-from cogs.nsfw_verification import NsfwRolePicker
+from cogs import channel_posting
 from constants import GUILD, OWNER
 from logger import obsidian_logger
 from util.dm import dm_cache
+from util.sharkey import sharkey_cache
 from util.storage import get_data, set_data
 
 
@@ -81,24 +82,6 @@ class DevCommands(discord.Cog):
         except Exception as e:
             obsidian_logger.exception("An error occurred:")
 
-    @dev_group.command(name="drop_nsfw_role_picker")
-    async def drop_nsfw_role_picker(self, ctx: discord.ApplicationContext):
-        try:
-            if ctx.user.id != int(OWNER):
-                await ctx.respond(
-                    "You are not authorized to use this command!", ephemeral=True
-                )
-                return
-
-            await ctx.channel.send(
-                "use the button below to get access to nsfw channels",
-                view=NsfwRolePicker(),
-            )
-            await ctx.respond("sent", ephemeral=True)
-        except Exception as e:
-            obsidian_logger.exception("An error occurred:")
-            await ctx.respond("an error occured", ephemeral=True)
-
     @dev_group.command(name="send_test_dm")
     async def send_test_dm(self, ctx: ApplicationContext, user: Member, message: str):
         try:
@@ -114,6 +97,14 @@ class DevCommands(discord.Cog):
             obsidian_logger.exception("Error")
             await ctx.respond("an error occured", ephemeral=True)
 
+    @dev_group.command(name="send_test_yuri")
+    async def send_test_yuri(self, ctx: ApplicationContext):
+        await ctx.respond("Sending test yuri", ephemeral=True)
+
+        if len(sharkey_cache.latest_yuribot_posts):
+            await sharkey_cache.fetch_yuribot_posts()
+
+        await channel_posting.post_yuri(self.bot)
 
 
 def setup(bot: Bot):

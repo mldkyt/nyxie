@@ -4,12 +4,36 @@ import random
 
 import aiohttp
 from aiohttp import ClientResponseError
-from discord import Cog, Bot, Interaction, InteractionType, InputTextStyle, Message, Embed, Color, EmbedField
+from discord import (
+    Bot,
+    ButtonStyle,
+    Cog,
+    InputTextStyle,
+    Interaction,
+    InteractionType,
+    Message,
+)
 from discord.ext.tasks import loop
-from discord.ui import Modal, InputText
-from sqlalchemy import insert, select, delete
+from discord.ui import (
+    ActionRow,
+    Button,
+    Container,
+    DesignerView,
+    InputText,
+    Modal,
+    Separator,
+    TextDisplay,
+)
+from sqlalchemy import delete, insert, select
 
-from constants import FORGEJO_INSTANCE, FORGEJO_TOKEN, GUILD, DEV_MODE, CHANNEL_SUGGESTIONS, CHANNEL_MODERATION
+from constants import (
+    CHANNEL_MODERATION,
+    CHANNEL_SUGGESTIONS,
+    DEV_MODE,
+    FORGEJO_INSTANCE,
+    FORGEJO_TOKEN,
+    GUILD,
+)
 from database import engine, suggestion_messages, suggestion_messages_comments
 from logger import obsidian_logger
 
@@ -290,18 +314,17 @@ class Issues(Cog):
         thread = self.bot.get_guild(int(GUILD)).get_channel(int(CHANNEL_SUGGESTIONS)).get_thread(int(a[4]))
         await thread.archive()
 
-        logs_msg = Embed(
-            title="Issue Closed",
-            color=Color.green(),
-            description="An issue was closed.",
-            fields=[
-                EmbedField("Forgejo link", f"https://{FORGEJO_INSTANCE}/lunya/DiscordServer/issues/{a[2]}"),
-                EmbedField("Jump to related thread", f"[Thread]({thread.jump_url})")
-            ]
+        component = Container(
+            TextDisplay("# Issue Closed"),
+            Separator(),
+            ActionRow(
+                Button(label="Forgejo", style=ButtonStyle.url, url=f"https://{FORGEJO_INSTANCE}/lunya/DiscordServer/issues/{a[2]}"),
+                Button(label="Thread", style=ButtonStyle.url, url=thread.jump_url)
+            )
         )
 
         logs_channel = self.bot.get_guild(int(GUILD)).get_channel(int(CHANNEL_MODERATION))
-        await logs_channel.send(embed=logs_msg)
+        await logs_channel.send(view=DesignerView(component))
 
     @loop(seconds=1)
     async def queue_suggestions(self):
@@ -391,21 +414,18 @@ class Issues(Cog):
                     .values(message_id=str(a[0]), tracker_id=res_b['number'], reply_id=str(reply.id), thread_id=str(thread.id))
                 )
 
-            logs_msg = Embed(
-                title="Issue Created",
-                color=Color.green(),
-                description="An issue was created.",
-                fields=[
-                    EmbedField("Forgejo link",
-                               f"https://{FORGEJO_INSTANCE}/lunya/DiscordServer/issues/{res_b['number']}"),
-                    EmbedField("Author", message.author.mention),
-                    EmbedField("Jump to message or thread",
-                               f"[Message]({message.jump_url}) [Thread]({thread.jump_url})")
-                ]
+            component = Container(
+                TextDisplay("# Issue Created"),
+                Separator(),
+                ActionRow(
+                    Button(label="Forgejo", style=ButtonStyle.link, url=f"https://{FORGEJO_INSTANCE}/lunya/DiscordServer/issues/{res_b['number']}"),
+                    Button(label="Message", style=ButtonStyle.link, url=message.jump_url),
+                    Button(label="Thread", style=ButtonStyle.link, url=thread.jump_url)
+                )
             )
 
             logs_channel = guild.get_channel(int(CHANNEL_MODERATION))
-            await logs_channel.send(embed=logs_msg)
+            await logs_channel.send(view=DesignerView(component))
         except Exception:
             obsidian_logger.exception("An error occured during suggestion queue execution:")
 

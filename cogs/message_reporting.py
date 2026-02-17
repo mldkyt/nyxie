@@ -1,17 +1,23 @@
 import discord
 from discord import Bot, Guild, Interaction, Member, Message, TextChannel, VoiceChannel
+from discord.ui import (
+    ActionRow,
+    Button,
+    Container,
+    DesignerView,
+    Separator,
+    TextDisplay,
+    button,
+)
 from sqlalchemy import insert, select
 
-from constants import CHANNEL_MODERATION
+from constants import CHANNEL_MODERATION, VERSION
 from database import engine, reports
 from logger import obsidian_logger
 from util.dm import dm_cache
 
 
-class ReportMessageOptions(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-
+class ReportMessageOptionsActions(ActionRow):
     async def approve_ban_reason(self, interaction: discord.Interaction, logs_id: int):
         try:
             if not isinstance(interaction.guild, Guild):
@@ -35,75 +41,26 @@ class ReportMessageOptions(discord.ui.View):
             if reporter is None:
                 return
 
-            emb = discord.Embed(
-                title="Report Status",
-                description="You reported a message recently. The message has violated the rules of the server and action has been taken against the content. Thank you for keeping the community safe.",
-                color=discord.Color.green(),
-                footer=discord.EmbedFooter(text="obsidian"),
+            component = Container(
+                TextDisplay("# Report Status"),
+                Separator(),
+                TextDisplay(
+                    "You reported a message recently. The message has violated the rules of the server and action has been taken against the content. Thank you for keeping the community safe."
+                ),
+                Separator(),
+                TextDisplay(f"-# obsidian {VERSION}"),
             )
 
             # await reporter.send(embed=emb)
-            dm_cache.add_dm_to_send(reporter.id, emb)
+            dm_cache.add_dm_to_send(reporter.id, DesignerView(component))
         except Exception as e:
             obsidian_logger.exception("An error occurred:")
 
-    async def reject_ban_reason(self, interaction: discord.Interaction, logs_id: int):
-        try:
-            if not isinstance(interaction.guild, Guild):
-                await interaction.respond(
-                    "This is supposed to be only executed inside of guilds",
-                    ephemeral=True,
-                )
-                return
-
-            # existing_data = get_data("reporting/reports")
-            # data = next((i for i in existing_data if i["logs_msg"] == logs_id), None)
-            with engine.begin() as cur:
-                data = cur.execute(
-                    select(reports.c.rid).where(reports.c.lid == str(logs_id))
-                ).fetchone()
-
-            if data is None:
-                return
-
-            reporter = await interaction.guild.fetch_member(data[0])
-            if reporter is None:
-                return
-
-            emb = discord.Embed(
-                title="Report Status",
-                description="You reported a message recently. The message has not violated the rules of the server. Thank you for your concerns, it is better to report suspicious content rather than not reporting it at all.",
-                color=discord.Color.red(),
-                footer=discord.EmbedFooter(text="obsidian"),
-            )
-
-            # await reporter.send(embed=emb)
-            dm_cache.add_dm_to_send(reporter.id, emb)
-        except Exception as e:
-            obsidian_logger.exception("An error occurred:")
-
-    # Buttons to report author of message
-
-    @discord.ui.button(
-        label="Reject", style=discord.ButtonStyle.success, custom_id="reject_report"
-    )
-    async def reject_report(
-        self, button: discord.ui.Button, interaction: discord.Interaction
-    ):
-        if not isinstance(interaction.message, Message):
-            await interaction.respond(
-                "This is supposed to be attached to a message",
-                ephemeral=True,
-            )
-            return
-        await self.reject_ban_reason(interaction, interaction.message.id)
-        await interaction.respond("Rejected!", ephemeral=True)
-
-    @discord.ui.button(
+    @button(
         label="Ban Message Author...",
         style=discord.ButtonStyle.red,
         custom_id="ban_message_author",
-        row=2,
+        id=101,
     )
     async def ban_message_author(self, button, interaction: Interaction):
         try:
@@ -143,7 +100,7 @@ class ReportMessageOptions(discord.ui.View):
         label="Warn Message Author...",
         style=discord.ButtonStyle.red,
         custom_id="warn_message_author",
-        row=2,
+        id=102,
     )
     async def warn_message_author(self, button, interaction: Interaction):
         try:
@@ -184,7 +141,7 @@ class ReportMessageOptions(discord.ui.View):
         label="Kick Message Author",
         style=discord.ButtonStyle.red,
         custom_id="kick_message_author",
-        row=2,
+        id=103,
     )
     async def kick_message_author(self, button, interaction: Interaction):
         try:
@@ -225,7 +182,7 @@ class ReportMessageOptions(discord.ui.View):
         label="Timeout Message Author 24h",
         style=discord.ButtonStyle.red,
         custom_id="timeout_message_author_1",
-        row=2,
+        id=104,
     )
     async def timeout_message_author_24h(self, button, interaction: Interaction):
         try:
@@ -266,7 +223,7 @@ class ReportMessageOptions(discord.ui.View):
         label="Timeout Message Author 7d",
         style=discord.ButtonStyle.red,
         custom_id="timeout_message_author_2",
-        row=2,
+        id=105,
     )
     async def timeout_message_author_7d(self, button, interaction: Interaction):
         try:
@@ -302,6 +259,71 @@ class ReportMessageOptions(discord.ui.View):
             await interaction.respond(
                 "An error occured. Report created successfully.", ephemeral=True
             )
+
+
+class ReportMessageOptionsReject(ActionRow):
+    def __init__(self, msg_jump_url: str):
+        super().__init__()
+
+        self.add_button(
+            label="Jump to message", style=discord.ButtonStyle.link, url=msg_jump_url
+        )
+
+    async def reject_ban_reason(self, interaction: discord.Interaction, logs_id: int):
+        try:
+            if not isinstance(interaction.guild, Guild):
+                await interaction.respond(
+                    "This is supposed to be only executed inside of guilds",
+                    ephemeral=True,
+                )
+                return
+
+            # existing_data = get_data("reporting/reports")
+            # data = next((i for i in existing_data if i["logs_msg"] == logs_id), None)
+            with engine.begin() as cur:
+                data = cur.execute(
+                    select(reports.c.rid).where(reports.c.lid == str(logs_id))
+                ).fetchone()
+
+            if data is None:
+                return
+
+            reporter = await interaction.guild.fetch_member(data[0])
+            if reporter is None:
+                return
+
+            component = Container(
+                TextDisplay("# Report Status"),
+                Separator(),
+                TextDisplay(
+                    "You reported a message recently. The message has not violated the rules of the server. Thank you for your concerns, it is better to report suspicious content rather than not reporting it at all."
+                ),
+                Separator(),
+                TextDisplay(f"-# obsidian {VERSION}"),
+            )
+
+            # await reporter.send(embed=emb)
+            dm_cache.add_dm_to_send(reporter.id, DesignerView(component))
+        except Exception:
+            obsidian_logger.exception("An error occurred:")
+
+    # Buttons to report author of message
+
+    @button(
+        label="Reject",
+        style=discord.ButtonStyle.success,
+        custom_id="reject_report",
+        id=100,
+    )
+    async def reject_report(self, button: Button, interaction: discord.Interaction):
+        if not isinstance(interaction.message, Message):
+            await interaction.respond(
+                "This is supposed to be attached to a message",
+                ephemeral=True,
+            )
+            return
+        await self.reject_ban_reason(interaction, interaction.message.id)
+        await interaction.respond("Rejected!", ephemeral=True)
 
 
 class EnterReportDetailsDialog(discord.ui.Modal):
@@ -371,33 +393,24 @@ class EnterReportDetailsDialog(discord.ui.Modal):
             )
             return
 
-        # Create logs embed
+        # Create logs component
 
-        emb = discord.Embed(
-            title="New Message Report!",
-            color=discord.Color.red(),
-            description=f"A message was reported by {interaction.user.mention} that reports user <@{self.author_id=}>.",
-            fields=[
-                discord.EmbedField(
-                    name="Message",
-                    value=f"[jump]({target_message.jump_url})",
-                    inline=True,
-                ),
-                discord.EmbedField(
-                    name="Reason", value=self.report_reason_field.value, inline=True
-                ),
-                discord.EmbedField(
-                    name="Message Author", value=f"<@{self.author_id=}>", inline=True
-                ),
-                discord.EmbedField(
-                    name="Report Author", value=interaction.user.mention, inline=True
-                ),
-            ],
+        component = Container(
+            TextDisplay("# New Message Report!"),
+            Separator(),
+            TextDisplay(f"""A message by <@{self.author_id}> was reported by {interaction.user.mention} fo {self.report_reason_field.value}
+
+**Reason**: {self.report_reason_field.value}
+**Author**: <@{self.author_id}>
+**Report Author**: {interaction.user.mention}"""),
+            Separator(),
+            ReportMessageOptionsActions(),
+            ReportMessageOptionsReject(msg_jump_url=target_message.jump_url),
         )
 
         # Send to logs
 
-        logs_msg = await logs_channel.send(embed=emb, view=ReportMessageOptions())
+        logs_msg = await logs_channel.send(view=DesignerView(component))
 
         # Save data about this message
 
@@ -427,7 +440,13 @@ class MessageReporting(discord.Cog):
 
     @discord.Cog.listener()
     async def on_ready(self):
-        self.bot.add_view(ReportMessageOptions())
+        # TODO: rewrite this
+        self.bot.add_view(
+            DesignerView(
+                ReportMessageOptionsActions(),
+                ReportMessageOptionsReject("https://example.com"),
+            )
+        )
 
     @discord.message_command(
         name="Report Message", description="Report this message to the moderators."

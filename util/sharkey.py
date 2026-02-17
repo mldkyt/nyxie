@@ -55,6 +55,7 @@ class SharkeyCache:
                 json={"userId": FEDI_YURIBOT_ID, "limit": 100, "withFiles": True},
             ) as req:
                 if not req.ok:
+                    obsidian_logger.warning("Failed to fetch yuri :( Status %d %s", req.status, await req.text())
                     return
 
                 self.latest_yuribot_posts = await req.json()

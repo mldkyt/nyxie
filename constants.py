@@ -17,7 +17,6 @@ OWNER = os.getenv("OWNER")
 ROLE_VIDEOS = os.getenv("ROLE_NOTIF_VIDEOS")
 ROLE_TIKTOK = os.getenv("ROLE_NOTIF_TIKTOK")
 ROLE_FEDI = os.getenv("ROLE_NOTIF_FEDI")
-ROLE_NSFW = os.getenv("ROLE_NSFW")
 
 CHANNEL_GENERAL = os.getenv("CHANNEL_GENERAL")
 CHANNEL_MEMES = os.getenv("CHANNEL_MEMES")
@@ -61,11 +60,14 @@ def validate_values(l: dict[str, str | None]):
     if DEV_MODE != "0":
         for i in range(3):
             obsidian_logger.warning(
-                "DEVELOPMENT MODE!!! STOP AND REMOVE DEV_MODE FROM ENV IF NOT A DEVELOPMENT ENVIRONMENT")
+                "DEVELOPMENT MODE!!! STOP AND REMOVE DEV_MODE FROM ENV IF NOT A DEVELOPMENT ENVIRONMENT"
+            )
 
     for k, v in l.items():
         if v is None:
-            obsidian_logger.warning(f"CONSTANTS: The constant value for {k} is NOT set!")
+            obsidian_logger.warning(
+                f"CONSTANTS: The constant value for {k} is NOT set!"
+            )
 
 
 validate_values(
@@ -76,7 +78,6 @@ validate_values(
         "ROLE_VIDEOS": ROLE_VIDEOS,
         "ROLE_TIKTOK": ROLE_TIKTOK,
         "ROLE_FEDI": ROLE_FEDI,
-        "ROLE_NSFW": ROLE_NSFW,
         "CHANNEL_GENERAL": CHANNEL_GENERAL,
         "CHANNEL_MEMES": CHANNEL_MEMES,
         "CHANNEL_MEDIA": CHANNEL_MEDIA,
@@ -93,6 +94,8 @@ validate_values(
         "FEDI_INSTANCE": FEDI_INSTANCE,
         "FEDI_USER_ID": FEDI_USER_ID,
         "FEDI_TOKEN": FEDI_TOKEN,
+        "FEDI_YURIBOT_ID": FEDI_YURIBOT_ID,
+        "FEDI_YAOIBOT_ID": FEDI_YAOIBOT_ID,
         "FORGEJO_INSTANCE": FORGEJO_INSTANCE,
         "FORGEJO_DEFAULT_USER": FORGEJO_DEFAULT_USER,
         "FORGEJO_TOKEN": FORGEJO_TOKEN,

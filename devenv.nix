@@ -9,12 +9,13 @@
   packages = [
     pkgs.python3
     pkgs.zed-editor
+    pkgs.ruff #awruff
   ];
 
   # https://devenv.sh/languages/
   languages.python = {
     enable = true;
-    version = "3.10";
+    version = "3.12";
     uv = {
       enable = true;
       sync.enable = true;

@@ -17,18 +17,29 @@ import pytz
 import yt_dlp.version
 from dateutil.parser import isoparse
 from deepl import Language
-from discord import Bot, Message, ButtonStyle, Interaction, InteractionType
+from discord import Bot, ButtonStyle, Interaction, InteractionType, Message
 from discord.ext import commands, tasks
 from discord.ext.commands import BucketType, cooldown
-from discord.ui import MediaGallery, Separator, Container, Section, Button, DesignerView, TextDisplay
+from discord.ui import (
+    Button,
+    Container,
+    DesignerView,
+    MediaGallery,
+    Section,
+    Separator,
+    TextDisplay,
+    Thumbnail,
+)
 
 from constants import (
     CHANNEL_MEMES,
     CHANNEL_MODERATION,
     DEEPL_API_KEY,
+    FEDI_INSTANCE,
+    FEDI_TOKEN,
     GUILD,
     OWNER,
-    VERSION, FEDI_INSTANCE, FEDI_TOKEN,
+    VERSION,
 )
 from logger import obsidian_logger
 from util.keysmash_generator import keysmash_ai
@@ -416,29 +427,41 @@ def generate_user_embed(resp_body):
     host = FEDI_INSTANCE if resp_body["host"] is None else resp_body["host"]
     desc = resp_body["description"][:1500]
     if desc != resp_body["description"]:
-        desc = desc + '...'
+        desc = desc + "..."
 
     emb = discord.Embed(
         title=f"{resp_body['name']} (@{resp_body['username']}@{host})",
         description=desc,
         thumbnail=resp_body["avatarUrl"],
         fields=[
-            discord.EmbedField(name="Notes", value=resp_body["notesCount"], inline=True),
-            discord.EmbedField(name="Followers", value=resp_body["followersCount"], inline=True),
-            discord.EmbedField(name="Following", value=resp_body["followingCount"], inline=True)
+            discord.EmbedField(
+                name="Notes", value=resp_body["notesCount"], inline=True
+            ),
+            discord.EmbedField(
+                name="Followers", value=resp_body["followersCount"], inline=True
+            ),
+            discord.EmbedField(
+                name="Following", value=resp_body["followingCount"], inline=True
+            ),
         ],
-        url=f'https://{FEDI_INSTANCE}/@{resp_body["username"]}@{host}',
-        color=discord.Color.from_rgb(255, 119, 255)
+        url=f"https://{FEDI_INSTANCE}/@{resp_body['username']}@{host}",
+        color=discord.Color.from_rgb(255, 119, 255),
     )
 
     if resp_body["host"] is not None:
-        emb.set_footer(text="The information may not be accurate as it comes from a remote instance.")
+        emb.set_footer(
+            text="The information may not be accurate as it comes from a remote instance."
+        )
 
     return emb
 
 
-async def lookup_user(user_name: str, user_inst: str | None, disable_pinned: bool = False, pinned_count: int = 3) -> \
-        list[discord.Embed] | None:
+async def lookup_user(
+    user_name: str,
+    user_inst: str | None,
+    disable_pinned: bool = False,
+    pinned_count: int = 3,
+) -> list[discord.Embed] | None:
     async with aiohttp.ClientSession() as session:
         body = {
             "username": user_name,
@@ -447,7 +470,9 @@ async def lookup_user(user_name: str, user_inst: str | None, disable_pinned: boo
         if user_inst is not None:
             body["host"] = user_inst
 
-        async with session.post(f"https://{FEDI_INSTANCE}/api/users/show", json=body) as resp:
+        async with session.post(
+            f"https://{FEDI_INSTANCE}/api/users/show", json=body
+        ) as resp:
             if resp.status != 200:
                 return None
 
@@ -471,41 +496,44 @@ async def lookup_user(user_name: str, user_inst: str | None, disable_pinned: boo
 
 
 def generate_note_embed(note, pinned=False):
-    image_url = note["files"][0]["url"] if len(note["files"]) > 0 and note[
-        'cw'] is None else None
+    image_url = (
+        note["files"][0]["url"]
+        if len(note["files"]) > 0 and note["cw"] is None
+        else None
+    )
 
     reaction_string = ""
 
     if note["repliesCount"] > 0:
-        reaction_string = f'{note["repliesCount"]} replies | '
+        reaction_string = f"{note['repliesCount']} replies | "
 
-    if note['renoteCount'] > 0:
-        reaction_string = f'{note["renoteCount"]} renotes | '
+    if note["renoteCount"] > 0:
+        reaction_string = f"{note['renoteCount']} renotes | "
 
     for k, v in note["reactions"].items():
         if len(k.split("@")) > 1:
-            k = f'{k.split("@")[0]}:'
+            k = f"{k.split('@')[0]}:"
 
-        reaction_string += f'{v}x {k} | '
+        reaction_string += f"{v}x {k} | "
 
     reaction_string = reaction_string[:-3]
 
-    host = FEDI_INSTANCE if note['user']['host'] is None else note['user']['host']
+    host = FEDI_INSTANCE if note["user"]["host"] is None else note["user"]["host"]
 
     pinned_post = "Pinned note by " if pinned else ""
 
-    desc = note["text"] if note["cw"] is None else f'CW: {note["cw"]}\n\n'
+    desc = note["text"] if note["cw"] is None else f"CW: {note['cw']}\n\n"
 
-    if note['cw'] is not None:
-        if len(note['files']) > 0 and len(note['text']) > 0:
+    if note["cw"] is not None:
+        if len(note["files"]) > 0 and len(note["text"]) > 0:
             desc += "(Open the link in order to view the text and media)"
-        elif len(note['files']) > 0 and len(note['text']) == 0:
+        elif len(note["files"]) > 0 and len(note["text"]) == 0:
             desc += "(Open the link in order to view the media)"
         else:
             desc += "(Open the link in order to view the text)"
 
-    if 'poll' in note and note['poll'] is not None and note['cw'] is None:
-        desc += get_poll_str(note['poll'])
+    if "poll" in note and note["poll"] is not None and note["cw"] is None:
+        desc += get_poll_str(note["poll"])
 
     emb = discord.Embed(
         title=f"{'Pinned ' if pinned else ''}Note by {note['user']['name']} (@{note['user']['username']}@{host})",
@@ -515,22 +543,24 @@ def generate_note_embed(note, pinned=False):
         author=discord.EmbedAuthor(
             name=f"{pinned_post}{note['user']['name']} (@{note['user']['username']}@{host})",
             icon_url=note["user"]["avatarUrl"],
-            url=f'https://{FEDI_INSTANCE}/@{note["user"]["username"]}@{host}'
+            url=f"https://{FEDI_INSTANCE}/@{note['user']['username']}@{host}",
         ),
         color=discord.Color.from_rgb(255, 119, 255),
-        footer=discord.EmbedFooter(
-            text=reaction_string
-        ) if len(reaction_string) > 0 else None
+        footer=discord.EmbedFooter(text=reaction_string)
+        if len(reaction_string) > 0
+        else None,
     )
 
     return emb
 
 
-async def lookup_note_id(note_id: str, pinned: bool = False) -> list[discord.Embed] | None:
+async def lookup_note_id(
+    note_id: str, pinned: bool = False
+) -> list[discord.Embed] | None:
     async with aiohttp.ClientSession() as session:
-        async with session.post(f"https://{FEDI_INSTANCE}/api/notes/show", json={
-            "noteId": note_id
-        }) as resp:
+        async with session.post(
+            f"https://{FEDI_INSTANCE}/api/notes/show", json={"noteId": note_id}
+        ) as resp:
             if resp.status != 200:
                 return None
 
@@ -546,9 +576,9 @@ async def get_posts_under_hashtags(lookup_str) -> list[discord.Embed] | None:
     embeds = []
 
     async with aiohttp.ClientSession() as session:
-        async with session.post(f"https://{FEDI_INSTANCE}/api/hashtags/show", json={
-            'tag': lookup_str[1:]
-        }) as resp:
+        async with session.post(
+            f"https://{FEDI_INSTANCE}/api/hashtags/show", json={"tag": lookup_str[1:]}
+        ) as resp:
             if resp.status != 200:
                 return None
 
@@ -558,17 +588,21 @@ async def get_posts_under_hashtags(lookup_str) -> list[discord.Embed] | None:
                 discord.Embed(
                     title=f"Hashtag: {lookup_str}",
                     fields=[
-                        discord.EmbedField(name="Posts", value=str(body['attachedUsersCount'])),
-                        discord.EmbedField(name="User Mentions", value=str(body['mentionedUsersCount']))
+                        discord.EmbedField(
+                            name="Posts", value=str(body["attachedUsersCount"])
+                        ),
+                        discord.EmbedField(
+                            name="User Mentions", value=str(body["mentionedUsersCount"])
+                        ),
                     ],
-                    color=discord.Color.from_rgb(255, 119, 255)
+                    color=discord.Color.from_rgb(255, 119, 255),
                 )
             )
 
-        async with session.post(f"https://{FEDI_INSTANCE}/api/notes/search-by-tag", json={
-            'limit': 10,
-            'tag': lookup_str[1:]
-        }) as resp:
+        async with session.post(
+            f"https://{FEDI_INSTANCE}/api/notes/search-by-tag",
+            json={"limit": 10, "tag": lookup_str[1:]},
+        ) as resp:
             if resp.status != 200:
                 return None
 
@@ -580,16 +614,26 @@ async def get_posts_under_hashtags(lookup_str) -> list[discord.Embed] | None:
     return embeds
 
 
-async def lookup_by_str(lookup_str: str, disable_pinned: bool = False, pinned_count: int = 3) -> list[
-                                                                                                     discord.Embed] | None:
+async def lookup_by_str(
+    lookup_str: str, disable_pinned: bool = False, pinned_count: int = 3
+) -> list[discord.Embed] | None:
     user_mention = lookup_str.split("@")
     if len(user_mention) == 2:
         # Local user lookup
-        return await lookup_user(user_mention[1], None, disable_pinned=disable_pinned, pinned_count=pinned_count)
+        return await lookup_user(
+            user_mention[1],
+            None,
+            disable_pinned=disable_pinned,
+            pinned_count=pinned_count,
+        )
     elif len(user_mention) == 3:
         # Remote user lookup
-        return await lookup_user(user_mention[1], user_mention[2], disable_pinned=disable_pinned,
-                                 pinned_count=pinned_count)
+        return await lookup_user(
+            user_mention[1],
+            user_mention[2],
+            disable_pinned=disable_pinned,
+            pinned_count=pinned_count,
+        )
 
     # Check hashtag
     if re.match(r"#[a-zA-Z0-9]+", lookup_str):
@@ -604,9 +648,9 @@ def get_poll_str(poll: dict | None) -> str:
         return ""
 
     message = "\n\n**[Poll]**\n"
-    counts = sum([i['votes'] for i in poll['choices']])
+    counts = sum([i["votes"] for i in poll["choices"]])
 
-    for i in poll['choices']:
+    for i in poll["choices"]:
         if counts == 0:
             message += f"**{i['text']}** - {i['votes']} votes\n"
         else:
@@ -614,33 +658,36 @@ def get_poll_str(poll: dict | None) -> str:
 
     message += "\n"
 
-    if poll['multiple']:
+    if poll["multiple"]:
         message += "**Multiple Choices** - "
 
-    expires_at = isoparse(poll['expiresAt'])
+    expires_at = isoparse(poll["expiresAt"])
     message += f"**Expires at {expires_at.strftime('%Y/%m/%d %H:%M:%S %Z')}**\n"
 
     return message.rstrip()
 
 
-async def search(query: str, content_type: str, media_type: str, count: int) -> tuple[list[discord.Embed], int] | None:
+async def search(
+    query: str, content_type: str, media_type: str, count: int
+) -> tuple[list[discord.Embed], int] | None:
     start_time = time.time()
     async with aiohttp.ClientSession() as session:
-        if content_type == 'notes':
+        if content_type == "notes":
             return await search_notes(query, media_type, session, start_time, count)
-        elif content_type == 'users':
+        elif content_type == "users":
             return await search_users(query, session, start_time, count)
 
-        raise ValueError(f"content_type is out of range: {content_type} is not a valid value")
+        raise ValueError(
+            f"content_type is out of range: {content_type} is not a valid value"
+        )
 
 
 async def search_users(query, session, start_time, count):
-    async with session.post(f"https://{FEDI_INSTANCE}/api/users/search", json={
-        'limit': 10,
-        'query': query
-    }, headers={
-        'Authorization': f'Bearer {FEDI_TOKEN}'
-    }) as resp:
+    async with session.post(
+        f"https://{FEDI_INSTANCE}/api/users/search",
+        json={"limit": 10, "query": query},
+        headers={"Authorization": f"Bearer {FEDI_TOKEN}"},
+    ) as resp:
         if resp.status != 200:
             text = await resp.text()
             obsidian_logger.warning("API returned %s: %s", str(resp.status), text)
@@ -667,17 +714,16 @@ async def search_users(query, session, start_time, count):
 
 
 async def search_notes(query, media_type, session, start_time, count):
-    body = {
-        "query": query,
-        "limit": 10
-    }
+    body = {"query": query, "limit": 10}
 
     if media_type != "all" and media_type in ["image", "video"]:
         body["filetype"] = media_type
 
-    async with session.post(f"https://{FEDI_INSTANCE}/api/notes/search", json=body, headers={
-        'Authorization': f'Bearer {FEDI_TOKEN}'
-    }) as resp:
+    async with session.post(
+        f"https://{FEDI_INSTANCE}/api/notes/search",
+        json=body,
+        headers={"Authorization": f"Bearer {FEDI_TOKEN}"},
+    ) as resp:
         if resp.status != 200:
             text = await resp.text()
             obsidian_logger.warning("API returned %s: %s", str(resp.status), text)
@@ -745,7 +791,10 @@ class UserCommands(discord.Cog):
 
     @discord.Cog.listener()
     async def on_interaction(self, interaction: Interaction):
-        if interaction.custom_id == "more_yuri_pwease_uwu" and interaction.type == InteractionType.component:
+        if (
+            interaction.custom_id == "more_yuri_pwease_uwu"
+            and interaction.type == InteractionType.component
+        ):
             items = os.listdir("rom/yuri")
             item = random.choice(items)
 
@@ -758,15 +807,21 @@ class UserCommands(discord.Cog):
             container.add_item(gallery)
             container.add_item(Separator())
             container.add_item(
-                Section(TextDisplay(
-                    f"yuri image {index + 1} out of {len(items)} | [browse](https://f.lunya.pet/~lunya/girls,,,)"),
-                    accessory=Button(label="more yuri :3", style=ButtonStyle.primary,
-                                     custom_id="more_yuri_pwease_uwu"))
+                Section(
+                    TextDisplay(
+                        f"yuri image {index + 1} out of {len(items)} | [browse](https://f.lunya.pet/~lunya/girls,,,)"
+                    ),
+                    accessory=Button(
+                        label="more yuri :3",
+                        style=ButtonStyle.primary,
+                        custom_id="more_yuri_pwease_uwu",
+                    ),
+                )
             )
 
             await interaction.respond(
                 view=DesignerView(container),
-                files=[discord.File(f"rom/yuri/{item}", filename="yuri.jpg")]
+                files=[discord.File(f"rom/yuri/{item}", filename="yuri.jpg")],
             )
 
     user_commands = discord.SlashCommandGroup(
@@ -969,21 +1024,36 @@ class UserCommands(discord.Cog):
                 "An error occurred while executing the command.", ephemeral=True
             )
 
-    fedi_group = discord.SlashCommandGroup(name="fedi", description="Fedi commands",
-                                           integration_types=[discord.IntegrationType.user_install])
+    fedi_group = discord.SlashCommandGroup(
+        name="fedi",
+        description="Fedi commands",
+        integration_types=[discord.IntegrationType.user_install],
+    )
 
-    @fedi_group.command(name="lookup", description="Lookup fedi user/post",
-                        integration_types=[discord.IntegrationType.user_install])
-    async def lookup_post(self, ctx: discord.ApplicationContext, lookup_str: str, disable_pinned: bool = False,
-                          pinned_count: int = 3):
+    @fedi_group.command(
+        name="lookup",
+        description="Lookup fedi user/post",
+        integration_types=[discord.IntegrationType.user_install],
+    )
+    async def lookup_post(
+        self,
+        ctx: discord.ApplicationContext,
+        lookup_str: str,
+        disable_pinned: bool = False,
+        pinned_count: int = 3,
+    ):
         try:
             # Verify right user
             if ctx.user.id != int(OWNER):
-                await ctx.respond("You are not authorized to use this command!", ephemeral=True)
+                await ctx.respond(
+                    "You are not authorized to use this command!", ephemeral=True
+                )
                 return
 
             # Let's attempt generate embed based on lookup function
-            emb = await lookup_by_str(lookup_str, disable_pinned=disable_pinned, pinned_count=pinned_count)
+            emb = await lookup_by_str(
+                lookup_str, disable_pinned=disable_pinned, pinned_count=pinned_count
+            )
 
             if emb is None:
                 await ctx.respond("Failed to lookup!", ephemeral=True)
@@ -994,17 +1064,28 @@ class UserCommands(discord.Cog):
             obsidian_logger.exception("An error occurred:")
             await ctx.respond("Error when looking up!", ephemeral=True)
 
-    @fedi_group.command(name="search", description="Search on fedi",
-                        integration_types=[discord.IntegrationType.user_install])
+    @fedi_group.command(
+        name="search",
+        description="Search on fedi",
+        integration_types=[discord.IntegrationType.user_install],
+    )
     @discord.option(name="media_type", choices=["image", "video"])
     @discord.option(name="content_type", choices=["notes", "users"])
     @discord.option(name="count", min=1, max=10)
-    async def search(self, ctx: discord.ApplicationContext, q: str, content_type: str = 'notes',
-                     media_type: str = 'all', count: int = 3):
+    async def search(
+        self,
+        ctx: discord.ApplicationContext,
+        q: str,
+        content_type: str = "notes",
+        media_type: str = "all",
+        count: int = 3,
+    ):
         try:
             # Verify right user
             if ctx.user.id != int(OWNER):
-                await ctx.respond("You are not authorized to use this command!", ephemeral=True)
+                await ctx.respond(
+                    "You are not authorized to use this command!", ephemeral=True
+                )
                 return
 
             await ctx.defer()
@@ -1016,49 +1097,71 @@ class UserCommands(discord.Cog):
                 await ctx.followup.send("Error! No result")
                 return
 
-            await ctx.followup.send(embeds=emb[0], content=f"Searched 3,089,841+ notes within {emb[1]} ms")
+            await ctx.followup.send(
+                embeds=emb[0], content=f"Searching notes finished within {emb[1]} ms"
+            )
         except Exception as e:
             obsidian_logger.exception("An error occurred:")
             await ctx.followup.send(f"Error! Server error: {e=}")
 
-    @fedi_group.command(name="note", description="Create a note on fedi",
-                        integration_types=[discord.IntegrationType.user_install])
+    @fedi_group.command(
+        name="note",
+        description="Create a note on fedi",
+        integration_types=[discord.IntegrationType.user_install],
+    )
     @discord.option(name="visibility", choices=["public", "home", "followers"])
-    async def note(self, ctx: discord.ApplicationContext, text: str, cw: str = "", visibility: str = "public",
-                   public_response: bool = False):
+    async def note(
+        self,
+        ctx: discord.ApplicationContext,
+        text: str,
+        cw: str = "",
+        visibility: str = "public",
+        public_response: bool = False,
+    ):
         try:
             # Try create a note
-            data = {'text': text, 'visibility': visibility}
+            data = {"text": text, "visibility": visibility}
             if len(cw.strip()) > 0:
-                data['cw'] = cw.strip()
+                data["cw"] = cw.strip()
 
             async with aiohttp.ClientSession() as session:
-                async with session.post(f"https://{FEDI_INSTANCE}/api/notes/create", json=data, headers={
-                    'Authorization': f'Bearer {FEDI_TOKEN}'
-                }) as resp:
+                async with session.post(
+                    f"https://{FEDI_INSTANCE}/api/notes/create",
+                    json=data,
+                    headers={"Authorization": f"Bearer {FEDI_TOKEN}"},
+                ) as resp:
                     if resp.status != 200:
-                        await ctx.respond("Non-OK response from server!", ephemeral=True)
+                        await ctx.respond(
+                            "Non-OK response from server!", ephemeral=True
+                        )
                         text = await resp.text()
 
-                        obsidian_logger.warning(f"Non-OK response {resp.status} from server: {text}")
+                        obsidian_logger.warning(
+                            f"Non-OK response {resp.status} from server: {text}"
+                        )
                         return
 
                     data = await resp.json()
 
-                    await ctx.respond(f"Note created! https://{FEDI_INSTANCE}/notes/{data['createdNote']['id']}",
-                                      ephemeral=not public_response)
+                    await ctx.respond(
+                        f"Note created! https://{FEDI_INSTANCE}/notes/{data['createdNote']['id']}",
+                        ephemeral=not public_response,
+                    )
         except Exception as e:
             obsidian_logger.exception("An error occurred:")
             await ctx.respond("Failed to create note!", ephemeral=True)
 
-    @discord.message_command(name="post this on fedi", integration_types=[discord.IntegrationType.user_install])
+    @discord.message_command(
+        name="post this on fedi",
+        integration_types=[discord.IntegrationType.user_install],
+    )
     @cooldown(1, 10, BucketType.default)
     async def note_message(self, ctx: discord.ApplicationContext, message: Message):
         try:
             owner = self.bot.get_user(int(OWNER))
             await ctx.respond("posting to fedi. see dms for activity", ephemeral=True)
 
-            data: dict[str, Any] = {'text': message.content, 'visibility': "public"}
+            data: dict[str, Any] = {"text": message.content, "visibility": "public"}
 
             if not os.path.exists("temp"):
                 os.mkdir("temp")
@@ -1076,57 +1179,79 @@ class UserCommands(discord.Cog):
 
             async def put_file(file_name: str):
                 async with aiohttp.ClientSession() as sess:
-                    async with sess.post(f"https://{FEDI_INSTANCE}/api/drive/files/create",
-                                         data={'file': open(f"temp/{file_name}", "rb"), 'name': file_name},
-                                         headers={'Authorization': f'Bearer {FEDI_TOKEN}'}) as req:
+                    async with sess.post(
+                        f"https://{FEDI_INSTANCE}/api/drive/files/create",
+                        data={
+                            "file": open(f"temp/{file_name}", "rb"),
+                            "name": file_name,
+                        },
+                        headers={"Authorization": f"Bearer {FEDI_TOKEN}"},
+                    ) as req:
                         if req.ok:
                             a = await req.json()
                             files.append(a)
                         else:
                             txt = await req.text()
-                            obsidian_logger.warning("Failed to upload file: Response code %s: %s", str(req.status), txt)
+                            obsidian_logger.warning(
+                                "Failed to upload file: Response code %s: %s",
+                                str(req.status),
+                                txt,
+                            )
 
             await asyncio.gather(*[put_file(i.filename) for i in message.attachments])
 
             if len(files) > 0:
-                data['fileIds'] = [i['id'] for i in files]
+                data["fileIds"] = [i["id"] for i in files]
                 for i in files:
                     try:
                         await owner.send(f"Alt text for {i['name']} ({i['url']}):")
-                        resp = await self.bot.wait_for('message', check=lambda msg: msg.author == owner)
+                        resp = await self.bot.wait_for(
+                            "message", check=lambda msg: msg.author == owner
+                        )
 
                         # Update alt text
                         async with aiohttp.ClientSession() as sess:
-                            async with sess.post(f"https://{FEDI_INSTANCE}/api/drive/files/update",
-                                                headers={'Authorization': f'Bearer {FEDI_TOKEN}'},
-                                                json={
-                                                    "fileId": i['id'],
-                                                    "comment": resp.content
-                                                }) as req:
+                            async with sess.post(
+                                f"https://{FEDI_INSTANCE}/api/drive/files/update",
+                                headers={"Authorization": f"Bearer {FEDI_TOKEN}"},
+                                json={"fileId": i["id"], "comment": resp.content},
+                            ) as req:
                                 if req.ok:
                                     a = await req.json()
                                 else:
                                     txt = await req.text()
-                                    await owner.send(f"Failed to update comment for {i['name']}: {txt}")
+                                    await owner.send(
+                                        f"Failed to update comment for {i['name']}: {txt}"
+                                    )
 
-                        await resp.reply(f"added comment to {i['name']} file successfully")
+                        await resp.reply(
+                            f"added comment to {i['name']} file successfully"
+                        )
                     except Exception:
                         await owner.send(f"Failed to update comment for {i['name']}")
 
             async with aiohttp.ClientSession() as session:
-                async with session.post(f"https://{FEDI_INSTANCE}/api/notes/create", json=data, headers={
-                    'Authorization': f'Bearer {FEDI_TOKEN}'
-                }) as resp:
+                async with session.post(
+                    f"https://{FEDI_INSTANCE}/api/notes/create",
+                    json=data,
+                    headers={"Authorization": f"Bearer {FEDI_TOKEN}"},
+                ) as resp:
                     if resp.status != 200:
-                        await ctx.respond("Non-OK response from server!", ephemeral=True)
+                        await ctx.respond(
+                            "Non-OK response from server!", ephemeral=True
+                        )
                         text = await resp.text()
 
-                        obsidian_logger.warning(f"Non-OK response {resp.status} from server: {text}")
+                        obsidian_logger.warning(
+                            f"Non-OK response {resp.status} from server: {text}"
+                        )
                         return
 
                     data = await resp.json()
 
-                    await owner.send(f"post stolen\nhttps://{FEDI_INSTANCE}/notes/{data['createdNote']['id']}")
+                    await owner.send(
+                        f"post stolen\nhttps://{FEDI_INSTANCE}/notes/{data['createdNote']['id']}"
+                    )
 
             for i in message.attachments:
                 os.unlink(f"temp/{i.filename}")
@@ -1163,18 +1288,20 @@ class UserCommands(discord.Cog):
 
             logs_channel = guild.get_channel(int(CHANNEL_MODERATION))
 
-            b = logs_channel.send(
-                embed=discord.Embed(
-                    title="Member Banned Externally",
-                    description=f"The member {user.mention} was banned here because Lunya issued a ban command from a different server.",
-                    fields=[
-                        discord.EmbedField(
-                            name="Banned Member", value=user.mention, inline=True
-                        ),
-                        discord.EmbedField(name="Reason", value=reason, inline=True),
-                    ],
-                )
+            component = Container(
+                TextDisplay("# Member Banned"),
+                Separator(),
+                TextDisplay(
+                    "A member was banned externally using the user command by Lunya."
+                ),
+                Section(
+                    TextDisplay("**User**: "),
+                    TextDisplay(user.display_name),
+                    accessory=Thumbnail(user.display_avatar.url),
+                ),
             )
+
+            b = logs_channel.send(view=DesignerView(component))
 
             c = ctx.respond("Member was banned successfully!", ephemeral=True)
 
@@ -1319,15 +1446,21 @@ class UserCommands(discord.Cog):
             container.add_item(gallery)
             container.add_item(Separator())
             container.add_item(
-                Section(TextDisplay(
-                    f"yuri image {index + 1} out of {len(items)} | [browse](https://f.lunya.pet/~lunya/girls,,,)"),
-                        accessory=Button(label="more yuri :3", style=ButtonStyle.primary,
-                                         custom_id="more_yuri_pwease_uwu"))
+                Section(
+                    TextDisplay(
+                        f"yuri image {index + 1} out of {len(items)} | [browse](https://f.lunya.pet/~lunya/girls,,,)"
+                    ),
+                    accessory=Button(
+                        label="more yuri :3",
+                        style=ButtonStyle.primary,
+                        custom_id="more_yuri_pwease_uwu",
+                    ),
+                )
             )
 
             await ctx.respond(
                 view=DesignerView(container),
-                files=[discord.File(f"rom/yuri/{item}", filename="yuri.jpg")]
+                files=[discord.File(f"rom/yuri/{item}", filename="yuri.jpg")],
             )
         except Exception as e:
             obsidian_logger.exception(

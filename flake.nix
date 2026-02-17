@@ -41,6 +41,13 @@
             typing-extensions
             urllib3
             yarl
+            blurhash
+            decorator
+            mastodon-py
+            python-magic
+            soupsieve
+            beautifulsoup4
+            markdownify
             (pkgs.python312Packages.buildPythonPackage {
               pname = "py-cord";
               version = "2.7.1";

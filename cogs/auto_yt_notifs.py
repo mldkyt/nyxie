@@ -1,11 +1,21 @@
 import asyncio
 import os
+from math import floor
 
 import aiohttp
 import discord
 import yt_dlp
-from discord import Bot
+from discord import Bot, ButtonStyle, MediaGalleryItem
 from discord.ext import tasks
+from discord.ui import (
+    ActionRow,
+    Button,
+    Container,
+    DesignerView,
+    MediaGallery,
+    Separator,
+    TextDisplay,
+)
 from sqlalchemy import delete, insert, select
 
 from constants import (
@@ -13,6 +23,7 @@ from constants import (
     FEDI_INSTANCE,
     FEDI_TOKEN,
     ROLE_VIDEOS,
+    VERSION,
     YT_LINK,
 )
 from database import engine, yt_notifications_ids
@@ -45,6 +56,15 @@ async def get_all_latest_post_info():
     except Exception:
         obsidian_logger.exception("An error occurred:")
         return []
+
+
+def format_views(views: int):
+    if views > 1_000_000:
+        return f"{floor(views / 1_000_000)}M views"
+    elif views > 1_000:
+        return f"{floor(views / 1_000)}k views"
+    else:
+        return f"{views} views"
 
 
 class AutoYouTubeNotifications(discord.Cog):
@@ -92,25 +112,24 @@ class AutoYouTubeNotifications(discord.Cog):
                     if i["id"] in existing_posts:
                         continue
 
-                    emb = discord.Embed(
-                        title=i["title"],
-                        description=i["description"],
-                        color=discord.Color.red(),
-                        url=f"https://youtube.com/watch?v={i['id']}",
-                        image=i["thumbnail"],
-                        fields=[
-                            discord.EmbedField(
-                                name="Views", value=i["view_count"], inline=True
+                    component = Container(
+                        TextDisplay("# New YouTube Video!"),
+                        Separator(),
+                        MediaGallery(MediaGalleryItem(i["thumbnail"])),
+                        TextDisplay(f"## {i['title']}"),
+                        TextDisplay(f"{format_views(i['view_count'])}"),
+                        Separator(),
+                        ActionRow(
+                            Button(
+                                label="Watch on YouTube",
+                                style=ButtonStyle.url,
+                                url=f"https://youtube.com/watch?v={i['id']}",
                             )
-                        ],
+                        ),
+                        TextDisplay(f"-# obsidian {VERSION} || <@&{ROLE_VIDEOS}>"),
                     )
 
-                    asyncio.get_event_loop().create_task(
-                        channel.send(
-                            f"<@&{ROLE_VIDEOS}> Lunya posted a new video~!\nClick the title of the embed or click this link~ https://youtube.com/watch?v={i['id']}",
-                            embed=emb,
-                        )
-                    )
+                    await channel.send(view=DesignerView(component))
 
                     async with aiohttp.ClientSession() as session:
                         async with session.post(
@@ -133,20 +152,26 @@ class AutoYouTubeNotifications(discord.Cog):
                 for i in posts:
                     if i["id"] in msg.content:
                         # Update the embed
-                        emb = discord.Embed(
-                            title=i["title"],
-                            description=i["description"],
-                            color=discord.Color.red(),
-                            url=f"https://youtube.com/watch?v={i['id']}",
-                            image=i["thumbnail"],
-                            fields=[
-                                discord.EmbedField(
-                                    name="Views", value=i["view_count"], inline=True
+                        component = Container(
+                            TextDisplay("# New YouTube Video!"),
+                            Separator(),
+                            MediaGallery(MediaGalleryItem(i["thumbnail"])),
+                            TextDisplay(f"## {i['title']}"),
+                            TextDisplay(f"{format_views(i['view_count'])}"),
+                            Separator(),
+                            ActionRow(
+                                Button(
+                                    label="Watch on YouTube",
+                                    style=ButtonStyle.url,
+                                    url=f"https://youtube.com/watch?v={i['id']}",
                                 )
-                            ],
+                            ),
+                            TextDisplay(f"-# obsidian {VERSION} || <@&{ROLE_VIDEOS}>"),
                         )
 
-                        asyncio.get_event_loop().create_task(msg.edit(embed=emb))
+                        await msg.edit(
+                            content=None, embed=None, view=DesignerView(component)
+                        )
         except Exception:
             obsidian_logger.exception("An error occurred:")
 

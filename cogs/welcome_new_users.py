@@ -1,9 +1,17 @@
 import datetime
 
-from discord import Cog, Member, Bot, Embed, Color, EmbedFooter
+from discord import Bot, Cog, Color, Embed, EmbedFooter, Member
 from discord.ext.tasks import loop
+from discord.ui import (
+    ActionRow,
+    Button,
+    Container,
+    DesignerView,
+    Separator,
+    TextDisplay,
+)
 
-from constants import GUILD, CHANNEL_GENERAL, CHANNEL_ROLES
+from constants import CHANNEL_GENERAL, CHANNEL_ROLES, GUILD
 from logger import obsidian_logger
 
 
@@ -23,24 +31,37 @@ class WelcomeNewUsers(Cog):
     async def on_member_join(self, member: Member):
         guild = self.bot.get_guild(int(GUILD))
         if member.guild.id != guild.id:
-            obsidian_logger.warning("The guild %s (%s) is not ours!", guild.name, str(guild.id))
+            obsidian_logger.warning(
+                "The guild %s (%s) is not ours!", guild.name, str(guild.id)
+            )
             return
 
-        embed = Embed(
-            title=f"Welcome {member.display_name} to the server!",
-            description=f"Please make sure to pick roles in <#{CHANNEL_ROLES}>! :3",
-            color=Color.green(),
-            footer=EmbedFooter("sent by obsidian")
+        roles = guild.get_channel(int(CHANNEL_ROLES))
+        if roles is None:
+            obsidian_logger.error(
+                "null roles channel: %s not a valid channel id in %s",
+                CHANNEL_ROLES,
+                GUILD,
+            )
+            return
+
+        com = Container(
+            TextDisplay("# New Member!"),
+            TextDisplay(f"Welcome {member.mention} to this server!"),
+            Separator(),
+            ActionRow(Button(url=roles.jump_url, label="Pick some roles!")),
         )
 
-        self.first_queue.append(
-            (member.mention, member.id, embed, datetime.datetime.now())
-        )
+        self.first_queue.append((member.id, com, datetime.datetime.now()))
 
     @Cog.listener()
     async def on_member_remove(self, member: Member):
-        self.first_queue = [i for i in self.first_queue if i[1] != member.id]
-        self.posts = [i for i in self.posts if (datetime.datetime.now() - i[2]).total_seconds() < 600]
+        self.first_queue = [i for i in self.first_queue if i[0] != member.id]
+        self.posts = [
+            i
+            for i in self.posts
+            if (datetime.datetime.now() - i[2]).total_seconds() < 600
+        ]
 
         a = [i for i in self.posts if i[1] == member.id]
         if len(a) == 1:
@@ -54,21 +75,16 @@ class WelcomeNewUsers(Cog):
 
         a = self.first_queue.pop(0)
 
-        if (datetime.datetime.now() - a[3]).total_seconds() < 10:
+        if (datetime.datetime.now() - a[2]).total_seconds() < 10:
             self.first_queue.append(a)
             return
 
         guild = self.bot.get_guild(int(GUILD))
         general = guild.get_channel(int(CHANNEL_GENERAL))
 
-        b = await general.send(
-            a[0],
-            embed=a[2]
-        )
+        b = await general.send(view=DesignerView(a[1]))
 
-        self.posts.append(
-            (b.id, a[1], datetime.datetime.now())
-        )
+        self.posts.append((b.id, a[0], datetime.datetime.now()))
 
     @loop(seconds=1)
     async def handle_queue(self):
