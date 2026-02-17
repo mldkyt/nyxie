@@ -6,7 +6,7 @@ from logger import obsidian_logger
 
 load_dotenv()
 
-VERSION = "2025.11.15"
+VERSION = "@VERSION@"
 
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 DEV_MODE = os.getenv("DEV_MODE", "0")
