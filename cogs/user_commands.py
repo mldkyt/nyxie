@@ -42,6 +42,7 @@ from constants import (
     VERSION,
 )
 from logger import obsidian_logger
+from util.akkoma import akkoma_cache
 from util.keysmash_generator import keysmash_ai
 from util.storage import get_data, set_data
 
@@ -1161,12 +1162,9 @@ class UserCommands(discord.Cog):
             owner = self.bot.get_user(int(OWNER))
             await ctx.respond("posting to fedi. see dms for activity", ephemeral=True)
 
-            data: dict[str, Any] = {"text": message.content, "visibility": "public"}
-
+            # get files
             if not os.path.exists("temp"):
                 os.mkdir("temp")
-
-            files: list[dict] = []
 
             async def get_file(a: discord.Attachment):
                 async with aiohttp.ClientSession() as sess:
@@ -1177,85 +1175,134 @@ class UserCommands(discord.Cog):
 
             await asyncio.gather(*[get_file(i) for i in message.attachments])
 
-            async def put_file(file_name: str):
-                async with aiohttp.ClientSession() as sess:
-                    async with sess.post(
-                        f"https://{FEDI_INSTANCE}/api/drive/files/create",
-                        data={
-                            "file": open(f"temp/{file_name}", "rb"),
-                            "name": file_name,
-                        },
-                        headers={"Authorization": f"Bearer {FEDI_TOKEN}"},
-                    ) as req:
-                        if req.ok:
-                            a = await req.json()
-                            files.append(a)
-                        else:
-                            txt = await req.text()
-                            obsidian_logger.warning(
-                                "Failed to upload file: Response code %s: %s",
-                                str(req.status),
-                                txt,
+            # account picker
+            await owner.send("account? [akkoma, sharkey]")
+            account = ""
+            while account not in ["akkoma", "sharkey", "ak", "a", "sk", "s"]:
+                try:
+                    account_msg = await self.bot.wait_for(
+                        "message", check=lambda msg: msg.author == owner, timeout=30
+                    )
+                    account = account_msg.content
+
+                    if account == "cancel":
+                        await owner.send("canceling")
+                        return
+                except TimeoutError:
+                    await owner.send("canceling")
+                    return
+
+            # post
+            if account in ["sk", "s", "sharkey"]:
+                files: list[dict] = []
+                data: dict[str, Any] = {"text": message.content, "visibility": "public"}
+
+                async def put_file(file_name: str):
+                    async with aiohttp.ClientSession() as sess:
+                        async with sess.post(
+                            f"https://{FEDI_INSTANCE}/api/drive/files/create",
+                            data={
+                                "file": open(f"temp/{file_name}", "rb"),
+                                "name": file_name,
+                            },
+                            headers={"Authorization": f"Bearer {FEDI_TOKEN}"},
+                        ) as req:
+                            if req.ok:
+                                a = await req.json()
+                                files.append(a)
+                            else:
+                                txt = await req.text()
+                                obsidian_logger.warning(
+                                    "Failed to upload file: Response code %s: %s",
+                                    str(req.status),
+                                    txt,
+                                )
+
+                await asyncio.gather(
+                    *[put_file(i.filename) for i in message.attachments]
+                )
+
+                if len(files) > 0:
+                    data["fileIds"] = [i["id"] for i in files]
+                    for i in files:
+                        try:
+                            await owner.send(f"Alt text for {i['name']} ({i['url']}):")
+                            resp = await self.bot.wait_for(
+                                "message", check=lambda msg: msg.author == owner
                             )
 
-            await asyncio.gather(*[put_file(i.filename) for i in message.attachments])
+                            # Update alt text
+                            async with aiohttp.ClientSession() as sess:
+                                async with sess.post(
+                                    f"https://{FEDI_INSTANCE}/api/drive/files/update",
+                                    headers={"Authorization": f"Bearer {FEDI_TOKEN}"},
+                                    json={"fileId": i["id"], "comment": resp.content},
+                                ) as req:
+                                    if req.ok:
+                                        a = await req.json()
+                                    else:
+                                        txt = await req.text()
+                                        await owner.send(
+                                            f"Failed to update comment for {i['name']}: {txt}"
+                                        )
 
-            if len(files) > 0:
-                data["fileIds"] = [i["id"] for i in files]
-                for i in files:
-                    try:
-                        await owner.send(f"Alt text for {i['name']} ({i['url']}):")
+                            await resp.reply(
+                                f"added comment to {i['name']} file successfully"
+                            )
+                        except Exception:
+                            await owner.send(
+                                f"Failed to update comment for {i['name']}"
+                            )
+
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(
+                        f"https://{FEDI_INSTANCE}/api/notes/create",
+                        json=data,
+                        headers={"Authorization": f"Bearer {FEDI_TOKEN}"},
+                    ) as resp:
+                        if resp.status != 200:
+                            await ctx.respond(
+                                "Non-OK response from server!", ephemeral=True
+                            )
+                            text = await resp.text()
+
+                            obsidian_logger.warning(
+                                f"Non-OK response {resp.status} from server: {text}"
+                            )
+                            return
+
+                        data = await resp.json()
+
+                        await owner.send(
+                            f"post stolen\nhttps://{FEDI_INSTANCE}/notes/{data['createdNote']['id']}"
+                        )
+
+            elif account in ["akkoma", "ak", "a"]:
+                media_ids = []
+
+                if len(message.attachments) > 0:
+                    for i in message.attachments:
+                        await owner.send(f"Alt text for {i.filename} ({i.url}):")
                         resp = await self.bot.wait_for(
                             "message", check=lambda msg: msg.author == owner
                         )
 
-                        # Update alt text
-                        async with aiohttp.ClientSession() as sess:
-                            async with sess.post(
-                                f"https://{FEDI_INSTANCE}/api/drive/files/update",
-                                headers={"Authorization": f"Bearer {FEDI_TOKEN}"},
-                                json={"fileId": i["id"], "comment": resp.content},
-                            ) as req:
-                                if req.ok:
-                                    a = await req.json()
-                                else:
-                                    txt = await req.text()
-                                    await owner.send(
-                                        f"Failed to update comment for {i['name']}: {txt}"
-                                    )
-
-                        await resp.reply(
-                            f"added comment to {i['name']} file successfully"
+                        media_ids.append(
+                            akkoma_cache.client.media_post(
+                                f"temp/{i.filename}", description=resp.content
+                            )
                         )
-                    except Exception:
-                        await owner.send(f"Failed to update comment for {i['name']}")
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    f"https://{FEDI_INSTANCE}/api/notes/create",
-                    json=data,
-                    headers={"Authorization": f"Bearer {FEDI_TOKEN}"},
-                ) as resp:
-                    if resp.status != 200:
-                        await ctx.respond(
-                            "Non-OK response from server!", ephemeral=True
-                        )
-                        text = await resp.text()
+                status = akkoma_cache.client.status_post(
+                    message.content, media_ids=media_ids
+                )
 
-                        obsidian_logger.warning(
-                            f"Non-OK response {resp.status} from server: {text}"
-                        )
-                        return
+                await owner.send(f"post stolen\n{status.url or status.uri}")
 
-                    data = await resp.json()
-
-                    await owner.send(
-                        f"post stolen\nhttps://{FEDI_INSTANCE}/notes/{data['createdNote']['id']}"
-                    )
-
-            for i in message.attachments:
-                os.unlink(f"temp/{i.filename}")
-            os.rmdir("temp")
+            if os.path.exists("temp"):
+                for i in message.attachments:
+                    os.unlink(f"temp/{i.filename}")
+                os.rmdir("temp")
         except Exception as e:
             obsidian_logger.exception("An error occurred:")
             await ctx.respond("Failed to create note!", ephemeral=True)
