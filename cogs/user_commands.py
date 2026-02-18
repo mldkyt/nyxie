@@ -17,30 +17,18 @@ import pytz
 import yt_dlp.version
 from dateutil.parser import isoparse
 from deepl import Language
-from discord import (
-    Bot,
-    ButtonStyle,
-    Interaction,
-    InteractionType,
-    MediaGalleryItem,
-    Message,
-)
+from discord import Bot, ButtonStyle, Interaction, InteractionType, Message
 from discord.ext import commands, tasks
 from discord.ext.commands import BucketType, cooldown
 from discord.ui import (
-    ActionRow,
     Button,
     Container,
-    DesignerModal,
     DesignerView,
-    InputText,
     MediaGallery,
-    Modal,
     Section,
     Separator,
     TextDisplay,
     Thumbnail,
-    button,
 )
 
 from constants import (
@@ -782,220 +770,6 @@ async def uwuify(text: str) -> str | None:
             return res["uwu"]
 
 
-class PostStealModal(Modal):
-    def __init__(self, mode: str, msg: Message) -> None:
-        super().__init__(title=f"Post on {mode}")
-
-        self.message = msg
-        self.mode = mode
-
-        index = 1
-        for i in msg.attachments:
-            if i.content_type is None or (
-                not i.content_type.startswith("image/")
-                and not i.content_type.startswith("video/")
-            ):
-                continue
-
-            self.add_item(
-                InputText(label=f"Picture {index} alt text", custom_id=f"pic{index}alt")
-            )
-            index += 1
-
-        self.add_item(InputText(label="cw", custom_id="cw", required=False))
-        self.add_item(
-            InputText(
-                label="omit",
-                placeholder="content,media...",
-                custom_id="omit",
-                required=False,
-            )
-        )
-
-    async def callback(self, interaction: Interaction):
-        # omit check
-        omit = self.get_item("omit")
-        if isinstance(omit, InputText):
-            omit = omit.value
-        else:
-            omit = ""
-
-        # absolutely no content check (we assume Discord never gives us an empty message without attachments)
-        # TODO: check for media attachments instead of all attachments (assuming owner only uses this with media)
-        if "content" in omit and len(self.message.attachments) == 0:
-            await interaction.respond("post failed: no content", ephemeral=True)
-            return
-
-        await interaction.respond(
-            "posting! please wait, you'll receive a DM", ephemeral=True
-        )
-
-        if self.mode == "sharkey":
-            files: list[dict] = []
-            data: dict[str, Any] = {
-                "text": self.message.content,
-                "visibility": "public",
-            }
-
-            if "content" in self.get_item("omit").value:
-                del data["text"]
-
-            if len(self.get_item("cw").value) > 0:
-                data["cw"] = self.get_item("cw").value
-
-            index = 1
-            if "media" not in omit:
-                for i in self.message.attachments:
-                    if i.content_type is None or (
-                        not i.content_type.startswith("image/")
-                        and not i.content_type.startswith("video/")
-                    ):
-                        continue
-
-                    alt_text = self.get_item(f"pic{index}alt")
-                    if alt_text is not None and isinstance(alt_text, InputText):
-                        alt_text = alt_text.value
-                    else:
-                        alt_text = ""
-
-                    async with aiohttp.ClientSession() as sess:
-                        async with sess.post(
-                            f"https://{FEDI_INSTANCE}/api/drive/files/create",
-                            data={
-                                "file": open(f"temp/{i.filename}", "rb"),
-                                "name": i.filename,
-                                "comment": alt_text,
-                            },
-                            headers={"Authorization": f"Bearer {FEDI_TOKEN}"},
-                        ) as req:
-                            if req.ok:
-                                a = await req.json()
-                                files.append(a)
-                            else:
-                                txt = await req.text()
-                                obsidian_logger.warning(
-                                    "Failed to upload file: Response code %s: %s",
-                                    str(req.status),
-                                    txt,
-                                )
-
-                if len(files) > 0:
-                    data["fileIds"] = [i["id"] for i in files]
-
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    f"https://{FEDI_INSTANCE}/api/notes/create",
-                    json=data,
-                    headers={"Authorization": f"Bearer {FEDI_TOKEN}"},
-                ) as resp:
-                    if resp.status != 200:
-                        await interaction.user.send("Non-OK response from server!")
-                        text = await resp.text()
-
-                        obsidian_logger.warning(
-                            f"Non-OK response {resp.status} from server: {text}"
-                        )
-                        return
-
-                    data = await resp.json()
-
-                    await interaction.user.send(
-                        f"post stolen\nhttps://{FEDI_INSTANCE}/notes/{data['createdNote']['id']}"
-                    )
-
-        elif self.mode == "akkoma":
-            media_ids = []
-
-            if "media" not in omit:
-                if len(self.message.attachments) > 0:
-                    index = 1
-                    for i in self.message.attachments:
-                        if i.content_type is None or (
-                            not i.content_type.startswith("image/")
-                            and not i.content_type.startswith("video/")
-                        ):
-                            continue
-
-                        alt_text = self.get_item(f"pic{index}alt")
-                        if alt_text is not None and isinstance(alt_text, InputText):
-                            alt_text = alt_text.value
-                        else:
-                            alt_text = ""
-
-                        media_ids.append(
-                            akkoma_cache.client.media_post(
-                                f"temp/{i.filename}", description=alt_text
-                            )
-                        )
-
-            cw = self.get_item("cw")
-            if cw is not None and isinstance(cw, InputText):
-                cw = cw.value
-            else:
-                cw = ""
-
-            status = akkoma_cache.client.status_post(
-                self.message.content if "content" not in omit else "",
-                media_ids=media_ids,
-                spoiler_text=cw,
-            )
-
-            await interaction.user.send(f"post stolen\n{status.url or status.uri}")
-
-
-class PostStealActions(ActionRow):
-    def __init__(self, message: Message):
-        super().__init__()
-
-        self.message = message
-
-    @button(label="Post on sk.lunya.pet")
-    async def post_on_main(self, button: Button, interaction: Interaction):
-        await interaction.response.send_modal(PostStealModal("sharkey", self.message))
-
-    @button(label="Post on akkoma")
-    async def post_on_main_2(self, button: Button, interaction: Interaction):
-        await interaction.response.send_modal(PostStealModal("akkoma", self.message))
-
-
-class PostStealView(DesignerView):
-    def __init__(self, message: Message):
-        super().__init__(timeout=1800)
-
-        container = Container()
-
-        container.add_item(TextDisplay("# Post"))
-        if len(message.clean_content) > 0:
-            container.add_item(TextDisplay(message.clean_content))
-
-        media = []
-        if len(message.attachments) > 0:
-            for i in message.attachments:
-                if i.content_type is None or (
-                    not i.content_type.startswith("image/")
-                    and not i.content_type.startswith("video/")
-                ):
-                    continue
-
-                media.append(i)
-
-            if len(media) > 0:
-                gallery = MediaGallery()
-
-                for i in media:
-                    gallery.append_item(
-                        MediaGalleryItem(url=i.url, description=i.description)
-                    )
-
-                container.add_item(gallery)
-
-        container.add_item(Separator())
-        container.add_item(PostStealActions(message))
-        # container.add_item(PostStealConsequences(message))
-
-        self.add_item(container)
-
-
 class UserCommands(discord.Cog):
     def __init__(self, bot: discord.Bot):
         self.bot = bot
@@ -1401,7 +1175,134 @@ class UserCommands(discord.Cog):
 
             await asyncio.gather(*[get_file(i) for i in message.attachments])
 
-            await owner.send(view=PostStealView(message))
+            # account picker
+            await owner.send("account? [akkoma, sharkey]")
+            account = ""
+            while account not in ["akkoma", "sharkey", "ak", "a", "sk", "s"]:
+                try:
+                    account_msg = await self.bot.wait_for(
+                        "message", check=lambda msg: msg.author == owner, timeout=30
+                    )
+                    account = account_msg.content
+
+                    if account == "cancel":
+                        await owner.send("canceling")
+                        return
+                except TimeoutError:
+                    await owner.send("canceling")
+                    return
+
+            # post
+            if account in ["sk", "s", "sharkey"]:
+                files: list[dict] = []
+                data: dict[str, Any] = {"text": message.content, "visibility": "public"}
+
+                async def put_file(file_name: str):
+                    async with aiohttp.ClientSession() as sess:
+                        async with sess.post(
+                            f"https://{FEDI_INSTANCE}/api/drive/files/create",
+                            data={
+                                "file": open(f"temp/{file_name}", "rb"),
+                                "name": file_name,
+                            },
+                            headers={"Authorization": f"Bearer {FEDI_TOKEN}"},
+                        ) as req:
+                            if req.ok:
+                                a = await req.json()
+                                files.append(a)
+                            else:
+                                txt = await req.text()
+                                obsidian_logger.warning(
+                                    "Failed to upload file: Response code %s: %s",
+                                    str(req.status),
+                                    txt,
+                                )
+
+                await asyncio.gather(
+                    *[put_file(i.filename) for i in message.attachments]
+                )
+
+                if len(files) > 0:
+                    data["fileIds"] = [i["id"] for i in files]
+                    for i in files:
+                        try:
+                            await owner.send(f"Alt text for {i['name']} ({i['url']}):")
+                            resp = await self.bot.wait_for(
+                                "message", check=lambda msg: msg.author == owner
+                            )
+
+                            # Update alt text
+                            async with aiohttp.ClientSession() as sess:
+                                async with sess.post(
+                                    f"https://{FEDI_INSTANCE}/api/drive/files/update",
+                                    headers={"Authorization": f"Bearer {FEDI_TOKEN}"},
+                                    json={"fileId": i["id"], "comment": resp.content},
+                                ) as req:
+                                    if req.ok:
+                                        a = await req.json()
+                                    else:
+                                        txt = await req.text()
+                                        await owner.send(
+                                            f"Failed to update comment for {i['name']}: {txt}"
+                                        )
+
+                            await resp.reply(
+                                f"added comment to {i['name']} file successfully"
+                            )
+                        except Exception:
+                            await owner.send(
+                                f"Failed to update comment for {i['name']}"
+                            )
+
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(
+                        f"https://{FEDI_INSTANCE}/api/notes/create",
+                        json=data,
+                        headers={"Authorization": f"Bearer {FEDI_TOKEN}"},
+                    ) as resp:
+                        if resp.status != 200:
+                            await ctx.respond(
+                                "Non-OK response from server!", ephemeral=True
+                            )
+                            text = await resp.text()
+
+                            obsidian_logger.warning(
+                                f"Non-OK response {resp.status} from server: {text}"
+                            )
+                            return
+
+                        data = await resp.json()
+
+                        await owner.send(
+                            f"post stolen\nhttps://{FEDI_INSTANCE}/notes/{data['createdNote']['id']}"
+                        )
+
+            elif account in ["akkoma", "ak", "a"]:
+                media_ids = []
+
+                if len(message.attachments) > 0:
+                    for i in message.attachments:
+                        await owner.send(f"Alt text for {i.filename} ({i.url}):")
+                        resp = await self.bot.wait_for(
+                            "message", check=lambda msg: msg.author == owner
+                        )
+
+                        media_ids.append(
+                            akkoma_cache.client.media_post(
+                                f"temp/{i.filename}", description=resp.content
+                            )
+                        )
+
+                status = akkoma_cache.client.status_post(
+                    message.content, media_ids=media_ids
+                )
+
+                await owner.send(f"post stolen\n{status.url or status.uri}")
+
+            if os.path.exists("temp"):
+                for i in message.attachments:
+                    os.unlink(f"temp/{i.filename}")
+                os.rmdir("temp")
         except Exception as e:
             obsidian_logger.exception("An error occurred:")
             await ctx.respond("Failed to create note!", ephemeral=True)
