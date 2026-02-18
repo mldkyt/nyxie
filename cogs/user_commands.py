@@ -1280,19 +1280,9 @@ class UserCommands(discord.Cog):
                         data["cw"] = resp.content
                         await resp.add_reaction("✅")
                     elif resp.content == "no cw":
-                        await owner.send("new cw:")
-                        resp = await self.bot.wait_for(
-                            "message", check=lambda msg: msg.author == owner
-                        )
-
                         del data["cw"]
                         await resp.add_reaction("✅")
                     elif resp.content == "no media":
-                        await owner.send("new cw:")
-                        resp = await self.bot.wait_for(
-                            "message", check=lambda msg: msg.author == owner
-                        )
-
                         if os.path.exists("temp"):
                             for i in message.attachments:
                                 os.unlink(f"temp/{i.filename}")
@@ -1303,11 +1293,6 @@ class UserCommands(discord.Cog):
                         del data["fileIds"]
                         await resp.add_reaction("✅")
                     elif resp.content == "no content":
-                        await owner.send("new cw:")
-                        resp = await self.bot.wait_for(
-                            "message", check=lambda msg: msg.author == owner
-                        )
-
                         del data["text"]
                         await resp.add_reaction("✅")
                     elif resp.content == "post":
@@ -1318,6 +1303,9 @@ class UserCommands(discord.Cog):
                             return
 
                         break
+                    elif resp.content == "cancel":
+                        await owner.send("canceling")
+                        return
 
                 async with aiohttp.ClientSession() as session:
                     async with session.post(
@@ -1387,19 +1375,9 @@ class UserCommands(discord.Cog):
                         cw = resp.content
                         await resp.add_reaction("✅")
                     elif resp.content == "no cw":
-                        await owner.send("new cw:")
-                        resp = await self.bot.wait_for(
-                            "message", check=lambda msg: msg.author == owner
-                        )
-
                         cw = ""
                         await resp.add_reaction("✅")
                     elif resp.content == "no media":
-                        await owner.send("new cw:")
-                        resp = await self.bot.wait_for(
-                            "message", check=lambda msg: msg.author == owner
-                        )
-
                         media_ids = []
                         if os.path.exists("temp"):
                             for i in message.attachments:
@@ -1410,11 +1388,6 @@ class UserCommands(discord.Cog):
 
                         await resp.add_reaction("✅")
                     elif resp.content == "no content":
-                        await owner.send("new cw:")
-                        resp = await self.bot.wait_for(
-                            "message", check=lambda msg: msg.author == owner
-                        )
-
                         text = ""
                         await resp.add_reaction("✅")
                     elif resp.content == "post":
@@ -1425,6 +1398,9 @@ class UserCommands(discord.Cog):
                             return
 
                         break
+                    elif resp.content == "cancel":
+                        await owner.send("canceling")
+                        return
 
                 status = akkoma_cache.client.status_post(
                     text, media_ids=media_ids, spoiler_text=cw
