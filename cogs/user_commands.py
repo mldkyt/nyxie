@@ -1254,6 +1254,71 @@ class UserCommands(discord.Cog):
                                 f"Failed to update comment for {i['name']}"
                             )
 
+                # edits
+                while True:
+                    await owner.send(
+                        "post is ready to be created, please issue following commands if needed: [edit content, edit cw, no media, no content, post]"
+                    )
+                    resp = await self.bot.wait_for(
+                        "message", check=lambda msg: msg.author == owner
+                    )
+
+                    if resp.content == "edit content":
+                        await owner.send("new content:")
+                        resp = await self.bot.wait_for(
+                            "message", check=lambda msg: msg.author == owner
+                        )
+
+                        data["text"] = resp.content
+                        await resp.add_reaction("✅")
+                    elif resp.content == "edit cw":
+                        await owner.send("new cw:")
+                        resp = await self.bot.wait_for(
+                            "message", check=lambda msg: msg.author == owner
+                        )
+
+                        data["cw"] = resp.content
+                        await resp.add_reaction("✅")
+                    elif resp.content == "no cw":
+                        await owner.send("new cw:")
+                        resp = await self.bot.wait_for(
+                            "message", check=lambda msg: msg.author == owner
+                        )
+
+                        del data["cw"]
+                        await resp.add_reaction("✅")
+                    elif resp.content == "no media":
+                        await owner.send("new cw:")
+                        resp = await self.bot.wait_for(
+                            "message", check=lambda msg: msg.author == owner
+                        )
+
+                        if os.path.exists("temp"):
+                            for i in message.attachments:
+                                os.unlink(f"temp/{i.filename}")
+
+                            if len(os.listdir("temp")) == 0:
+                                os.rmdir("temp")
+
+                        del data["fileIds"]
+                        await resp.add_reaction("✅")
+                    elif resp.content == "no content":
+                        await owner.send("new cw:")
+                        resp = await self.bot.wait_for(
+                            "message", check=lambda msg: msg.author == owner
+                        )
+
+                        del data["text"]
+                        await resp.add_reaction("✅")
+                    elif resp.content == "post":
+                        if "text" not in data and "mediaIds" not in data:
+                            await owner.send(
+                                "failed to post: no text AND media found, at least one is needed"
+                            )
+                            return
+
+                        break
+
                 async with aiohttp.ClientSession() as session:
                     async with session.post(
                         f"https://{FEDI_INSTANCE}/api/notes/create",
@@ -1293,8 +1358,76 @@ class UserCommands(discord.Cog):
                             )
                         )
 
+                cw = ""
+                text = message.content
+
+                # edits
+                while True:
+                    await owner.send(
+                        "post is ready to be created, please issue following commands if needed: [edit content, edit cw, no media, no content, post]"
+                    )
+                    resp = await self.bot.wait_for(
+                        "message", check=lambda msg: msg.author == owner
+                    )
+
+                    if resp.content == "edit content":
+                        await owner.send("new content:")
+                        resp = await self.bot.wait_for(
+                            "message", check=lambda msg: msg.author == owner
+                        )
+
+                        text = resp.content
+                        await resp.add_reaction("✅")
+                    elif resp.content == "edit cw":
+                        await owner.send("new cw:")
+                        resp = await self.bot.wait_for(
+                            "message", check=lambda msg: msg.author == owner
+                        )
+
+                        cw = resp.content
+                        await resp.add_reaction("✅")
+                    elif resp.content == "no cw":
+                        await owner.send("new cw:")
+                        resp = await self.bot.wait_for(
+                            "message", check=lambda msg: msg.author == owner
+                        )
+
+                        cw = ""
+                        await resp.add_reaction("✅")
+                    elif resp.content == "no media":
+                        await owner.send("new cw:")
+                        resp = await self.bot.wait_for(
+                            "message", check=lambda msg: msg.author == owner
+                        )
+
+                        media_ids = []
+                        if os.path.exists("temp"):
+                            for i in message.attachments:
+                                os.unlink(f"temp/{i.filename}")
+
+                            if len(os.listdir("temp")) == 0:
+                                os.rmdir("temp")
+
+                        await resp.add_reaction("✅")
+                    elif resp.content == "no content":
+                        await owner.send("new cw:")
+                        resp = await self.bot.wait_for(
+                            "message", check=lambda msg: msg.author == owner
+                        )
+
+                        text = ""
+                        await resp.add_reaction("✅")
+                    elif resp.content == "post":
+                        if len(text) == 0 and len(media_ids) == 0:
+                            await owner.send(
+                                "failed to post: no text AND media found, at least one is needed"
+                            )
+                            return
+
+                        break
+
                 status = akkoma_cache.client.status_post(
-                    message.content, media_ids=media_ids
+                    text, media_ids=media_ids, spoiler_text=cw
                 )
 
                 await owner.send(f"post stolen\n{status.url or status.uri}")
@@ -1302,7 +1435,9 @@ class UserCommands(discord.Cog):
             if os.path.exists("temp"):
                 for i in message.attachments:
                     os.unlink(f"temp/{i.filename}")
-                os.rmdir("temp")
+
+                if len(os.listdir("temp")) == 0:
+                    os.rmdir("temp")
         except Exception as e:
             obsidian_logger.exception("An error occurred:")
             await ctx.respond("Failed to create note!", ephemeral=True)
