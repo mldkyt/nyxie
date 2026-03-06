@@ -1307,6 +1307,11 @@ class UserCommands(discord.Cog):
                         await owner.send("canceling")
                         return
 
+                if len(data["text"].strip()) == 0:
+                    del data["text"]
+                if len(data["cw"].strip()) == 0:
+                    del data["cw"]
+
                 async with aiohttp.ClientSession() as session:
                     async with session.post(
                         f"https://{FEDI_INSTANCE}/api/notes/create",

@@ -445,6 +445,7 @@ class MessageReporting(discord.Cog):
             DesignerView(
                 ReportMessageOptionsActions(),
                 ReportMessageOptionsReject("https://example.com"),
+                timeout=None
             )
         )
 
