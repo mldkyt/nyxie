@@ -28,7 +28,7 @@ from discord.ui import (
     Section,
     Separator,
     TextDisplay,
-    Thumbnail,
+    Thumbnail, ActionRow,
 )
 
 from constants import (
@@ -44,6 +44,7 @@ from constants import (
 from logger import obsidian_logger
 from util.akkoma import akkoma_cache
 from util.keysmash_generator import keysmash_ai
+from util.sharkey import sharkey_cache
 from util.storage import get_data, set_data
 
 dm_cache = []
@@ -796,33 +797,31 @@ class UserCommands(discord.Cog):
             interaction.custom_id == "more_yuri_pwease_uwu"
             and interaction.type == InteractionType.component
         ):
-            items = os.listdir("rom/yuri")
-            item = random.choice(items)
-
-            index = items.index(item)
+            yuri = await sharkey_cache.get_yuribot_post()
 
             gallery = MediaGallery()
-            gallery.add_item("attachment://yuri.jpg")
+            gallery.add_item(yuri["files"][0]["url"])
 
             container = Container()
             container.add_item(gallery)
             container.add_item(Separator())
             container.add_item(
-                Section(
-                    TextDisplay(
-                        f"yuri image {index + 1} out of {len(items)} | [browse](https://f.lunya.pet/~lunya/girls,,,)"
-                    ),
-                    accessory=Button(
+                ActionRow(
+                    Button(
                         label="more yuri :3",
                         style=ButtonStyle.primary,
                         custom_id="more_yuri_pwease_uwu",
+                    ),
+                    Button(
+                        label="source is fedi",
+                        style=ButtonStyle.link,
+                        url=f"https://sk.lunya.pet/notes/{yuri['id']}",
                     ),
                 )
             )
 
             await interaction.respond(
                 view=DesignerView(container),
-                files=[discord.File(f"rom/yuri/{item}", filename="yuri.jpg")],
             )
 
     user_commands = discord.SlashCommandGroup(
@@ -1596,34 +1595,31 @@ class UserCommands(discord.Cog):
     @cooldown(1, 10, BucketType.default)
     async def yuri(self, ctx: discord.ApplicationContext):
         try:
-            items = os.listdir("rom/yuri")
-            item = random.choice(items)
-            print(item)
-
-            index = items.index(item)
+            yuri = await sharkey_cache.get_yuribot_post()
 
             gallery = MediaGallery()
-            gallery.add_item("attachment://yuri.jpg")
+            gallery.add_item(yuri["files"][0]["url"])
 
             container = Container()
             container.add_item(gallery)
             container.add_item(Separator())
             container.add_item(
-                Section(
-                    TextDisplay(
-                        f"yuri image {index + 1} out of {len(items)} | [browse](https://f.lunya.pet/~lunya/girls,,,)"
-                    ),
-                    accessory=Button(
+                ActionRow(
+                    Button(
                         label="more yuri :3",
                         style=ButtonStyle.primary,
                         custom_id="more_yuri_pwease_uwu",
+                    ),
+                    Button(
+                        label="source is fedi",
+                        style=ButtonStyle.link,
+                        url=f"https://sk.lunya.pet/notes/{yuri['id']}",
                     ),
                 )
             )
 
             await ctx.respond(
                 view=DesignerView(container),
-                files=[discord.File(f"rom/yuri/{item}", filename="yuri.jpg")],
             )
         except Exception as e:
             obsidian_logger.exception(
