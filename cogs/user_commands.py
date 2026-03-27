@@ -1306,9 +1306,9 @@ class UserCommands(discord.Cog):
                         await owner.send("canceling")
                         return
 
-                if len(data["text"].strip()) == 0:
+                if "text" in data and len(data["text"].strip()) == 0:
                     del data["text"]
-                if len(data["cw"].strip()) == 0:
+                if "cw" in data and len(data["cw"].strip()) == 0:
                     del data["cw"]
 
                 async with aiohttp.ClientSession() as session:
