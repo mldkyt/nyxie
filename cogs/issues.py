@@ -32,7 +32,7 @@ from constants import (
     DEV_MODE,
     FORGEJO_INSTANCE,
     FORGEJO_TOKEN,
-    GUILD,
+    GUILD, FORGEJO_OWNER, FORGEJO_PROJECT,
 )
 from database import engine, suggestion_messages, suggestion_messages_comments
 from logger import obsidian_logger
@@ -96,9 +96,7 @@ class Issues(Cog):
     async def on_ready(self):
         async with aiohttp.ClientSession() as sess:
             async with sess.get(
-                    f"https://{FORGEJO_INSTANCE}/api/v1/repos/lunya/DiscordServer/labels"
-                    if DEV_MODE == "0" else
-                    f"https://{FORGEJO_INSTANCE}/api/v1/repos/lunya/test/labels",
+                    f"https://{FORGEJO_INSTANCE}/api/v1/repos/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/labels",
                     headers={
                         "Authorization": f"Bearer {FORGEJO_TOKEN}"
                     }) as res:
@@ -181,9 +179,7 @@ class Issues(Cog):
             # Add comment
             async with aiohttp.ClientSession() as sess:
                 async with sess.post(
-                        f"https://{FORGEJO_INSTANCE}/api/v1/repos/lunya/DiscordServer/issues/{a[1]}/comments"
-                        if DEV_MODE == "0" else
-                        f"https://{FORGEJO_INSTANCE}/api/v1/repos/lunya/test/issues/{a[1]}/comments",
+                        f"https://{FORGEJO_INSTANCE}/api/v1/repos/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/issues/{a[1]}/comments",
                         headers={
                             "Authorization": f"Bearer {FORGEJO_TOKEN}"
                         }, json={
@@ -224,9 +220,7 @@ class Issues(Cog):
 
                 async with aiohttp.ClientSession() as sess:
                     async with sess.post(
-                            f"https://{FORGEJO_INSTANCE}/api/v1/repos/lunya/DiscordServer/issues/comments/{out['id']}/assets"
-                            if DEV_MODE == "0" else
-                            f"https://{FORGEJO_INSTANCE}/api/v1/repos/lunya/test/issues/comments/{out['id']}/assets",
+                            f"https://{FORGEJO_INSTANCE}/api/v1/repos/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/issues/comments/{out['id']}/assets",
                             headers={
                                 "Authorization": f"Bearer {FORGEJO_TOKEN}"
                             },
@@ -266,9 +260,7 @@ class Issues(Cog):
             # Delete comment
             async with aiohttp.ClientSession() as sess:
                 async with sess.delete(
-                        f"https://{FORGEJO_INSTANCE}/api/v1/repos/lunya/DiscordServer/issues/comments/{a[1]}"
-                        if DEV_MODE == "0" else
-                        f"https://{FORGEJO_INSTANCE}/api/v1/repos/lunya/test/issues/comments/{a[1]}",
+                        f"https://{FORGEJO_INSTANCE}/api/v1/repos/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/issues/comments/{a[1]}",
                         headers={
                             "Authorization": f"Bearer {FORGEJO_TOKEN}"
                         }) as res:
@@ -299,9 +291,7 @@ class Issues(Cog):
     async def close_issue(self, a: tuple[int, str, int, str, str]):
         async with aiohttp.ClientSession() as sess:
             async with sess.patch(
-                    f"https://{FORGEJO_INSTANCE}/api/v1/repos/lunya/DiscordServer/issues/{a[2]}"
-                    if DEV_MODE == "0" else
-                    f"https://{FORGEJO_INSTANCE}/api/v1/repos/lunya/test/issues/{a[2]}",
+                    f"https://{FORGEJO_INSTANCE}/api/v1/repos/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/issues/{a[2]}",
                     headers={
                         "Authorization": f"Bearer {FORGEJO_TOKEN}"
                     }, json={
@@ -341,9 +331,7 @@ class Issues(Cog):
 
             async with aiohttp.ClientSession() as sess:
                 async with sess.post(
-                        f"https://{FORGEJO_INSTANCE}/api/v1/repos/lunya/DiscordServer/issues"
-                        if DEV_MODE == "0" else
-                        f"https://{FORGEJO_INSTANCE}/api/v1/repos/lunya/test/issues",
+                        f"https://{FORGEJO_INSTANCE}/api/v1/repos/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/issues",
                         headers={
                             "Authorization": f"Bearer {FORGEJO_TOKEN}"
                         }, json={
@@ -383,9 +371,7 @@ class Issues(Cog):
 
                 async with aiohttp.ClientSession() as sess:
                     async with sess.post(
-                            f"https://{FORGEJO_INSTANCE}/api/v1/repos/lunya/DiscordServer/issues/{res_b['number']}/assets"
-                            if DEV_MODE == "0" else
-                            f"https://{FORGEJO_INSTANCE}/api/v1/repos/lunya/test/issues/{res_b['number']}/assets",
+                            f"https://{FORGEJO_INSTANCE}/api/v1/repos/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/issues/{res_b['number']}/assets",
                             headers={
                                 "Authorization": f"Bearer {FORGEJO_TOKEN}"
                             },
@@ -418,7 +404,7 @@ class Issues(Cog):
                 TextDisplay("# Issue Created"),
                 Separator(),
                 ActionRow(
-                    Button(label="Forgejo", style=ButtonStyle.link, url=f"https://{FORGEJO_INSTANCE}/lunya/DiscordServer/issues/{res_b['number']}"),
+                    Button(label="Forgejo", style=ButtonStyle.link, url=f"https://{FORGEJO_INSTANCE}/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/issues/{res_b['number']}"),
                     Button(label="Message", style=ButtonStyle.link, url=message.jump_url),
                     Button(label="Thread", style=ButtonStyle.link, url=thread.jump_url)
                 )
@@ -433,9 +419,7 @@ class Issues(Cog):
     async def update_thread_titles(self):
         async with aiohttp.ClientSession() as sess:
             async with sess.get(
-                    f"https://{FORGEJO_INSTANCE}/api/v1/repos/lunya/DiscordServer/issues"
-                    if DEV_MODE == "0" else
-                    f"https://{FORGEJO_INSTANCE}/api/v1/repos/lunya/test/issues",
+                    f"https://{FORGEJO_INSTANCE}/api/v1/repos/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/issues",
                     headers={
                         "Authorization": f"Bearer {FORGEJO_TOKEN}"
                     }, params={
