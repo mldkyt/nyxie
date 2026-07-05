@@ -24,60 +24,6 @@ engine = create_engine(
 
 md_obj = MetaData()
 
-cache_channel = Table(
-    "cache_channel",
-    md_obj,
-    Column("id", Integer, primary_key=True, autoincrement=True),
-    Column("cid", VARCHAR, unique=True),
-    Column("name", VARCHAR, nullable=False),
-    Column("topic", VARCHAR),
-    Column("announcement", BOOLEAN, nullable=False, default=False),
-    Column("nsfw", BOOLEAN, nullable=False, default=False),
-)
-
-cache_user = Table(
-    "cache_user",
-    md_obj,
-    Column("id", Integer, primary_key=True, autoincrement=True),
-    Column("uid", VARCHAR, unique=True),
-    Column("username", VARCHAR, nullable=False),
-    Column("displayname", VARCHAR, nullable=False),
-    Column("avatar", VARCHAR),
-    Column("bot", BOOLEAN, nullable=False, default=False),
-)
-
-cache_message = Table(
-    "cache_message",
-    md_obj,
-    Column("id", Integer, primary_key=True, autoincrement=True),
-    Column("mid", VARCHAR, unique=True),
-    Column("cid", Integer, ForeignKey(cache_channel.c.id)),
-    Column("uid", Integer, ForeignKey(cache_user.c.id)),
-    Column("content", VARCHAR, nullable=False),
-    Column("sentat", DateTime, nullable=False),
-)
-
-cache_embed = Table(
-    "cache_embed",
-    md_obj,
-    Column("id", Integer, primary_key=True, autoincrement=True),
-    Column("mid", Integer, ForeignKey(cache_message.c.id)),
-    Column("title", VARCHAR),
-    Column("description", VARCHAR),
-    Column("authorname", VARCHAR),
-    Column("authoravatar", VARCHAR),
-    Column("footertext", VARCHAR),
-)
-
-cache_embed_field = Table(
-    "cache_embed_field",
-    md_obj,
-    Column("id", Integer, primary_key=True, autoincrement=True),
-    Column("eid", Integer, ForeignKey(cache_embed.c.id)),
-    Column("name", VARCHAR, nullable=False),
-    Column("value", VARCHAR, nullable=False),
-)
-
 fedi_notifications_ids = Table(
     "fedi_notifications",
     md_obj,
