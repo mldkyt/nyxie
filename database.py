@@ -31,13 +31,6 @@ fedi_notifications_ids = Table(
     Column("aid", VARCHAR, nullable=False, unique=True),
 )
 
-yt_notifications_ids = Table(
-    "yt_notifications",
-    md_obj,
-    Column("id", Integer, primary_key=True, autoincrement=True),
-    Column("ytid", VARCHAR, nullable=False, unique=True),
-)
-
 dm_channels = Table(
     "dm_channel",
     md_obj,
