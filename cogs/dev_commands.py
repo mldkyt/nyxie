@@ -1,8 +1,10 @@
 import discord
-from discord import ApplicationContext, Bot, Member
+from discord import ApplicationContext, Bot, Member, message_command, Message
+from sqlalchemy import select
 
 from cogs import channel_posting
 from constants import GUILD, OWNER
+from database import engine, web_channels_list
 from logger import obsidian_logger
 from util.dm import dm_cache
 from util.sharkey import sharkey_cache
@@ -105,6 +107,20 @@ class DevCommands(discord.Cog):
             await sharkey_cache.fetch_yuribot_posts()
 
         await channel_posting.post_yuri(self.bot)
+
+    @message_command(guild_ids=[int(GUILD)])
+    async def test_command(self, ctx: ApplicationContext, message: Message):
+
+        with engine.begin() as c:
+            thread_db = c.execute(
+                select(web_channels_list)
+                .where(web_channels_list.c.id == message.id)
+            ).fetchone()
+
+        await ctx.respond(f"""# test
+- channel ID: {message.channel.id}, channel type: {str(message.channel.type)}, channel mention: {message.channel.mention}
+- message ID: {message.id}
+- thread info: {str(thread_db)}""")
 
 
 def setup(bot: Bot):
