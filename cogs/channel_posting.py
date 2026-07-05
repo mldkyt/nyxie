@@ -2,10 +2,8 @@ from asyncio import gather
 from datetime import datetime
 from random import choice, randint
 
-from aiohttp import ClientSession
 from discord import Bot, ButtonStyle, Cog, Guild, MediaGalleryItem, TextChannel
 from discord.ext.tasks import loop
-from discord.types.components import TextDisplayComponent
 from discord.ui import (
     ActionRow,
     Button,
@@ -20,12 +18,11 @@ from constants import (
     CHANNEL_MEOW,
     CHANNEL_YAOI,
     CHANNEL_YURI,
-    FEDI_INSTANCE,
     GUILD,
     VERSION,
 )
 from logger import obsidian_logger
-from util.sharkey import sharkey_cache
+from util.akkoma import akkoma_cache
 
 DEBUG = False
 
@@ -41,7 +38,7 @@ async def post_yuri(bot: Bot):
         obsidian_logger.warning("Yuri channel not found :(")
         return
 
-    yuri = await sharkey_cache.get_yuribot_post()
+    yuri = akkoma_cache.get_yuribot_post()
     if yuri is None:
         obsidian_logger.warning("No yuri :(")
         return  # :(
@@ -49,14 +46,14 @@ async def post_yuri(bot: Bot):
     component = Container(
         TextDisplay("# Daily Yuri"),
         Separator(),
-        MediaGallery(MediaGalleryItem(url=yuri["files"][0]["url"])),
+        MediaGallery(MediaGalleryItem(url=yuri.media_attachments[0].url)),
         TextDisplay(f"-# Tags: {yuri['files'][0]['comment']}"),
         Separator(),
         ActionRow(
             Button(
                 label="Open yuri on fedi",
                 style=ButtonStyle.url,
-                url=f"https://{FEDI_INSTANCE}/notes/{yuri['id']}",
+                url=yuri.url,
             )
         ),
         TextDisplay(f"-# obsidian {VERSION}"),
@@ -73,20 +70,20 @@ async def post_yaoi(bot: Bot):
     if not isinstance(chan, TextChannel):
         return
 
-    yaoi = await sharkey_cache.get_yaoibot_post()
+    yaoi = akkoma_cache.get_yaoibot_post()
     if yaoi is None:
         return  # :(
 
     component = Container(
         TextDisplay("# Daily Yaoi"),
         Separator(),
-        MediaGallery(MediaGalleryItem(url=yaoi["files"][0]["url"])),
+        MediaGallery(MediaGalleryItem(url=yaoi.media_attachments[0].url)),
         Separator(),
         ActionRow(
             Button(
                 label="Open yaoi on fedi",
                 style=ButtonStyle.url,
-                url=f"https://{FEDI_INSTANCE}/notes/{yaoi['id']}",
+                url=yaoi.url,
             )
         ),
         TextDisplay(f"-# obsidian {VERSION}"),

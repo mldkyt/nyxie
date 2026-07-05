@@ -8,7 +8,6 @@ import string
 import subprocess
 import sys
 import time
-from typing import Any
 
 import aiohttp
 import deepl
@@ -44,7 +43,6 @@ from constants import (
 from logger import obsidian_logger
 from util.akkoma import akkoma_cache
 from util.keysmash_generator import keysmash_ai
-from util.sharkey import sharkey_cache
 from util.storage import get_data, set_data
 
 dm_cache = []
@@ -797,10 +795,10 @@ class UserCommands(discord.Cog):
             interaction.custom_id == "more_yuri_pwease_uwu"
             and interaction.type == InteractionType.component
         ):
-            yuri = await sharkey_cache.get_yuribot_post()
+            yuri = akkoma_cache.get_yuribot_post()
 
             gallery = MediaGallery()
-            gallery.add_item(yuri["files"][0]["url"])
+            gallery.add_item(yuri.media_attachments[0].url)
 
             container = Container()
             container.add_item(gallery)
@@ -815,7 +813,7 @@ class UserCommands(discord.Cog):
                     Button(
                         label="source is fedi",
                         style=ButtonStyle.link,
-                        url=f"https://sk.lunya.pet/notes/{yuri['id']}",
+                        url=yuri.url,
                     ),
                 )
             )
@@ -1174,243 +1172,82 @@ class UserCommands(discord.Cog):
 
             await asyncio.gather(*[get_file(i) for i in message.attachments])
 
-            # account picker
-            await owner.send("account? [akkoma, sharkey]")
-            account = ""
-            while account not in ["akkoma", "sharkey", "ak", "a", "sk", "s"]:
-                try:
-                    account_msg = await self.bot.wait_for(
-                        "message", check=lambda msg: msg.author == owner, timeout=30
-                    )
-                    account = account_msg.content
+            media_ids = []
 
-                    if account == "cancel":
-                        await owner.send("canceling")
+            if len(message.attachments) > 0:
+                for i in message.attachments:
+                    await owner.send(f"Alt text for {i.filename} ({i.url}):")
+                    resp = await self.bot.wait_for(
+                        "message", check=lambda msg: msg.author == owner
+                    )
+
+                    media_ids.append(
+                        akkoma_cache.client.media_post(
+                            f"temp/{i.filename}", description=resp.content
+                        )
+                    )
+
+            cw = ""
+            text = message.content
+
+            # edits
+            while True:
+                await owner.send(
+                    "post is ready to be created, please issue following commands if needed: [edit content, edit cw, no media, no content, post]"
+                )
+                resp = await self.bot.wait_for(
+                    "message", check=lambda msg: msg.author == owner
+                )
+
+                if resp.content == "edit content":
+                    await owner.send("new content:")
+                    resp = await self.bot.wait_for(
+                        "message", check=lambda msg: msg.author == owner
+                    )
+
+                    text = resp.content
+                    await resp.add_reaction("✅")
+                elif resp.content == "edit cw":
+                    await owner.send("new cw:")
+                    resp = await self.bot.wait_for(
+                        "message", check=lambda msg: msg.author == owner
+                    )
+
+                    cw = resp.content
+                    await resp.add_reaction("✅")
+                elif resp.content == "no cw":
+                    cw = ""
+                    await resp.add_reaction("✅")
+                elif resp.content == "no media":
+                    media_ids = []
+                    if os.path.exists("temp"):
+                        for i in message.attachments:
+                            os.unlink(f"temp/{i.filename}")
+
+                        if len(os.listdir("temp")) == 0:
+                            os.rmdir("temp")
+
+                    await resp.add_reaction("✅")
+                elif resp.content == "no content":
+                    text = ""
+                    await resp.add_reaction("✅")
+                elif resp.content == "post":
+                    if len(text) == 0 and len(media_ids) == 0:
+                        await owner.send(
+                            "failed to post: no text AND media found, at least one is needed"
+                        )
                         return
-                except TimeoutError:
+
+                    break
+                elif resp.content == "cancel":
                     await owner.send("canceling")
                     return
 
-            # post
-            if account in ["sk", "s", "sharkey"]:
-                files: list[dict] = []
-                data: dict[str, Any] = {"text": message.content, "visibility": "public"}
+            status = akkoma_cache.client.status_post(
+                text, media_ids=media_ids, spoiler_text=cw
+            )
 
-                async def put_file(file_name: str):
-                    async with aiohttp.ClientSession() as sess:
-                        async with sess.post(
-                            f"https://{FEDI_INSTANCE}/api/drive/files/create",
-                            data={
-                                "file": open(f"temp/{file_name}", "rb"),
-                                "name": file_name,
-                            },
-                            headers={"Authorization": f"Bearer {FEDI_TOKEN}"},
-                        ) as req:
-                            if req.ok:
-                                a = await req.json()
-                                files.append(a)
-                            else:
-                                txt = await req.text()
-                                obsidian_logger.warning(
-                                    "Failed to upload file: Response code %s: %s",
-                                    str(req.status),
-                                    txt,
-                                )
-
-                await asyncio.gather(
-                    *[put_file(i.filename) for i in message.attachments]
-                )
-
-                if len(files) > 0:
-                    data["fileIds"] = [i["id"] for i in files]
-                    for i in files:
-                        try:
-                            await owner.send(f"Alt text for {i['name']} ({i['url']}):")
-                            resp = await self.bot.wait_for(
-                                "message", check=lambda msg: msg.author == owner
-                            )
-
-                            # Update alt text
-                            async with aiohttp.ClientSession() as sess:
-                                async with sess.post(
-                                    f"https://{FEDI_INSTANCE}/api/drive/files/update",
-                                    headers={"Authorization": f"Bearer {FEDI_TOKEN}"},
-                                    json={"fileId": i["id"], "comment": resp.content},
-                                ) as req:
-                                    if req.ok:
-                                        a = await req.json()
-                                    else:
-                                        txt = await req.text()
-                                        await owner.send(
-                                            f"Failed to update comment for {i['name']}: {txt}"
-                                        )
-
-                            await resp.reply(
-                                f"added comment to {i['name']} file successfully"
-                            )
-                        except Exception:
-                            await owner.send(
-                                f"Failed to update comment for {i['name']}"
-                            )
-
-                # edits
-                while True:
-                    await owner.send(
-                        "post is ready to be created, please issue following commands if needed: [edit content, edit cw, no media, no content, post]"
-                    )
-                    resp = await self.bot.wait_for(
-                        "message", check=lambda msg: msg.author == owner
-                    )
-
-                    if resp.content == "edit content":
-                        await owner.send("new content:")
-                        resp = await self.bot.wait_for(
-                            "message", check=lambda msg: msg.author == owner
-                        )
-
-                        data["text"] = resp.content
-                        await resp.add_reaction("✅")
-                    elif resp.content == "edit cw":
-                        await owner.send("new cw:")
-                        resp = await self.bot.wait_for(
-                            "message", check=lambda msg: msg.author == owner
-                        )
-
-                        data["cw"] = resp.content
-                        await resp.add_reaction("✅")
-                    elif resp.content == "no cw":
-                        del data["cw"]
-                        await resp.add_reaction("✅")
-                    elif resp.content == "no media":
-                        if os.path.exists("temp"):
-                            for i in message.attachments:
-                                os.unlink(f"temp/{i.filename}")
-
-                            if len(os.listdir("temp")) == 0:
-                                os.rmdir("temp")
-
-                        del data["fileIds"]
-                        await resp.add_reaction("✅")
-                    elif resp.content == "no content":
-                        del data["text"]
-                        await resp.add_reaction("✅")
-                    elif resp.content == "post":
-                        if "text" not in data and "mediaIds" not in data:
-                            await owner.send(
-                                "failed to post: no text AND media found, at least one is needed"
-                            )
-                            return
-
-                        break
-                    elif resp.content == "cancel":
-                        await owner.send("canceling")
-                        return
-
-                if "text" in data and len(data["text"].strip()) == 0:
-                    del data["text"]
-                if "cw" in data and len(data["cw"].strip()) == 0:
-                    del data["cw"]
-
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(
-                        f"https://{FEDI_INSTANCE}/api/notes/create",
-                        json=data,
-                        headers={"Authorization": f"Bearer {FEDI_TOKEN}"},
-                    ) as resp:
-                        if resp.status != 200:
-                            await ctx.respond(
-                                "Non-OK response from server!", ephemeral=True
-                            )
-                            text = await resp.text()
-
-                            obsidian_logger.warning(
-                                f"Non-OK response {resp.status} from server: {text}"
-                            )
-                            return
-
-                        data = await resp.json()
-
-                        await owner.send(
-                            f"post stolen\nhttps://{FEDI_INSTANCE}/notes/{data['createdNote']['id']}"
-                        )
-
-            elif account in ["akkoma", "ak", "a"]:
-                media_ids = []
-
-                if len(message.attachments) > 0:
-                    for i in message.attachments:
-                        await owner.send(f"Alt text for {i.filename} ({i.url}):")
-                        resp = await self.bot.wait_for(
-                            "message", check=lambda msg: msg.author == owner
-                        )
-
-                        media_ids.append(
-                            akkoma_cache.client.media_post(
-                                f"temp/{i.filename}", description=resp.content
-                            )
-                        )
-
-                cw = ""
-                text = message.content
-
-                # edits
-                while True:
-                    await owner.send(
-                        "post is ready to be created, please issue following commands if needed: [edit content, edit cw, no media, no content, post]"
-                    )
-                    resp = await self.bot.wait_for(
-                        "message", check=lambda msg: msg.author == owner
-                    )
-
-                    if resp.content == "edit content":
-                        await owner.send("new content:")
-                        resp = await self.bot.wait_for(
-                            "message", check=lambda msg: msg.author == owner
-                        )
-
-                        text = resp.content
-                        await resp.add_reaction("✅")
-                    elif resp.content == "edit cw":
-                        await owner.send("new cw:")
-                        resp = await self.bot.wait_for(
-                            "message", check=lambda msg: msg.author == owner
-                        )
-
-                        cw = resp.content
-                        await resp.add_reaction("✅")
-                    elif resp.content == "no cw":
-                        cw = ""
-                        await resp.add_reaction("✅")
-                    elif resp.content == "no media":
-                        media_ids = []
-                        if os.path.exists("temp"):
-                            for i in message.attachments:
-                                os.unlink(f"temp/{i.filename}")
-
-                            if len(os.listdir("temp")) == 0:
-                                os.rmdir("temp")
-
-                        await resp.add_reaction("✅")
-                    elif resp.content == "no content":
-                        text = ""
-                        await resp.add_reaction("✅")
-                    elif resp.content == "post":
-                        if len(text) == 0 and len(media_ids) == 0:
-                            await owner.send(
-                                "failed to post: no text AND media found, at least one is needed"
-                            )
-                            return
-
-                        break
-                    elif resp.content == "cancel":
-                        await owner.send("canceling")
-                        return
-
-                status = akkoma_cache.client.status_post(
-                    text, media_ids=media_ids, spoiler_text=cw
-                )
-
-                await owner.send(f"post stolen\n{status.url or status.uri}")
+            await owner.send(f"post stolen\n{status.url or status.uri}")
 
             if os.path.exists("temp"):
                 for i in message.attachments:
@@ -1595,10 +1432,10 @@ class UserCommands(discord.Cog):
     @cooldown(1, 10, BucketType.default)
     async def yuri(self, ctx: discord.ApplicationContext):
         try:
-            yuri = await sharkey_cache.get_yuribot_post()
+            yuri = akkoma_cache.get_yuribot_post()
 
             gallery = MediaGallery()
-            gallery.add_item(yuri["files"][0]["url"])
+            gallery.add_item(yuri.media_attachments[0].url)
 
             container = Container()
             container.add_item(gallery)
@@ -1613,7 +1450,7 @@ class UserCommands(discord.Cog):
                     Button(
                         label="source is fedi",
                         style=ButtonStyle.link,
-                        url=f"https://sk.lunya.pet/notes/{yuri['id']}",
+                        url=yuri.url,
                     ),
                 )
             )
