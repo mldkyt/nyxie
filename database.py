@@ -24,13 +24,6 @@ engine = create_engine(
 
 md_obj = MetaData()
 
-fedi_notifications_ids = Table(
-    "fedi_notifications",
-    md_obj,
-    Column("id", Integer, primary_key=True, autoincrement=True),
-    Column("aid", VARCHAR, nullable=False, unique=True),
-)
-
 dm_channels = Table(
     "dm_channel",
     md_obj,
