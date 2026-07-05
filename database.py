@@ -38,18 +38,6 @@ yt_notifications_ids = Table(
     Column("ytid", VARCHAR, nullable=False, unique=True),
 )
 
-reports = Table(
-    "reports",
-    md_obj,
-    Column("id", Integer, primary_key=True, autoincrement=True),
-    Column("cid", VARCHAR, comment="Channel ID"),
-    Column("mid", VARCHAR, comment="Message ID"),
-    Column("aid", VARCHAR, comment="Message Author ID"),
-    Column("rid", VARCHAR, comment="Reporter ID"),
-    Column("lid", VARCHAR, comment="Log message ID"),
-    Column("reason", VARCHAR),
-)
-
 dm_channels = Table(
     "dm_channel",
     md_obj,
