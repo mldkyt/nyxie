@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Messages</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            background-color: #111111;
+        }
+    </style>
+</head>
+<body>
+<div style="display: flex; flex-direction: row;">
+    <div style="width: 20%;">
+        <span>Channels</span>
+        <br>
+
+        {% for category, channels in channels.items() %}
+        {% if category %}<span style="margin: 2px;"><strong>{{category}}</strong></span><br>{% endif %}
+        {% for channel in channels %}
+        <a href="/explore/{{channel.id}}" style="margin: 1px;">#{{channel.name}}</a>
+        <br>
+        {% endfor %}
+        {% endfor %}
+    </div>
+    <div>
+        <span>{{title}}</span>
+        {% if return_channel_id %}
+        <a href="/explore/{{return_channel_id}}">return to channel</a>
+        {% endif %}
+        <br>
+        {% for message in messages %}
+        <div style="display: flex; flex-direction: row; {% if message.is_highlight %}background-color: #222222; {% endif %} margin: 8px 0;">
+            <img alt="Profile picture of {{message.author_name}}" height="48" src="{{message.author_pfp}}"
+                 style="margin: 4px; flex-shrink: 0;"
+                 width="48">
+            <div style="display: flex; flex-direction: column; margin: 4px;">
+                {% if message.reply_to %}
+                <span style="font-size: 80%;">Reply to <a href="?m={{message.reply_to}}" style="color: #E2B188;">this message</a></span>
+                {% endif %}
+                <a href="?m={{message.id}}"
+                   style="display: flex; flex-direction: column; margin: 4px; text-decoration: none; color: unset;">
+                    <span><strong>{{message.author_name}}</strong> <span style="color: #E2B188; font-size: 80%">{{message.username}}</span></span>
+                    <span>{{message.content|safe}}</span>
+                    <span style="font-size: 60%;">{{message.created_at}}</span>
+                </a>
+                {% if message.reply_ids %}
+                <span style="font-size: 80%;">
+                    Replies:
+                    {% for reply in message.reply_ids %}
+                    <a href="?m={{reply.id}}">#{{reply.number}}</a>
+                    {% endfor %}
+                </span>
+                {% endif %}
+                <span style="font-size: 80%;">
+                    {% if message.thread %}
+                    <a href="/explore/{{message.channel_id}}/{{message.thread.id}}" style="color: #E2B188;">Thread: {{message.thread.name}}</a>
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+</body>
+</html>
