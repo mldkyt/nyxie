@@ -510,6 +510,9 @@ def process_preferences():
     else:
         session["more"] = "0"
 
+    if "theme" in request.form and request.form["theme"] in ["Pleroma", "Monokai", "Catppuccin", "Discord"]:
+        session["theme"] = request.form["theme"]
+
 
 def search_messages(query: str):
     with engine.begin() as c:
