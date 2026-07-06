@@ -1,6 +1,6 @@
 from discord import Message, TextChannel, Thread, ChannelType
 from markdown_it import MarkdownIt
-from sqlalchemy import select, Connection, insert, update
+from sqlalchemy import select, Connection, insert, update, delete
 
 from database import engine, web_messages_list, web_authors_list, web_channels_list, web_messages_attachments_list
 
@@ -75,7 +75,7 @@ def _update_channel(c: Connection, channel: TextChannel | Thread):
         )
 
 
-def _add_or_update_channel(c: Connection, channel: TextChannel | Thread):
+def add_or_update_channel(c: Connection, channel: TextChannel | Thread):
     if c.execute(
             select(web_channels_list.c.id)
                     .where(web_channels_list.c.id == channel.id)
@@ -130,7 +130,7 @@ async def _resolve_and_add_reply(c: Connection, msg: Message) -> int | None:
 
 async def _add_message(c: Connection, message: Message):
     _add_or_update_author(c, message)
-    _add_or_update_channel(c, message.channel)
+    add_or_update_channel(c, message.channel)
     reply_msg = await _resolve_and_add_reply(c, message)
     if message.thread is not None:
         await _add_or_update_thread(c, message.thread)
@@ -152,7 +152,7 @@ async def _add_message(c: Connection, message: Message):
 
 async def _update_message(c: Connection, message: Message):
     _add_or_update_author(c, message)
-    _add_or_update_channel(c, message.channel)
+    add_or_update_channel(c, message.channel)
     reply_msg = await _resolve_and_add_reply(c, message)
     if message.thread is not None:
         await _add_or_update_thread(c, message.thread)
@@ -177,6 +177,12 @@ async def add_message(message: Message):
         else:
             await _update_message(c, message)
 
+def remove_message(message: int):
+    with engine.begin() as c:
+        c.execute(
+            delete(web_messages_list)
+            .where(web_messages_list.c.id == message)
+        )
 
 def get_channels():
     with engine.begin() as c:
