@@ -11,6 +11,7 @@ RUN pip3 install --upgrade uv
 RUN uv sync
 
 COPY masto_auth.py .
+COPY webmain.py .
 COPY logger.py .
 COPY main.py .
 COPY constants.py .
