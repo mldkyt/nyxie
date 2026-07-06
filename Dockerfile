@@ -20,6 +20,7 @@ COPY util/ util/.
 COPY alembic.ini .
 COPY alembic/ alembic/.
 COPY docker/ docker/.
+COPY web/ web/.
 COPY .git/ .git/.
 
 RUN chmod +x docker/prepare.sh
