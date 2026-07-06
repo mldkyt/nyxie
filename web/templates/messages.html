@@ -35,7 +35,7 @@
         {% for category, channels in channels.items() %}
         {% if category %}<span style="margin: 2px;"><strong>{{category}}</strong></span><br>{% endif %}
         {% for channel in channels %}
-        <a href="/explore/{{channel.id}}" style="margin: 1px;">#{{channel.name}}</a>
+        <a href="/discord/explore/{{channel.id}}" style="margin: 1px;">#{{channel.name}}</a>
         <br>
         {% endfor %}
         {% endfor %}
@@ -43,7 +43,7 @@
     <div>
         <span>{{title}}</span>
         {% if return_channel_id %}
-        <a href="/explore/{{return_channel_id}}">return to channel</a>
+        <a href="/discord/explore/{{return_channel_id}}">return to channel</a>
         {% endif %}
         <br>
         {% for message in messages %}
@@ -71,7 +71,7 @@
                 {% endif %}
                 <span style="font-size: 80%;">
                     {% if message.thread %}
-                    <a href="/explore/{{message.channel_id}}/{{message.thread.id}}" style="color: #E2B188;">Thread: {{message.thread.name}}</a>
+                    <a href="/discord/explore/{{message.channel_id}}/{{message.thread.id}}" style="color: #E2B188;">Thread: {{message.thread.name}}</a>
                     {% endif %}
                 </span>
             </div>

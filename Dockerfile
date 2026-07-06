@@ -5,6 +5,7 @@ WORKDIR /app
 RUN apk add --no-cache postgresql17 postgresql17-dev git bash gcc
 
 COPY pyproject.toml .
+COPY uv.lock .
 
 RUN pip3 install --upgrade uv
 RUN uv sync
