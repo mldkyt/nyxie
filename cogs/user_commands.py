@@ -2,19 +2,20 @@ import asyncio
 import datetime
 import os.path
 import random
-import re
 import shutil
 import string
 import subprocess
 import sys
 import time
+import typing
 
 import aiohttp
+import bs4
 import deepl
 import discord
 import pytz
 import yt_dlp.version
-from dateutil.parser import isoparse
+from bs4 import BeautifulSoup
 from deepl import Language
 from discord import Bot, ButtonStyle, Interaction, InteractionType, Message
 from discord.ext import commands, tasks
@@ -29,13 +30,13 @@ from discord.ui import (
     TextDisplay,
     Thumbnail, ActionRow,
 )
+from mastodon.return_types import Status, Poll, Account
 
 from constants import (
     CHANNEL_MEMES,
     CHANNEL_MODERATION,
     DEEPL_API_KEY,
     FEDI_INSTANCE,
-    FEDI_TOKEN,
     GUILD,
     OWNER,
     VERSION, FORGEJO_OWNER, FORGEJO_PROJECT,
@@ -422,33 +423,52 @@ class PickerComponent(discord.ui.View):
             lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
+# borrowed from https://stackoverflow.com/questions/30337528/make-beautifulsoup-handle-line-breaks-as-a-browser-would
+def get_text(tag: bs4.Tag) -> str:
+    _inline_elements = {"a","span","em","strong","u","i","font","mark","label",
+    "s","sub","sup","tt","bdo","button","cite","del","b","a","font",}
 
-def generate_user_embed(resp_body):
-    host = FEDI_INSTANCE if resp_body["host"] is None else resp_body["host"]
-    desc = resp_body["description"][:1500]
-    if desc != resp_body["description"]:
+    def _get_text(tag: bs4.Tag) -> typing.Generator:
+        for child in tag.children:
+            if isinstance(child, bs4.Tag):
+                # if the tag is a block type tag then yield new lines before after
+                is_block_element = child.name not in _inline_elements
+                if is_block_element:
+                    yield "\n"
+                yield from ["\n"] if child.name == "br" else _get_text(child)
+                if is_block_element:
+                    yield "\n"
+            elif isinstance(child, bs4.NavigableString):
+                yield child.string
+
+    return "".join(_get_text(tag))
+
+
+def generate_user_embed(account: Account):
+    desc = account.note[:1500]
+    if desc != account.note:
         desc = desc + "..."
 
     emb = discord.Embed(
-        title=f"{resp_body['name']} (@{resp_body['username']}@{host})",
+        title=f"{account.display_name} ({account.acct})",
         description=desc,
-        thumbnail=resp_body["avatarUrl"],
+        thumbnail=account.avatar,
         fields=[
             discord.EmbedField(
-                name="Notes", value=resp_body["notesCount"], inline=True
+                name="Statuses", value=str(account.statuses_count), inline=True
             ),
             discord.EmbedField(
-                name="Followers", value=resp_body["followersCount"], inline=True
+                name="Followers", value=str(account.followers_count), inline=True
             ),
             discord.EmbedField(
-                name="Following", value=resp_body["followingCount"], inline=True
+                name="Following", value=str(account.following_count), inline=True
             ),
         ],
-        url=f"https://{FEDI_INSTANCE}/@{resp_body['username']}@{host}",
+        url=account.url,
         color=discord.Color.from_rgb(255, 119, 255),
     )
 
-    if resp_body["host"] is not None:
+    if "@" in account.acct:
         emb.set_footer(
             text="The information may not be accurate as it comes from a remote instance."
         )
@@ -456,94 +476,49 @@ def generate_user_embed(resp_body):
     return emb
 
 
-async def lookup_user(
-    user_name: str,
-    user_inst: str | None,
-    disable_pinned: bool = False,
-    pinned_count: int = 3,
-) -> list[discord.Embed] | None:
-    async with aiohttp.ClientSession() as session:
-        body = {
-            "username": user_name,
-        }
-
-        if user_inst is not None:
-            body["host"] = user_inst
-
-        async with session.post(
-            f"https://{FEDI_INSTANCE}/api/users/show", json=body
-        ) as resp:
-            if resp.status != 200:
-                return None
-
-            resp_body = await resp.json()
-
-            emb = generate_user_embed(resp_body)
-
-            if disable_pinned:
-                return [emb]
-
-            pinned_notes = []
-            i = 0
-            for post in resp_body["pinnedNotes"]:
-                i = i + 1
-                if i > pinned_count:
-                    break
-
-                pinned_notes.append(generate_note_embed(post, pinned=True))
-
-            return [emb, *pinned_notes]
-
-
-def generate_note_embed(note, pinned=False):
+def generate_status_embed(status: Status, pinned=False):
     image_url = (
-        note["files"][0]["url"]
-        if len(note["files"]) > 0 and note["cw"] is None
+        status.media_attachments[0].url
+        if len(status.media_attachments) > 0 and len(status.spoiler_text) == 0
         else None
     )
 
     reaction_string = ""
 
-    if note["repliesCount"] > 0:
-        reaction_string = f"{note['repliesCount']} replies | "
+    if status.favourites_count > 0:
+        reaction_string += f"{status.favourites_count} favorites | "
+    if status.replies_count > 0:
+        reaction_string += f"{status.replies_count} replies | "
+    if status.reblogs_count > 0:
+        reaction_string += f"{status.reblogs_count} renotes | "
 
-    if note["renoteCount"] > 0:
-        reaction_string = f"{note['renoteCount']} renotes | "
-
-    for k, v in note["reactions"].items():
-        if len(k.split("@")) > 1:
-            k = f"{k.split('@')[0]}:"
-
-        reaction_string += f"{v}x {k} | "
-
-    reaction_string = reaction_string[:-3]
-
-    host = FEDI_INSTANCE if note["user"]["host"] is None else note["user"]["host"]
+    reaction_string = reaction_string[:3]
 
     pinned_post = "Pinned note by " if pinned else ""
 
-    desc = note["text"] if note["cw"] is None else f"CW: {note['cw']}\n\n"
+    content = get_text(BeautifulSoup(status.content, features="html.parser")).strip()
+    desc = content if len(status.spoiler_text) == 0 else f"CW: {status.spoiler_text}\n\n"
 
-    if note["cw"] is not None:
-        if len(note["files"]) > 0 and len(note["text"]) > 0:
+    if len(status.spoiler_text) > 0:
+        if len(status.media_attachments) > 0 and len(content) > 0:
             desc += "(Open the link in order to view the text and media)"
-        elif len(note["files"]) > 0 and len(note["text"]) == 0:
+        elif len(status.media_attachments) > 0 and len(content) == 0:
             desc += "(Open the link in order to view the media)"
         else:
             desc += "(Open the link in order to view the text)"
 
-    if "poll" in note and note["poll"] is not None and note["cw"] is None:
-        desc += get_poll_str(note["poll"])
+    if status.poll is not None:
+        desc += get_poll_str(status.poll)
 
     emb = discord.Embed(
-        title=f"{'Pinned ' if pinned else ''}Note by {note['user']['name']} (@{note['user']['username']}@{host})",
-        url=f"https://{FEDI_INSTANCE}/notes/{note['id']}",
+        title=f"{'Pinned ' if pinned else ''}Note by {status.account.display_name} ({status.account.acct})",
+        url=status.url,
         description=desc,
         image=image_url,
         author=discord.EmbedAuthor(
-            name=f"{pinned_post}{note['user']['name']} (@{note['user']['username']}@{host})",
-            icon_url=note["user"]["avatarUrl"],
-            url=f"https://{FEDI_INSTANCE}/@{note['user']['username']}@{host}",
+            name=f"{pinned_post}{status.account.display_name} ({status.account.acct})",
+            icon_url=status.account.avatar,
+            url=status.account.url,
         ),
         color=discord.Color.from_rgb(255, 119, 255),
         footer=discord.EmbedFooter(text=reaction_string)
@@ -553,116 +528,36 @@ def generate_note_embed(note, pinned=False):
 
     return emb
 
-
-async def lookup_note_id(
-    note_id: str, pinned: bool = False
-) -> list[discord.Embed] | None:
-    async with aiohttp.ClientSession() as session:
-        async with session.post(
-            f"https://{FEDI_INSTANCE}/api/notes/show", json={"noteId": note_id}
-        ) as resp:
-            if resp.status != 200:
-                return None
-
-            resp_body = await resp.json()
-
-            emb = generate_note_embed(resp_body, pinned)
-
-            return [emb]
-
-
-async def get_posts_under_hashtags(lookup_str) -> list[discord.Embed] | None:
+async def get_posts_under_hashtags(hashtag) -> list[discord.Embed] | None:
     # Lookup_str: #art for example
     embeds = []
 
-    async with aiohttp.ClientSession() as session:
-        async with session.post(
-            f"https://{FEDI_INSTANCE}/api/hashtags/show", json={"tag": lookup_str[1:]}
-        ) as resp:
-            if resp.status != 200:
-                return None
+    hashtag = list(akkoma_cache.client.timeline_hashtag(hashtag))
 
-            body = await resp.json()
-
-            embeds.append(
-                discord.Embed(
-                    title=f"Hashtag: {lookup_str}",
-                    fields=[
-                        discord.EmbedField(
-                            name="Posts", value=str(body["attachedUsersCount"])
-                        ),
-                        discord.EmbedField(
-                            name="User Mentions", value=str(body["mentionedUsersCount"])
-                        ),
-                    ],
-                    color=discord.Color.from_rgb(255, 119, 255),
-                )
-            )
-
-        async with session.post(
-            f"https://{FEDI_INSTANCE}/api/notes/search-by-tag",
-            json={"limit": 10, "tag": lookup_str[1:]},
-        ) as resp:
-            if resp.status != 200:
-                return None
-
-            body = await resp.json()
-
-            for i in body[:3]:
-                embeds.append(generate_note_embed(i))
+    for i in hashtag[3:]:
+        embeds.append(generate_status_embed(i))
 
     return embeds
 
 
-async def lookup_by_str(
-    lookup_str: str, disable_pinned: bool = False, pinned_count: int = 3
-) -> list[discord.Embed] | None:
-    user_mention = lookup_str.split("@")
-    if len(user_mention) == 2:
-        # Local user lookup
-        return await lookup_user(
-            user_mention[1],
-            None,
-            disable_pinned=disable_pinned,
-            pinned_count=pinned_count,
-        )
-    elif len(user_mention) == 3:
-        # Remote user lookup
-        return await lookup_user(
-            user_mention[1],
-            user_mention[2],
-            disable_pinned=disable_pinned,
-            pinned_count=pinned_count,
-        )
-
-    # Check hashtag
-    if re.match(r"#[a-zA-Z0-9]+", lookup_str):
-        return await get_posts_under_hashtags(lookup_str)
-
-    # Lookup note by MisskeyID
-    return await lookup_note_id(lookup_str)
-
-
-def get_poll_str(poll: dict | None) -> str:
-    if poll is None:
-        return ""
-
+def get_poll_str(poll: Poll) -> str:
     message = "\n\n**[Poll]**\n"
-    counts = sum([i["votes"] for i in poll["choices"]])
+    counts = poll.votes_count
 
-    for i in poll["choices"]:
-        if counts == 0:
-            message += f"**{i['text']}** - {i['votes']} votes\n"
+    for option in poll.options:
+        if counts == 0 or option.votes_count is None:
+            message += f"**{option.title}** - {option.votes_count} votes\n"
         else:
-            message += f"**{i['text']}** - {i['votes']} votes ({int(i['votes'] / counts * 100)}%)\n"
+            message += f"**{option.title}** - {option.votes_count} votes ({int(option.votes_count / counts * 100)}%)\n"
 
     message += "\n"
 
-    if poll["multiple"]:
+    if poll.multiple:
         message += "**Multiple Choices** - "
 
-    expires_at = isoparse(poll["expiresAt"])
-    message += f"**Expires at {expires_at.strftime('%Y/%m/%d %H:%M:%S %Z')}**\n"
+    expires_at = poll.expires_at
+    if expires_at is not None:
+        message += f"**Expires at {expires_at.strftime('%Y/%m/%d %H:%M:%S %Z')}**\n"
 
     return message.rstrip()
 
@@ -671,85 +566,59 @@ async def search(
     query: str, content_type: str, media_type: str, count: int
 ) -> tuple[list[discord.Embed], int] | None:
     start_time = time.time()
-    async with aiohttp.ClientSession() as session:
-        if content_type == "notes":
-            return await search_notes(query, media_type, session, start_time, count)
-        elif content_type == "users":
-            return await search_users(query, session, start_time, count)
+    if content_type == "notes":
+        return await search_posts(query, media_type, start_time, count)
+    elif content_type == "users":
+        return await search_users(query, start_time, count)
 
-        raise ValueError(
-            f"content_type is out of range: {content_type} is not a valid value"
-        )
-
-
-async def search_users(query, session, start_time, count):
-    async with session.post(
-        f"https://{FEDI_INSTANCE}/api/users/search",
-        json={"limit": 10, "query": query},
-        headers={"Authorization": f"Bearer {FEDI_TOKEN}"},
-    ) as resp:
-        if resp.status != 200:
-            text = await resp.text()
-            lunamon_logger.warning("API returned %s: %s", str(resp.status), text)
-            return None
-
-        resp_body = await resp.json()
-
-        embeds = []
-
-        for i in resp_body:
-            emb = generate_user_embed(i)
-
-            if emb is None:
-                continue
-
-            embeds.append(emb)
-
-            if len(embeds) >= count:
-                break
-
-        end_time = time.time()
-        diff = round((end_time - start_time) * 1000)
-        return (embeds, diff) if len(embeds) > 0 else None
+    raise ValueError(
+        f"content_type is out of range: {content_type} is not a valid value"
+    )
 
 
-async def search_notes(query, media_type, session, start_time, count):
-    body = {"query": query, "limit": 10}
+async def search_users(query, start_time, count):
+    users = akkoma_cache.client.search_v2(query)
+    embeds = []
 
-    if media_type != "all" and media_type in ["image", "video"]:
-        body["filetype"] = media_type
+    for i in users.accounts:
+        emb = generate_user_embed(i)
 
-    async with session.post(
-        f"https://{FEDI_INSTANCE}/api/notes/search",
-        json=body,
-        headers={"Authorization": f"Bearer {FEDI_TOKEN}"},
-    ) as resp:
-        if resp.status != 200:
-            text = await resp.text()
-            lunamon_logger.warning("API returned %s: %s", str(resp.status), text)
-            return None
+        if emb is None:
+            continue
 
-        resp_body = await resp.json()
+        embeds.append(emb)
 
-        embeds = []
+        if len(embeds) >= count:
+            break
 
-        for i in resp_body:
-            if i["cw"] is not None:
-                continue
+    end_time = time.time()
+    diff = round((end_time - start_time) * 1000)
+    return (embeds, diff) if len(embeds) > 0 else None
 
-            emb = generate_note_embed(i)
 
-            if emb is None:
-                continue
+async def search_posts(query, media_type, start_time, count):
+    statuses = akkoma_cache.client.search_v2(query)
+    embeds = []
 
-            embeds.append(emb)
+    for i in statuses.statuses:
+        if len(i.spoiler_text) > 0:
+            continue
+        if media_type == "all" and len(i.media_attachments) == 0:
+            continue
+        if media_type == "image" and not any(j.type == "image" for j in i.media_attachments):
+            continue
+        if media_type == "video" and not any(j.type == "video" for j in i.media_attachments):
+            continue
 
-            if len(embeds) >= count:
-                break
+        emb = generate_status_embed(i)
+        embeds.append(emb)
 
-        end_time = time.time()
-        diff = round((end_time - start_time) * 1000)
-        return (embeds[:count], diff) if len(embeds) > 0 else None
+        if len(embeds) >= count:
+            break
+
+    end_time = time.time()
+    diff = round((end_time - start_time) * 1000)
+    return (embeds[:count], diff) if len(embeds) > 0 else None
 
 
 async def uwuify(text: str) -> str | None:
@@ -1029,52 +898,18 @@ class UserCommands(discord.Cog):
     )
 
     @fedi_group.command(
-        name="lookup",
-        description="Lookup fedi user/post",
-        integration_types=[discord.IntegrationType.user_install],
-    )
-    async def lookup_post(
-        self,
-        ctx: discord.ApplicationContext,
-        lookup_str: str,
-        disable_pinned: bool = False,
-        pinned_count: int = 3,
-    ):
-        try:
-            # Verify right user
-            if ctx.user.id != int(OWNER):
-                await ctx.respond(
-                    "You are not authorized to use this command!", ephemeral=True
-                )
-                return
-
-            # Let's attempt generate embed based on lookup function
-            emb = await lookup_by_str(
-                lookup_str, disable_pinned=disable_pinned, pinned_count=pinned_count
-            )
-
-            if emb is None:
-                await ctx.respond("Failed to lookup!", ephemeral=True)
-                return
-
-            await ctx.respond(embeds=emb)
-        except Exception as e:
-            lunamon_logger.exception("An error occurred:")
-            await ctx.respond("Error when looking up!", ephemeral=True)
-
-    @fedi_group.command(
         name="search",
         description="Search on fedi",
         integration_types=[discord.IntegrationType.user_install],
     )
     @discord.option(name="media_type", choices=["image", "video"])
-    @discord.option(name="content_type", choices=["notes", "users"])
+    @discord.option(name="content_type", choices=["posts", "users"])
     @discord.option(name="count", min=1, max=10)
     async def search(
         self,
         ctx: discord.ApplicationContext,
         q: str,
-        content_type: str = "notes",
+        content_type: str = "posts",
         media_type: str = "all",
         count: int = 3,
     ):
@@ -1107,7 +942,7 @@ class UserCommands(discord.Cog):
         description="Create a note on fedi",
         integration_types=[discord.IntegrationType.user_install],
     )
-    @discord.option(name="visibility", choices=["public", "home", "followers"])
+    @discord.option(name="visibility", choices=["public", "unlisted", "private"])
     async def note(
         self,
         ctx: discord.ApplicationContext,
@@ -1117,37 +952,14 @@ class UserCommands(discord.Cog):
         public_response: bool = False,
     ):
         try:
-            # Try create a note
-            data = {"text": text, "visibility": visibility}
-            if len(cw.strip()) > 0:
-                data["cw"] = cw.strip()
-
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    f"https://{FEDI_INSTANCE}/api/notes/create",
-                    json=data,
-                    headers={"Authorization": f"Bearer {FEDI_TOKEN}"},
-                ) as resp:
-                    if resp.status != 200:
-                        await ctx.respond(
-                            "Non-OK response from server!", ephemeral=True
-                        )
-                        text = await resp.text()
-
-                        lunamon_logger.warning(
-                            f"Non-OK response {resp.status} from server: {text}"
-                        )
-                        return
-
-                    data = await resp.json()
-
-                    await ctx.respond(
-                        f"Note created! https://{FEDI_INSTANCE}/notes/{data['createdNote']['id']}",
-                        ephemeral=not public_response,
-                    )
+            post = akkoma_cache.client.status_post(text, spoiler_text=cw, visibility=visibility)
+            await ctx.respond(
+                f"Note created! {post.url}",
+                ephemeral=not public_response,
+            )
         except Exception as e:
             lunamon_logger.exception("An error occurred:")
-            await ctx.respond("Failed to create note!", ephemeral=True)
+            await ctx.respond("Failed to create status :(", ephemeral=True)
 
     @discord.message_command(
         name="post this on fedi",
