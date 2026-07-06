@@ -35,7 +35,7 @@ from constants import (
     GUILD, FORGEJO_OWNER, FORGEJO_PROJECT,
 )
 from database import engine, suggestion_messages, suggestion_messages_comments
-from logger import obsidian_logger
+from logger import lunamon_logger
 
 
 class ForgejoCreateIssueModal(Modal):
@@ -78,7 +78,7 @@ class ForgejoCreateIssueModal(Modal):
                         ephemeral=True,
                     )
         except Exception as e:
-            obsidian_logger.exception("An error occurred:")
+            lunamon_logger.exception("An error occurred:")
             await interaction.respond("an error occurred, please try again later and probably tell Lunya",
                                       ephemeral=True)
 
@@ -149,9 +149,9 @@ class Issues(Cog):
         except ClientResponseError as e:
             await interaction.respond(f"An error occured while contacting the server, {e.status} {e.message}",
                                       ephemeral=True)
-            obsidian_logger.warning(f"Repo doesn't exist: %s %s", e.status, e.message)
+            lunamon_logger.warning(f"Repo doesn't exist: %s %s", e.status, e.message)
         except Exception:
-            obsidian_logger.exception("Error handling on_interaction inside Bug Reporting")
+            lunamon_logger.exception("Error handling on_interaction inside Bug Reporting")
 
     @Cog.listener()
     async def on_message(self, message: Message):
@@ -204,7 +204,7 @@ class Issues(Cog):
                 async with aiohttp.ClientSession() as sess:
                     async with sess.get(attachment.url) as req:
                         if not req.ok:
-                            obsidian_logger.warning("Failed to download %s", attachment.filename)
+                            lunamon_logger.warning("Failed to download %s", attachment.filename)
                             continue
 
                         data = await req.read()
@@ -215,7 +215,7 @@ class Issues(Cog):
             # Upload
             for attachment in message.attachments:
                 if not os.path.exists(f'tmp/{attachment.filename}'):
-                    obsidian_logger.warning("Tried to upload non-existent file %s", attachment.filename)
+                    lunamon_logger.warning("Tried to upload non-existent file %s", attachment.filename)
                     continue
 
                 async with aiohttp.ClientSession() as sess:
@@ -229,8 +229,8 @@ class Issues(Cog):
                             }) as res:
                         if not res.ok:
                             text = await res.text()
-                            obsidian_logger.warning("File failed to upload: %s: %s %s", attachment.filename,
-                                                    str(res.status), text)
+                            lunamon_logger.warning("File failed to upload: %s: %s %s", attachment.filename,
+                                                   str(res.status), text)
 
             # Delete locally
             for attachment in message.attachments:
@@ -327,7 +327,7 @@ class Issues(Cog):
                 self.suggestion_queue.append(a)
                 return
 
-            obsidian_logger.info("Suggestions queue: 1 active, %d queued", len(self.suggestion_queue))
+            lunamon_logger.info("Suggestions queue: 1 active, %d queued", len(self.suggestion_queue))
 
             async with aiohttp.ClientSession() as sess:
                 async with sess.post(
@@ -355,7 +355,7 @@ class Issues(Cog):
                 async with aiohttp.ClientSession() as sess:
                     async with sess.get(attachment.url) as req:
                         if not req.ok:
-                            obsidian_logger.warning("Failed to download %s", attachment.filename)
+                            lunamon_logger.warning("Failed to download %s", attachment.filename)
                             continue
 
                         data = await req.read()
@@ -366,7 +366,7 @@ class Issues(Cog):
             # Upload
             for attachment in message.attachments:
                 if not os.path.exists(f'tmp/{attachment.filename}'):
-                    obsidian_logger.warning("Tried to upload non-existent file %s", attachment.filename)
+                    lunamon_logger.warning("Tried to upload non-existent file %s", attachment.filename)
                     continue
 
                 async with aiohttp.ClientSession() as sess:
@@ -380,8 +380,8 @@ class Issues(Cog):
                             }) as res:
                         if not res.ok:
                             text = await res.text()
-                            obsidian_logger.warning("File failed to upload: %s: %s %s", attachment.filename,
-                                                    str(res.status), text)
+                            lunamon_logger.warning("File failed to upload: %s: %s %s", attachment.filename,
+                                                   str(res.status), text)
 
             # Delete locally
             for attachment in message.attachments:
@@ -413,7 +413,7 @@ class Issues(Cog):
             logs_channel = guild.get_channel(int(CHANNEL_MODERATION))
             await logs_channel.send(view=DesignerView(component))
         except Exception:
-            obsidian_logger.exception("An error occured during suggestion queue execution:")
+            lunamon_logger.exception("An error occured during suggestion queue execution:")
 
     @loop(minutes=5)
     async def update_thread_titles(self):
@@ -454,8 +454,8 @@ class Issues(Cog):
 
             if thread.name.strip() != issue["title"].strip():
                 await thread.edit(name=issue["title"].strip())
-                obsidian_logger.info("Updated thread name for issue %d to %s on Discord", issue["number"],
-                                     issue["title"])
+                lunamon_logger.info("Updated thread name for issue %d to %s on Discord", issue["number"],
+                                    issue["title"])
 
 
 def setup(bot: Bot):

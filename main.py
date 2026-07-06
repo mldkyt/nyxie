@@ -4,7 +4,7 @@ import discord
 from discord.ext import commands
 
 from constants import DISCORD_TOKEN
-from logger import obsidian_logger
+from logger import lunamon_logger
 
 bot = discord.Bot(intents=discord.Intents.all())
 
@@ -18,7 +18,7 @@ async def on_ready():
     if not bot.user:
         return
 
-    obsidian_logger.info(f"{bot.user.display_name} has connected to Discord!")
+    lunamon_logger.info(f"{bot.user.display_name} has connected to Discord!")
 
 
 @bot.event
@@ -64,7 +64,7 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error):
         )
         return
 
-    obsidian_logger.exception("An error occurred:")
+    lunamon_logger.exception("An error occurred:")
     try:
         # respond
         await ctx.respond(
@@ -76,5 +76,5 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error):
     raise error
 
 
-obsidian_logger.info("Starting obsidian")
+lunamon_logger.info("Starting Lunamon")
 bot.run(DISCORD_TOKEN)

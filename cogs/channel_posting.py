@@ -21,7 +21,7 @@ from constants import (
     GUILD,
     VERSION,
 )
-from logger import obsidian_logger
+from logger import lunamon_logger
 from util.akkoma import akkoma_cache
 
 DEBUG = False
@@ -30,17 +30,17 @@ DEBUG = False
 async def post_yuri(bot: Bot):
     guild = bot.get_guild(int(GUILD))
     if not isinstance(guild, Guild):
-        obsidian_logger.warning("Guild not found")
+        lunamon_logger.warning("Guild not found")
         return
 
     chan = guild.get_channel(int(CHANNEL_YURI))
     if not isinstance(chan, TextChannel):
-        obsidian_logger.warning("Yuri channel not found :(")
+        lunamon_logger.warning("Yuri channel not found :(")
         return
 
     yuri = akkoma_cache.get_yuribot_post()
     if yuri is None:
-        obsidian_logger.warning("No yuri :(")
+        lunamon_logger.warning("No yuri :(")
         return  # :(
 
     component = Container(
@@ -56,7 +56,7 @@ async def post_yuri(bot: Bot):
                 url=yuri.url,
             )
         ),
-        TextDisplay(f"-# obsidian {VERSION}"),
+        TextDisplay(f"-# Lunamon {VERSION}"),
     )
 
     await chan.send(view=DesignerView(component))
@@ -86,7 +86,7 @@ async def post_yaoi(bot: Bot):
                 url=yaoi.url,
             )
         ),
-        TextDisplay(f"-# obsidian {VERSION}"),
+        TextDisplay(f"-# Lunamon {VERSION}"),
     )
 
     await chan.send(view=DesignerView(component))
