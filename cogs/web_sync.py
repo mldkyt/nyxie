@@ -1,11 +1,13 @@
-from discord import Cog, Bot, Message, RawMessageUpdateEvent, RawMessageDeleteEvent
+import datetime
+
+from discord import Cog, Bot, Message, RawMessageUpdateEvent, RawMessageDeleteEvent, Thread, ChannelType
 from discord.abc import GuildChannel
-from sqlalchemy import delete
+from sqlalchemy import delete, update
 
 from constants import GUILD
-from database import engine, web_channels_list
+from database import engine, web_channels_list, web_messages_list
 from logger import lunamon_logger
-from util.web_sync import add_message, remove_message, add_or_update_channel
+from util.web_sync import add_message, remove_message, unpin_all_messages
 
 
 class WebSync(Cog):
@@ -91,7 +93,15 @@ class WebSync(Cog):
             except Exception:
                 lunamon_logger.exception("Failed to add message to web UI:")
 
+    @Cog.listener()
+    async def on_guild_channel_pins_update(self, channel: GuildChannel | Thread, last_pin: datetime.datetime):
+        if channel.type in [ChannelType.public_thread, ChannelType.private_thread]:
+            return
 
+        unpin_all_messages(channel)
+
+        async for pinned in channel.pins():
+            await add_message(pinned.message)
 
 
 def setup(bot: Bot):

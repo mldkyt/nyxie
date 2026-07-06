@@ -82,6 +82,7 @@ web_messages_list = Table(
     Column("channel_id", BigInteger, nullable=False),
     Column("reply_msg", BigInteger),
     Column("created_at", DateTime(timezone=True), nullable=False, server_default="now()"),
+    Column("pinned", Integer, server_default="0", nullable=False),
     # this will get updated by the _update_message method
     ForeignKeyConstraint(
         ["author_id"], ["authors.id"],
