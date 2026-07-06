@@ -2,7 +2,7 @@ import os
 
 from dotenv import load_dotenv
 
-from logger import obsidian_logger
+from logger import lunamon_logger
 
 load_dotenv()
 
@@ -61,13 +61,13 @@ DEEPL_API_KEY = os.getenv("DEEPL_API_KEY")
 def validate_values(l: dict[str, str | None]):
     if DEV_MODE != "0":
         for i in range(3):
-            obsidian_logger.warning(
+            lunamon_logger.warning(
                 "DEVELOPMENT MODE!!! STOP AND REMOVE DEV_MODE FROM ENV IF NOT A DEVELOPMENT ENVIRONMENT"
             )
 
     for k, v in l.items():
         if v is None:
-            obsidian_logger.warning(
+            lunamon_logger.warning(
                 f"CONSTANTS: The constant value for {k} is NOT set!"
             )
 

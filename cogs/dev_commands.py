@@ -2,7 +2,7 @@ import discord
 from discord import ApplicationContext, Bot, Member
 
 from constants import GUILD, OWNER
-from logger import obsidian_logger
+from logger import lunamon_logger
 from util.dm import dm_cache
 from util.storage import get_data, set_data
 
@@ -13,7 +13,7 @@ class DevCommands(discord.Cog):
 
     @discord.Cog.listener()
     async def on_ready(self):
-        obsidian_logger.info("Dev Commands Cog is ready!")
+        lunamon_logger.info("Dev Commands Cog is ready!")
 
         # Set status if in configuration file
         status_data = get_data("status")
@@ -78,7 +78,7 @@ class DevCommands(discord.Cog):
             await self.bot.change_presence(activity=activity)
             await ctx.respond(f"Status set to {mode}: {status}!", ephemeral=True)
         except Exception as e:
-            obsidian_logger.exception("An error occurred:")
+            lunamon_logger.exception("An error occurred:")
 
     @dev_group.command(name="send_test_dm")
     async def send_test_dm(self, ctx: ApplicationContext, user: Member, message: str):
@@ -92,7 +92,7 @@ class DevCommands(discord.Cog):
             dm_cache.add_dm_to_send(user.id, message)
             await ctx.respond("Dm will be sent", ephemeral=True)
         except Exception:
-            obsidian_logger.exception("Error")
+            lunamon_logger.exception("Error")
             await ctx.respond("an error occured", ephemeral=True)
 
 

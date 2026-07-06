@@ -38,9 +38,9 @@ from constants import (
     FEDI_TOKEN,
     GUILD,
     OWNER,
-    VERSION,
+    VERSION, FORGEJO_OWNER, FORGEJO_PROJECT,
 )
-from logger import obsidian_logger
+from logger import lunamon_logger
 from util.akkoma import akkoma_cache
 from util.keysmash_generator import keysmash_ai
 from util.storage import get_data, set_data
@@ -104,7 +104,7 @@ class RefreshTimeView(discord.ui.View):
                 f"Your time: <t:{int(utc_time.timestamp())}:F>"
             )
         except Exception as e:
-            obsidian_logger.exception("An error occurred:")
+            lunamon_logger.exception("An error occurred:")
             await interaction.response.send_message(f"error :(", ephemeral=True)
 
 
@@ -142,7 +142,7 @@ class ReadReceiptComponent(discord.ui.View):
             )
             set_data(f"read_receipt/{interaction.message.id}", data)
         except Exception as e:
-            obsidian_logger.exception("An error occurred:")
+            lunamon_logger.exception("An error occurred:")
             await interaction.respond(
                 "error :(\n-# this error was automatically reported", ephemeral=True
             )
@@ -279,7 +279,7 @@ class PickerComponent(discord.ui.View):
             await interaction.respond(f"✅ Message sent\n{meow} :3", ephemeral=True)
             dm_cache.append(f"{meow} by {interaction.user.mention} :3")
         except Exception as e:
-            obsidian_logger.exception("An error occurred:")
+            lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
     async def colon_three(self, interaction: discord.Interaction):
@@ -290,7 +290,7 @@ class PickerComponent(discord.ui.View):
             )
             dm_cache.append(f"{colon_three} by {interaction.user.mention} :3")
         except Exception as e:
-            obsidian_logger.exception("An error occurred:")
+            lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
     async def cute(self, interaction: discord.Interaction):
@@ -300,7 +300,7 @@ class PickerComponent(discord.ui.View):
                 f"{interaction.user.mention} said that you're such a cute girl~ :3"
             )
         except Exception as e:
-            obsidian_logger.exception("An error occurred:")
+            lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
     async def pretty(self, interaction: discord.Interaction):
@@ -310,7 +310,7 @@ class PickerComponent(discord.ui.View):
                 f"{interaction.user.mention} said that you're such a pretty girl~ :3"
             )
         except Exception as e:
-            obsidian_logger.exception("An error occurred:")
+            lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
     async def gorgeous(self, interaction: discord.Interaction):
@@ -320,7 +320,7 @@ class PickerComponent(discord.ui.View):
                 f"{interaction.user.mention} said that you're such a gorgeous girl~ :3"
             )
         except Exception as e:
-            obsidian_logger.exception("An error occurred:")
+            lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
     async def cool(self, interaction: discord.Interaction):
@@ -330,7 +330,7 @@ class PickerComponent(discord.ui.View):
                 f"{interaction.user.mention} said that you're such a coool girl~ :3"
             )
         except Exception as e:
-            obsidian_logger.exception("An error occurred:")
+            lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
     async def good_girl(self, interaction: discord.Interaction):
@@ -342,7 +342,7 @@ class PickerComponent(discord.ui.View):
                 f"{interaction.user.mention} said that you're such a goooood girl~ :3"
             )
         except Exception as e:
-            obsidian_logger.exception("An error occurred:")
+            lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
     async def meowat(self, interaction: discord.Interaction):
@@ -350,7 +350,7 @@ class PickerComponent(discord.ui.View):
             await interaction.respond(f"✅ meow -> <@{OWNER}>", ephemeral=True)
             dm_cache.append(f"{interaction.user.mention} meowd at you :3")
         except Exception as e:
-            obsidian_logger.exception("An error occurred:")
+            lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
     async def purrr(self, interaction: discord.Interaction):
@@ -358,7 +358,7 @@ class PickerComponent(discord.ui.View):
             await interaction.respond("✅ *purrrrrrr*", ephemeral=True)
             dm_cache.append(f"{interaction.user.mention} has *purrrrr* :3")
         except Exception as e:
-            obsidian_logger.exception("An error occurred:")
+            lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
     async def girlkiss(self, interaction: discord.Interaction):
@@ -368,7 +368,7 @@ class PickerComponent(discord.ui.View):
                 f"{interaction.user.mention} has give you girlkiss :3333333333"
             )
         except Exception as e:
-            obsidian_logger.exception("An error occurred:")
+            lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
     async def boop(self, interaction: discord.Interaction):
@@ -376,7 +376,7 @@ class PickerComponent(discord.ui.View):
             await interaction.respond("✅ >///<", ephemeral=True)
             dm_cache.append(f"{interaction.user.mention} has booped you :3")
         except Exception as e:
-            obsidian_logger.exception("An error occurred:")
+            lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
     async def paws_at_you(self, interaction: discord.Interaction):
@@ -384,7 +384,7 @@ class PickerComponent(discord.ui.View):
             await interaction.respond("✅ *paws at Lunya*", ephemeral=True)
             dm_cache.append(f"{interaction.user.mention} *paws at you* :3")
         except Exception as e:
-            obsidian_logger.exception("An error occurred:")
+            lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
     async def beep(self, interaction: discord.Interaction):
@@ -392,7 +392,7 @@ class PickerComponent(discord.ui.View):
             await interaction.respond("✅ beeeeep", ephemeral=True)
             dm_cache.append(f"{interaction.user.mention} beeped at you :3")
         except Exception as e:
-            obsidian_logger.exception("An error occurred:")
+            lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
     async def click(self, interaction: discord.Interaction):
@@ -419,7 +419,7 @@ class PickerComponent(discord.ui.View):
 
             dm_cache.append(f"{interaction.user.mention} clicked at you :3")
         except Exception as e:
-            obsidian_logger.exception("An error occurred:")
+            lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
 
@@ -690,7 +690,7 @@ async def search_users(query, session, start_time, count):
     ) as resp:
         if resp.status != 200:
             text = await resp.text()
-            obsidian_logger.warning("API returned %s: %s", str(resp.status), text)
+            lunamon_logger.warning("API returned %s: %s", str(resp.status), text)
             return None
 
         resp_body = await resp.json()
@@ -726,7 +726,7 @@ async def search_notes(query, media_type, session, start_time, count):
     ) as resp:
         if resp.status != 200:
             text = await resp.text()
-            obsidian_logger.warning("API returned %s: %s", str(resp.status), text)
+            lunamon_logger.warning("API returned %s: %s", str(resp.status), text)
             return None
 
         resp_body = await resp.json()
@@ -853,7 +853,7 @@ class UserCommands(discord.Cog):
 
             await ctx.respond(msg)
         except Exception:
-            obsidian_logger.exception("Error occured in /user message")
+            lunamon_logger.exception("Error occured in /user message")
 
     @user_commands.command(
         name="information",
@@ -879,7 +879,7 @@ class UserCommands(discord.Cog):
             )
 
             await ctx.respond(
-                f"# obsidian version {VERSION}\n"
+                f"# Lunamon version {VERSION}\n"
                 f"```\n"
                 f"{uname.stdout.strip()}\n"
                 f"{uptime.stdout.strip()}\n"
@@ -888,7 +888,7 @@ class UserCommands(discord.Cog):
                 ephemeral=not public,
             )
         except Exception as e:
-            obsidian_logger.exception("Error occured in /user information")
+            lunamon_logger.exception("Error occured in /user information")
             await ctx.respond(
                 "An error occurred while executing the command.", ephemeral=True
             )
@@ -923,7 +923,7 @@ class UserCommands(discord.Cog):
 
             await ctx.respond(message, view=PickerComponent(type))
         except Exception as e:
-            obsidian_logger.exception("Error occured in /user picker")
+            lunamon_logger.exception("Error occured in /user picker")
             await ctx.respond(
                 "An error occurred while executing the command.", ephemeral=True
             )
@@ -970,7 +970,7 @@ class UserCommands(discord.Cog):
                     ephemeral=not public,
                 )
         except Exception as e:
-            obsidian_logger.exception("Error occured in /user clicker")
+            lunamon_logger.exception("Error occured in /user clicker")
             await ctx.respond(
                 "an error occurred while executing the command.", ephemeral=True
             )
@@ -989,7 +989,7 @@ class UserCommands(discord.Cog):
 
             await ctx.respond(message, view=ReadReceiptComponent())
         except Exception as e:
-            obsidian_logger.exception("Error occured in /user read_receipt")
+            lunamon_logger.exception("Error occured in /user read_receipt")
             await ctx.respond(
                 "An error occurred while executing the command.", ephemeral=True
             )
@@ -1017,7 +1017,7 @@ class UserCommands(discord.Cog):
                 view=RefreshTimeView(),
             )
         except Exception as e:
-            obsidian_logger.exception("Error occured in /user time")
+            lunamon_logger.exception("Error occured in /user time")
             await ctx.respond(
                 "An error occurred while executing the command.", ephemeral=True
             )
@@ -1059,7 +1059,7 @@ class UserCommands(discord.Cog):
 
             await ctx.respond(embeds=emb)
         except Exception as e:
-            obsidian_logger.exception("An error occurred:")
+            lunamon_logger.exception("An error occurred:")
             await ctx.respond("Error when looking up!", ephemeral=True)
 
     @fedi_group.command(
@@ -1099,7 +1099,7 @@ class UserCommands(discord.Cog):
                 embeds=emb[0], content=f"Searching notes finished within {emb[1]} ms"
             )
         except Exception as e:
-            obsidian_logger.exception("An error occurred:")
+            lunamon_logger.exception("An error occurred:")
             await ctx.followup.send(f"Error! Server error: {e=}")
 
     @fedi_group.command(
@@ -1134,7 +1134,7 @@ class UserCommands(discord.Cog):
                         )
                         text = await resp.text()
 
-                        obsidian_logger.warning(
+                        lunamon_logger.warning(
                             f"Non-OK response {resp.status} from server: {text}"
                         )
                         return
@@ -1146,7 +1146,7 @@ class UserCommands(discord.Cog):
                         ephemeral=not public_response,
                     )
         except Exception as e:
-            obsidian_logger.exception("An error occurred:")
+            lunamon_logger.exception("An error occurred:")
             await ctx.respond("Failed to create note!", ephemeral=True)
 
     @discord.message_command(
@@ -1256,7 +1256,7 @@ class UserCommands(discord.Cog):
                 if len(os.listdir("temp")) == 0:
                     os.rmdir("temp")
         except Exception as e:
-            obsidian_logger.exception("An error occurred:")
+            lunamon_logger.exception("An error occurred:")
             await ctx.respond("Failed to create note!", ephemeral=True)
 
     @user_commands.command(
@@ -1306,7 +1306,7 @@ class UserCommands(discord.Cog):
 
             await asyncio.gather(a, b, c)
         except Exception as e:
-            obsidian_logger.exception("Error occured from /user ban_from_lunya")
+            lunamon_logger.exception("Error occured from /user ban_from_lunya")
             await ctx.respond("An error occured banning this user.", ephemeral=True)
 
     @user_commands.command(
@@ -1333,7 +1333,7 @@ class UserCommands(discord.Cog):
 
             await ctx.respond(uwuified, ephemeral=not private)
         except Exception as e:
-            obsidian_logger.exception("Error occured in /user uwwwu")
+            lunamon_logger.exception("Error occured in /user uwwwu")
             await ctx.respond(f"An error occured! {e=}", ephemeral=True)
 
     @discord.slash_command(name="uwuify", description="UwUify text")
@@ -1362,7 +1362,7 @@ class UserCommands(discord.Cog):
 
             await ctx.respond(uwuified, ephemeral=True)
         except Exception as e:
-            obsidian_logger.exception("Error occured in the public uwuify text")
+            lunamon_logger.exception("Error occured in the public uwuify text")
             await ctx.respond(f"An error occured! {e=}", ephemeral=True)
 
     @discord.message_command(
@@ -1403,22 +1403,22 @@ class UserCommands(discord.Cog):
             # Delete
             shutil.rmtree("temp")
         except Exception as e:
-            obsidian_logger.exception("Error occured when borrowing a meme")
+            lunamon_logger.exception("Error occured when borrowing a meme")
             await ctx.respond("Error!", ephemeral=True)
 
     @discord.slash_command(name="version", description="Print bot version")
     async def version(self, ctx: discord.ApplicationContext):
         try:
             await ctx.respond(
-                f"# obsidian version {VERSION}\n\n"
+                f"# Lunamon version {VERSION}\n\n"
                 f"Python {sys.version} on {sys.platform}\n"
                 f"py-cord {discord.__version__}\n"
                 f"yt_dlp {yt_dlp.version.__version__} {yt_dlp.version.CHANNEL}\n\n"
-                f"Licensed under GNU AGPL v3.0. Software's source code is [here](<https://git.lunya.pet/Lunya/obsidian>)",
+                f"Licensed under GNU AGPL v3.0. Software's source code is [here](<https://git.lunya.pet/{FORGEJO_OWNER}/{FORGEJO_PROJECT}>)",
                 ephemeral=True,
             )
         except Exception as e:
-            obsidian_logger.exception("Error occured when printing version, HOW????")
+            lunamon_logger.exception("Error occured when printing version, HOW????")
             await ctx.respond("Error!", ephemeral=True)
 
     @discord.slash_command(
@@ -1459,7 +1459,7 @@ class UserCommands(discord.Cog):
                 view=DesignerView(container),
             )
         except Exception as e:
-            obsidian_logger.exception(
+            lunamon_logger.exception(
                 "Error occured when posting yuri, the world is gonna end"
             )
             await ctx.respond(f"Error: {str(e)}", ephemeral=True)
@@ -1506,7 +1506,7 @@ class UserCommands(discord.Cog):
                 f"Translated from {translated.detected_source_lang}:\n\n{translated.text}"
             )
         except Exception as e:
-            obsidian_logger.exception("Error when translate message")
+            lunamon_logger.exception("Error when translate message")
             await ctx.respond("An error occurred", ephemeral=True)
 
     @discord.slash_command(
@@ -1518,7 +1518,7 @@ class UserCommands(discord.Cog):
         try:
             await ctx.respond(file=discord.File("rom/sotruebestie.gif"))
         except Exception:
-            obsidian_logger.exception(
+            lunamon_logger.exception(
                 "Error when posting so true bestie, the world is gonna end"
             )
 
@@ -1535,7 +1535,7 @@ class UserCommands(discord.Cog):
 
             dm_cache.clear()
         except Exception as e:
-            obsidian_logger.exception("Error occured when handling queue events")
+            lunamon_logger.exception("Error occured when handling queue events")
 
 
 def setup(bot: Bot):

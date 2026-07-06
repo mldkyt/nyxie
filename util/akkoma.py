@@ -5,7 +5,7 @@ from mastodon import Mastodon
 from mastodon.return_types import Status
 
 from constants import FEDI_YURIBOT_ID, FEDI_YAOIBOT_ID
-from logger import obsidian_logger
+from logger import lunamon_logger
 
 
 class AkkomaCache:
@@ -20,7 +20,7 @@ class AkkomaCache:
             
             self.logged_in = True
         except Exception:
-            obsidian_logger.exception("[Akkoma] Safelogin failed")
+            lunamon_logger.exception("[Akkoma] Safelogin failed")
 
     logged_in = False
 
@@ -29,7 +29,7 @@ class AkkomaCache:
 
     def get_latest_posts(self) -> list[Status]:
         if not self.logged_in:
-            obsidian_logger.error("[Akkoma] Not logged in yet, cannot get_latest_posts")
+            lunamon_logger.error("[Akkoma] Not logged in yet, cannot get_latest_posts")
             return []
 
         if (
@@ -43,7 +43,7 @@ class AkkomaCache:
 
     def get_yuribot_post(self) -> Status | None:
         if not self.logged_in:
-            obsidian_logger.error("[Akkoma] Cannot fetch yuri :( not logged in...")
+            lunamon_logger.error("[Akkoma] Cannot fetch yuri :( not logged in...")
             return None
 
         if FEDI_YURIBOT_ID is None:
@@ -56,7 +56,7 @@ class AkkomaCache:
 
     def get_yaoibot_post(self) -> Status | None:
         if not self.logged_in:
-            obsidian_logger.error("[Akkoma] Cannot fetch yaoi :( not logged in...")
+            lunamon_logger.error("[Akkoma] Cannot fetch yaoi :( not logged in...")
             return None
 
         if FEDI_YAOIBOT_ID is None:

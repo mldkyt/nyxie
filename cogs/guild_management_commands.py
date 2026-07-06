@@ -4,7 +4,7 @@ from discord import Cog, Bot, SlashCommandGroup, Permissions, ApplicationContext
 from discord.ui import View, Button
 
 from constants import GUILD, OWNER, FORGEJO_INSTANCE, FORGEJO_TOKEN
-from logger import obsidian_logger
+from logger import lunamon_logger
 
 
 class GuildManagementCommands(Cog):
@@ -21,7 +21,7 @@ class GuildManagementCommands(Cog):
         try:
             if ctx.user.id != int(OWNER):
                 await ctx.respond("you are not intended to run this", ephemeral=True)
-                obsidian_logger.warning(
+                lunamon_logger.warning(
                     "please fix your permissions lunya, the send_project_button is not supposed to be used by the public")
                 return
 
@@ -40,9 +40,9 @@ class GuildManagementCommands(Cog):
             await ctx.respond("Sent", ephemeral=True)
         except ClientResponseError as e:
             await ctx.respond(f"An error occured while contacting the server, {e.status} {e.message}", ephemeral=True)
-            obsidian_logger.warning(f"Repo %s/%s doesn't exist: %s %s", owner, repo, e.status, e.message)
+            lunamon_logger.warning(f"Repo %s/%s doesn't exist: %s %s", owner, repo, e.status, e.message)
         except Exception:
-            obsidian_logger.exception("An error occured")
+            lunamon_logger.exception("An error occured")
             await ctx.respond("An error occured, forgejo is down or repo doesn't exist", ephemeral=True)
 
 

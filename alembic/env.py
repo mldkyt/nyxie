@@ -62,7 +62,7 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    connectable = create_engine(os.getenv("DB_URL", "sqlite:///data/obsidian.db"))
+    connectable = create_engine(os.getenv("DB_URL", "sqlite:///data/Lunamon.db"))
 
     with connectable.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)

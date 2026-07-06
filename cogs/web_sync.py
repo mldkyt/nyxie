@@ -4,7 +4,7 @@ from sqlalchemy import delete
 
 from constants import GUILD
 from database import engine, web_channels_list
-from logger import obsidian_logger
+from logger import lunamon_logger
 from util.web_sync import add_message, remove_message, add_or_update_channel
 
 
@@ -22,14 +22,14 @@ class WebSync(Cog):
                     try:
                         await add_message(message)
                     except Exception:
-                        obsidian_logger.exception("Failed to add message to web UI:")
+                        lunamon_logger.exception("Failed to add message to web UI:")
 
     @Cog.listener()
     async def on_message(self, message: Message):
         try:
             await add_message(message)
         except Exception:
-            obsidian_logger.exception("Error adding message:")
+            lunamon_logger.exception("Error adding message:")
 
     @Cog.listener()
     async def on_raw_message_edit(self, payload: RawMessageUpdateEvent):
@@ -52,14 +52,14 @@ class WebSync(Cog):
                 return
             await add_message(message) # will update
         except Exception:
-            obsidian_logger.exception("Error editing message:")
+            lunamon_logger.exception("Error editing message:")
 
     @Cog.listener()
     async def on_raw_message_delete(self, payload: RawMessageDeleteEvent):
         try:
             remove_message(payload.message_id)
         except Exception:
-            obsidian_logger.exception("Error deleting message:")
+            lunamon_logger.exception("Error deleting message:")
 
     @Cog.listener()
     async def on_guild_channel_create(self, channel: GuildChannel):
@@ -68,9 +68,9 @@ class WebSync(Cog):
                 try:
                     await add_message(message)
                 except Exception:
-                    obsidian_logger.exception("Failed to add message to web UI:")
+                    lunamon_logger.exception("Failed to add message to web UI:")
         except Exception:
-            obsidian_logger.exception("Failed adding new channel:")
+            lunamon_logger.exception("Failed adding new channel:")
 
     @Cog.listener()
     async def on_guild_channel_delete(self, channel: GuildChannel):
@@ -81,7 +81,7 @@ class WebSync(Cog):
                     .where(web_channels_list.c.id == channel.id)
                 )
         except Exception:
-            obsidian_logger.exception("Failed removing channel:")
+            lunamon_logger.exception("Failed removing channel:")
 
     @Cog.listener()
     async def on_guild_channel_update(self, before: GuildChannel, after: GuildChannel):
@@ -89,7 +89,7 @@ class WebSync(Cog):
             try:
                 await add_message(message)
             except Exception:
-                obsidian_logger.exception("Failed to add message to web UI:")
+                lunamon_logger.exception("Failed to add message to web UI:")
 
 
 

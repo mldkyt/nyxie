@@ -2,9 +2,9 @@ import os
 
 from mastodon import Mastodon
 
-app_name = input("app name [obsidian]: ")
+app_name = input("app name [Lunamon]: ")
 if len(app_name.strip()) == 0:
-    app_name = "obsidian"
+    app_name = "Lunamon"
 
 instance_url = input("instance url: ")
 

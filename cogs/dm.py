@@ -5,7 +5,7 @@ from sqlalchemy import select, insert, delete
 
 from constants import GUILD
 from database import engine, dm_channels
-from logger import obsidian_logger
+from logger import lunamon_logger
 from util.dm import dm_cache
 
 
@@ -22,7 +22,7 @@ class DM(Cog):
 
     async def ensure_channel(self, user_id: int, r=0) -> TextChannel:
         if r > 3:
-            obsidian_logger.error("Failed to ensure DM channel for %d", user_id)
+            lunamon_logger.error("Failed to ensure DM channel for %d", user_id)
             raise RecursionError("Too many attempts to create a channel were performed")
 
         # Check channel
@@ -49,7 +49,7 @@ class DM(Cog):
         try:
             user = await self.guild.fetch_member(user_id)
         except Exception as e:
-            obsidian_logger.exception("An error occured")
+            lunamon_logger.exception("An error occured")
             raise e
 
         if user is None:
@@ -80,7 +80,7 @@ class DM(Cog):
                 if user is None:
                     raise ValueError("User not found")
             except Exception:
-                obsidian_logger.exception("Tried to DM user that doesn't exist!")
+                lunamon_logger.exception("Tried to DM user that doesn't exist!")
                 continue
 
             try:
@@ -96,7 +96,7 @@ class DM(Cog):
                     channel = await self.ensure_channel(message[0])
                     await channel.send(f"{user.mention}, {message[1]}")
                 except Exception:
-                    obsidian_logger.exception("An error occured when DMing")
+                    lunamon_logger.exception("An error occured when DMing")
 
             message = dm_cache.get_message_to_send()
 
