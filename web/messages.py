@@ -15,16 +15,16 @@ def explore_index():
 @messages_bp.route("/discord/explore/<channel_id>")
 def explore_channel(channel_id: str):
     if not channel_id.isnumeric():
-        return redirect("/explore")
+        return redirect("/discord/explore")
 
     channels = get_channels()
     title = get_title_for_channel(int(channel_id))
     if title is None:
-        return redirect("/explore")
+        return redirect("/discord/explore")
 
     if "m" in request.args:
         if not request.args["m"].isnumeric():
-            return redirect(f"/explore/{channel_id}")
+            return redirect(f"/discord/explore/{channel_id}")
 
         messages = get_surrounding_messages(int(request.args["m"]))
     else:
@@ -36,18 +36,18 @@ def explore_channel(channel_id: str):
 @messages_bp.route("/discord/explore/<channel_id>/<thread_id>")
 def explore_thread(channel_id: str, thread_id: str):
     if not channel_id.isnumeric():
-        return redirect("/explore")
+        return redirect("/discord/explore")
     if not thread_id.isnumeric():
-        return redirect(f"/explore/{channel_id}")
+        return redirect(f"/discord/explore/{channel_id}")
 
     channels = get_channels()
     title = get_title_for_channel(int(thread_id))
     if title is None:
-        return redirect(f"/explore/{channel_id}")
+        return redirect(f"/discord/explore/{channel_id}")
 
     if "m" in request.args:
         if not request.args["m"].isnumeric():
-            return redirect(f"/explore/{channel_id}")
+            return redirect(f"/discord/explore/{channel_id}")
 
         messages = get_surrounding_messages(int(request.args["m"]))
     else:
