@@ -29,6 +29,7 @@ from discord.ui import (
     TextDisplay,
     Thumbnail, ActionRow,
 )
+from markdownify import markdownify
 from mastodon.return_types import Status, Poll, Account
 
 from constants import (
@@ -421,30 +422,11 @@ class PickerComponent(discord.ui.View):
             lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
-# borrowed from https://stackoverflow.com/questions/30337528/make-beautifulsoup-handle-line-breaks-as-a-browser-would
-def get_text(tag: bs4.Tag) -> str:
-    _inline_elements = {"a","span","em","strong","u","i","font","mark","label",
-    "s","sub","sup","tt","bdo","button","cite","del","b","a","font",}
-
-    def _get_text(tag: bs4.Tag) -> typing.Generator:
-        for child in tag.children:
-            if isinstance(child, bs4.Tag):
-                # if the tag is a block type tag then yield new lines before after
-                is_block_element = child.name not in _inline_elements
-                if is_block_element:
-                    yield "\n"
-                yield from ["\n"] if child.name == "br" else _get_text(child)
-                if is_block_element:
-                    yield "\n"
-            elif isinstance(child, bs4.NavigableString):
-                yield child.string
-
-    return "".join(_get_text(tag))
-
 
 def generate_user_embed(account: Account):
-    desc = account.note[:1500]
-    if desc != account.note:
+    desc_start = markdownify(account.note)
+    desc = desc_start[:1500]
+    if desc != desc_start:
         desc = desc + "..."
 
     emb = discord.Embed(
@@ -488,13 +470,13 @@ def generate_status_embed(status: Status, pinned=False):
     if status.replies_count > 0:
         reaction_string += f"{status.replies_count} replies | "
     if status.reblogs_count > 0:
-        reaction_string += f"{status.reblogs_count} renotes | "
+        reaction_string += f"{status.reblogs_count} reblogs | "
 
-    reaction_string = reaction_string[:3]
+    reaction_string = reaction_string[:-3]
 
-    pinned_post = "Pinned note by " if pinned else ""
+    pinned_post = "Pinned post by " if pinned else ""
 
-    content = get_text(BeautifulSoup(status.content, features="html.parser")).strip()
+    content = markdownify(status.content)
     desc = content if len(status.spoiler_text) == 0 else f"CW: {status.spoiler_text}\n\n"
 
     if len(status.spoiler_text) > 0:
@@ -511,7 +493,7 @@ def generate_status_embed(status: Status, pinned=False):
     emb = discord.Embed(
         title=f"{'Pinned ' if pinned else ''}Note by {status.account.display_name} ({status.account.acct})",
         url=status.url,
-        description=desc,
+        description=desc[:1500],
         image=image_url,
         author=discord.EmbedAuthor(
             name=f"{pinned_post}{status.account.display_name} ({status.account.acct})",
@@ -564,7 +546,7 @@ async def search(
     query: str, content_type: str, media_type: str, count: int
 ) -> tuple[list[discord.Embed], int] | None:
     start_time = time.time()
-    if content_type == "notes":
+    if content_type == "posts":
         return await search_posts(query, media_type, start_time, count)
     elif content_type == "users":
         return await search_users(query, start_time, count)
@@ -600,8 +582,6 @@ async def search_posts(query, media_type, start_time, count):
 
     for i in statuses.statuses:
         if len(i.spoiler_text) > 0:
-            continue
-        if media_type == "all" and len(i.media_attachments) == 0:
             continue
         if media_type == "image" and not any(j.type == "image" for j in i.media_attachments):
             continue
@@ -928,19 +908,19 @@ class UserCommands(discord.Cog):
                 return
 
             await ctx.followup.send(
-                embeds=emb[0], content=f"Searching notes finished within {emb[1]} ms"
+                embeds=emb[0], content=f"Searching finished in {emb[1]} ms"
             )
         except Exception as e:
             lunamon_logger.exception("An error occurred:")
             await ctx.followup.send(f"Error! Server error: {e=}")
 
     @fedi_group.command(
-        name="note",
-        description="Create a note on fedi",
+        name="post",
+        description="Create a post on fedi",
         integration_types=[discord.IntegrationType.user_install],
     )
     @discord.option(name="visibility", choices=["public", "unlisted", "private"])
-    async def note(
+    async def post(
         self,
         ctx: discord.ApplicationContext,
         text: str,
@@ -951,7 +931,7 @@ class UserCommands(discord.Cog):
         try:
             post = akkoma_cache.client.status_post(text, spoiler_text=cw, visibility=visibility)
             await ctx.respond(
-                f"Note created! {post.url}",
+                f"Post created! {post.url}",
                 ephemeral=not public_response,
             )
         except Exception as e:
@@ -963,7 +943,7 @@ class UserCommands(discord.Cog):
         integration_types=[discord.IntegrationType.user_install],
     )
     @cooldown(1, 10, BucketType.default)
-    async def note_message(self, ctx: discord.ApplicationContext, message: Message):
+    async def post_message(self, ctx: discord.ApplicationContext, message: Message):
         try:
             owner = self.bot.get_user(int(OWNER))
             await ctx.respond("posting to fedi. see dms for activity", ephemeral=True)
@@ -1066,7 +1046,7 @@ class UserCommands(discord.Cog):
                     os.rmdir("temp")
         except Exception as e:
             lunamon_logger.exception("An error occurred:")
-            await ctx.respond("Failed to create note!", ephemeral=True)
+            await ctx.respond("Failed to create post :(", ephemeral=True)
 
     @user_commands.command(
         name="ban_from_lunya",

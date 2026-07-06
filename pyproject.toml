@@ -15,5 +15,5 @@ dependencies = [
     "gunicorn>=26.0.0",
     "psycopg2>=2.9.12",
     "markdown-it-py>=4.2.0",
-    "beautifulsoup4>=4.15.0",
+    "markdownify>=1.2.3",
 ]
