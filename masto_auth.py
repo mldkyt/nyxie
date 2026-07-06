@@ -27,12 +27,16 @@ mode = input("mode [userpass, code] ")
 if mode == "userpass":
     username = input("username: ")
     password = input("password: ")
+    two_fa = input("2FA code: ")
+    if len(two_fa.strip()) == 0:
+        two_fa = None
 
     mastodon = Mastodon(client_id='data/pytooter_clientcred.secret', api_base_url=instance_url)
 
     mastodon.log_in(
         username,
         password,
+        two_fa,
         to_file="data/pytooter_usercred.secret"
     )
 
