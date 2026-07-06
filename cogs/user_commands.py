@@ -14,7 +14,6 @@ import bs4
 import deepl
 import discord
 import pytz
-import yt_dlp.version
 from bs4 import BeautifulSoup
 from deepl import Language
 from discord import Bot, ButtonStyle, Interaction, InteractionType, Message
@@ -36,7 +35,6 @@ from constants import (
     CHANNEL_MEMES,
     CHANNEL_MODERATION,
     DEEPL_API_KEY,
-    FEDI_INSTANCE,
     GUILD,
     OWNER,
     VERSION, FORGEJO_OWNER, FORGEJO_PROJECT,
@@ -744,7 +742,6 @@ class UserCommands(discord.Cog):
             version = (
                 f"Python {sys.version} on {sys.platform}\n"
                 f"py-cord {discord.__version__}\n"
-                f"yt_dlp {yt_dlp.version.__version__} {yt_dlp.version.CHANNEL}\n"
             )
 
             await ctx.respond(
@@ -1225,7 +1222,6 @@ class UserCommands(discord.Cog):
                 f"# Lunamon version {VERSION}\n\n"
                 f"Python {sys.version} on {sys.platform}\n"
                 f"py-cord {discord.__version__}\n"
-                f"yt_dlp {yt_dlp.version.__version__} {yt_dlp.version.CHANNEL}\n\n"
                 f"Licensed under GNU AGPL v3.0. Software's source code is [here](<https://git.lunya.pet/{FORGEJO_OWNER}/{FORGEJO_PROJECT}>)",
                 ephemeral=True,
             )
