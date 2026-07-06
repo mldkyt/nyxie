@@ -29,7 +29,6 @@ from sqlalchemy import delete, insert, select
 from constants import (
     CHANNEL_MODERATION,
     CHANNEL_SUGGESTIONS,
-    DEV_MODE,
     FORGEJO_INSTANCE,
     FORGEJO_TOKEN,
     GUILD, FORGEJO_OWNER, FORGEJO_PROJECT,
