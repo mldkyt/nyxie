@@ -6,7 +6,14 @@
     <style>
         :root {
             color-scheme: dark;
-            background-color: #111111;
+            background-color: {{theme.bg}};
+            color: {{theme.text}};
+            font-family: "Tiresias PCFont", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        }
+
+        a {
+            color: {{theme.accent}};
+            text-decoration: none;
         }
     </style>
     <script defer src="https://a.mldchan.dev/script.js" data-website-id="43bc27a1-8bfc-45a2-baf2-dbb4b4c9ef02"></script>
@@ -30,6 +37,7 @@
 <div style="display: flex; flex-direction: row;">
     <div style="width: 20%;">
         <a href="/discord/explore">home</a>
+        <br>
         <span>Channels</span>
         <br>
 
@@ -47,6 +55,14 @@
             <form method="post" action="/discord/explore">
                 <input type="checkbox" {% if session.more == "1" %}checked{% endif %} name="more_msgs" id="more_msgs">
                 <label for="more_msgs">Show more messages</label>
+                <br>
+                <label for="theme">Theme:</label>
+                <select name="theme" id="theme">
+                    <option value="Pleroma" {% if session.theme == "Pleroma" %}selected{% endif %}>Pleroma</option>
+                    <option value="Catppuccin" {% if session.theme == "Catppuccin" %}selected{% endif %}>Catppuccin Mocha Mauve</option>
+                    <option value="Monokai" {% if session.theme == "Monokai" %}selected{% endif %}>Monokai</option>
+                    <option value="Discord" {% if session.theme == "Discord" %}selected{% endif %}>Discord</option>
+                </select>
                 <br>
                 <button type="submit">Apply preferences</button>
             </form>
@@ -67,17 +83,17 @@
             <a href="?p=1">pinned</a>
             <br>
             {% for message in messages %}
-            <div style="display: flex; flex-direction: row; {% if message.is_highlight %}background-color: #222222; {% endif %} margin: 8px 0;">
+            <div style="display: flex; flex-direction: row; {% if message.is_highlight %}background-color: {{theme.highlight}}; {% endif %} margin: 8px 0;">
                 <img alt="Profile picture of {{message.author_name}}" height="48" src="{{message.author_pfp}}"
                      style="margin: 4px; flex-shrink: 0;"
                      width="48">
                 <div style="display: flex; flex-direction: column; margin: 4px;">
                     {% if message.reply_to %}
-                    <span style="font-size: 80%;">Reply to <a href="/discord/explore/{{message.channel_id}}?m={{message.reply_to}}" style="color: #E2B188;">this message</a></span>
+                    <span style="font-size: 80%;">Reply to <a href="/discord/explore/{{message.channel_id}}?m={{message.reply_to}}" style="color: {{theme.accent}};">this message</a></span>
                     {% endif %}
                     <a href="/discord/explore/{{message.channel_id}}?m={{message.id}}"
                        style="display: flex; flex-direction: column; margin: 4px; text-decoration: none; color: unset;">
-                        <span><strong>{{message.author_name}}</strong> <span style="color: #E2B188; font-size: 80%">{{message.username}}</span></span>
+                        <span><strong>{{message.author_name}}</strong> <span style="color: {{theme.accent}}; font-size: 80%">{{message.username}}</span></span>
                         <span>{{message.content|safe}}</span>
                         <span style="font-size: 60%;">{{message.created_at}}</span>
                     </a>
@@ -94,14 +110,14 @@
                     </span>
                     <span style="font-size: 80%;">
                         {% if message.thread %}
-                        <a href="/discord/explore/{{message.channel_id}}/{{message.thread.id}}" style="color: #E2B188;">Thread: {{message.thread.name}}</a>
+                        <a href="/discord/explore/{{message.channel_id}}/{{message.thread.id}}" style="color: {{theme.accent}};">Thread: {{message.thread.name}}</a>
                         {% endif %}
                     </span>
                     <span style="font-size: 80%;">
                         {% if message.attachments %}
                         Attachments:
                         {% for attachment in message.attachments %}
-                        <a href="{{attachment.url}}" style="color: #E2B188;">{{attachment.name}}</a>
+                        <a href="{{attachment.url}}" style="color: {{theme.accent}};">{{attachment.name}}</a>
                         <br>
                         {% endfor %}
                         {% endif %}
