@@ -1,8 +1,11 @@
-from discord import Cog, Bot
+from discord import Cog, Bot, Message, RawMessageUpdateEvent, RawMessageDeleteEvent
+from discord.abc import GuildChannel
+from sqlalchemy import delete
 
 from constants import GUILD
+from database import engine, web_channels_list
 from logger import obsidian_logger
-from util.web_sync import add_message
+from util.web_sync import add_message, remove_message, add_or_update_channel
 
 
 class WebSync(Cog):
@@ -20,6 +23,75 @@ class WebSync(Cog):
                         await add_message(message)
                     except Exception:
                         obsidian_logger.exception("Failed to add message to web UI:")
+
+    @Cog.listener()
+    async def on_message(self, message: Message):
+        try:
+            await add_message(message)
+        except Exception:
+            obsidian_logger.exception("Error adding message:")
+
+    @Cog.listener()
+    async def on_raw_message_edit(self, payload: RawMessageUpdateEvent):
+        if payload.guild_id is None:
+            return
+        if payload.channel_id is None:
+            return
+
+        try:
+            guild = self.bot.get_guild(payload.guild_id)
+            if guild is None:
+                return
+            channel = guild.get_channel(payload.channel_id)
+            if channel is None:
+                return
+            if not channel.permissions_for(guild.me).read_messages:
+                return
+            message = payload.cached_message or await channel.fetch_message(payload.message_id)
+            if message.is_system():
+                return
+            await add_message(message) # will update
+        except Exception:
+            obsidian_logger.exception("Error editing message:")
+
+    @Cog.listener()
+    async def on_raw_message_delete(self, payload: RawMessageDeleteEvent):
+        try:
+            remove_message(payload.message_id)
+        except Exception:
+            obsidian_logger.exception("Error deleting message:")
+
+    @Cog.listener()
+    async def on_guild_channel_create(self, channel: GuildChannel):
+        try:
+            async for message in channel.history(limit=1000):
+                try:
+                    await add_message(message)
+                except Exception:
+                    obsidian_logger.exception("Failed to add message to web UI:")
+        except Exception:
+            obsidian_logger.exception("Failed adding new channel:")
+
+    @Cog.listener()
+    async def on_guild_channel_delete(self, channel: GuildChannel):
+        try:
+            with engine.begin() as c:
+                c.execute(
+                    delete(web_channels_list)
+                    .where(web_channels_list.c.id == channel.id)
+                )
+        except Exception:
+            obsidian_logger.exception("Failed removing channel:")
+
+    @Cog.listener()
+    async def on_guild_channel_update(self, before: GuildChannel, after: GuildChannel):
+        async for message in after.history(limit=1000):
+            try:
+                await add_message(message)
+            except Exception:
+                obsidian_logger.exception("Failed to add message to web UI:")
+
+
 
 
 def setup(bot: Bot):
