@@ -47,7 +47,7 @@ async def post_yuri(bot: Bot):
         TextDisplay("# Daily Yuri"),
         Separator(),
         MediaGallery(MediaGalleryItem(url=yuri.media_attachments[0].url)),
-        TextDisplay(f"-# Tags: {yuri['files'][0]['comment']}"),
+        TextDisplay(f"-# Tags: {yuri.media_attachments[0].description}"),
         Separator(),
         ActionRow(
             Button(
