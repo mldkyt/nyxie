@@ -1,7 +1,7 @@
 import os.path
 from pprint import pprint
 
-from discord import Message, TextChannel, Thread, ChannelType, Embed
+from discord import Message, TextChannel, Thread, ChannelType, Embed, DeletedReferencedMessage
 from discord.abc import GuildChannel
 from flask import request, session
 from markdown_it import MarkdownIt
@@ -147,22 +147,6 @@ async def _add_attachments(c: Connection, message: Message):
                     attachment_url=f"/discord/explore/attachments/{message.id}/{i}-{attachment.filename}")
         )
 
-async def _resolve_and_add_reply(c: Connection, msg: Message) -> int | None:
-    if msg.reference is not None and msg.reference.resolved is not None:
-        try:
-            if c.execute(
-                    select(web_messages_list.c.id)
-                            .where(web_messages_list.c.id == msg.reference.message_id)
-            ).fetchone() is None:
-                await _add_message(c, msg.reference.resolved)
-            else:
-                await _update_message(c, msg.reference.resolved)
-            return msg.reference.message_id
-        except Exception:
-            pass
-
-    return None
-
 def _embed_to_text(embed: Embed):
     output = "\n\n"
 
@@ -197,10 +181,20 @@ def _embed_to_text(embed: Embed):
 
     return output
 
+def _get_reference_message(message: Message):
+    if message.reference is None:
+        return None
+    if message.reference.resolved is None:
+        return None
+    if isinstance(message.reference.resolved, DeletedReferencedMessage):
+        return None
+
+    return message.reference.resolved.id
+
 async def _add_message(c: Connection, message: Message):
     _add_or_update_author(c, message)
     add_or_update_channel(c, message.channel)
-    reply_msg = await _resolve_and_add_reply(c, message)
+    reply_msg = _get_reference_message(message)
     if message.thread is not None:
         await _add_or_update_thread(c, message.thread)
 
@@ -228,7 +222,7 @@ async def _add_message(c: Connection, message: Message):
 async def _update_message(c: Connection, message: Message):
     _add_or_update_author(c, message)
     add_or_update_channel(c, message.channel)
-    reply_msg = await _resolve_and_add_reply(c, message)
+    reply_msg = _get_reference_message(message)
     if message.thread is not None:
         await _add_or_update_thread(c, message.thread)
 
