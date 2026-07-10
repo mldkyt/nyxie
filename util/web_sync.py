@@ -1,3 +1,5 @@
+import os.path
+
 from certifi import where
 from discord import Message, TextChannel, Thread, ChannelType, Embed
 from discord.abc import GuildChannel
@@ -6,6 +8,7 @@ from markdown_it import MarkdownIt
 from sqlalchemy import select, Connection, insert, update, delete
 
 from database import engine, web_messages_list, web_authors_list, web_channels_list, web_messages_attachments_list
+from logger import lunamon_logger
 
 
 def _add_author(c: Connection, message: Message):
@@ -106,13 +109,39 @@ async def _add_or_update_thread(c: Connection, thread: Thread):
         else:
             await _update_message(c, message)
 
-def _add_attachments(c: Connection, message: Message):
-    for attachment in message.attachments:
+async def _add_attachments(c: Connection, message: Message):
+    existing_attachments = [i[0] for i in c.execute(
+        select(web_messages_attachments_list.c.attachment_name)
+        .where(web_messages_attachments_list.c.message_id == message.id)
+    ).fetchall()]
+
+    for i in range(len(existing_attachments)):
+        attachment = existing_attachments[i]
+        if os.path.exists(f"data/attachments/{message.id}/{i}-{attachment}"):
+            os.remove(f"data/attachments/{message.id}/{i}-{attachment}")
+
         c.execute(
-            insert(web_messages_attachments_list)
-            .values(message_id=message.id, attachment_name=attachment.filename, attachment_url=attachment.url)
+            delete(web_messages_attachments_list)
+            .where((web_messages_attachments_list.c.attachment_name == attachment) &
+                   (web_messages_attachments_list.c.message_id == message.id))
         )
 
+    for i in range(len(message.attachments)):
+        attachment = message.attachments[i]
+        if not os.path.exists("data/attachments"):
+            os.mkdir("data/attachments")
+        if not os.path.exists(f"data/attachments/{message.id}"):
+            os.mkdir(f"data/attachments/{message.id}")
+
+        with open(f"data/attachments/{message.id}/{i}-{attachment.filename}", "wb") as f:
+            lunamon_logger.debug("Saving attachment %s for message %s", attachment.filename, str(message.id))
+            await attachment.save(f)
+
+        c.execute(
+            insert(web_messages_attachments_list)
+            .values(message_id=message.id, attachment_name=attachment.filename,
+                    attachment_url=f"/discord/explore/attachments/{message.id}/{i}-{attachment.filename}")
+        )
 
 async def _resolve_and_add_reply(c: Connection, msg: Message) -> int | None:
     if msg.reference is not None and msg.reference.resolved is not None:
@@ -190,7 +219,7 @@ async def _add_message(c: Connection, message: Message):
                 pinned=1 if message.pinned else 0)
     )
 
-    _add_attachments(c, message)
+    await _add_attachments(c, message)
 
 async def _update_message(c: Connection, message: Message):
     _add_or_update_author(c, message)
@@ -211,6 +240,8 @@ async def _update_message(c: Connection, message: Message):
         .values(content=content, reply_msg=reply_msg, created_at=message.created_at,
                 pinned=1 if message.pinned else 0)
     )
+
+    await _add_attachments(c, message)
 
 def unpin_all_messages(ch: GuildChannel | Thread):
     with engine.begin() as c:
