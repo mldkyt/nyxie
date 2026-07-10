@@ -115,16 +115,17 @@ async def _add_attachments(c: Connection, message: Message):
         .where(web_messages_attachments_list.c.message_id == message.id)
     ).fetchall()]
 
-    for i in range(len(existing_attachments)):
-        attachment = existing_attachments[i]
-        if os.path.exists(f"data/attachments/{message.id}/{i}-{attachment}"):
-            os.remove(f"data/attachments/{message.id}/{i}-{attachment}")
+    if len(existing_attachments) != len(message.attachments):
+        for i in range(len(existing_attachments)):
+            attachment = existing_attachments[i]
+            if os.path.exists(f"data/attachments/{message.id}/{i}-{attachment}"):
+                os.remove(f"data/attachments/{message.id}/{i}-{attachment}")
 
-        c.execute(
-            delete(web_messages_attachments_list)
-            .where((web_messages_attachments_list.c.attachment_name == attachment) &
-                   (web_messages_attachments_list.c.message_id == message.id))
-        )
+            c.execute(
+                delete(web_messages_attachments_list)
+                .where((web_messages_attachments_list.c.attachment_name == attachment) &
+                       (web_messages_attachments_list.c.message_id == message.id))
+            )
 
     for i in range(len(message.attachments)):
         attachment = message.attachments[i]
@@ -132,6 +133,9 @@ async def _add_attachments(c: Connection, message: Message):
             os.mkdir("data/attachments")
         if not os.path.exists(f"data/attachments/{message.id}"):
             os.mkdir(f"data/attachments/{message.id}")
+
+        if os.path.exists(f"data/attachments/{message.id}/{i}-{attachment.filename}"):
+            continue
 
         with open(f"data/attachments/{message.id}/{i}-{attachment.filename}", "wb") as f:
             lunamon_logger.debug("Saving attachment %s for message %s", attachment.filename, str(message.id))
