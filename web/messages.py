@@ -1,54 +1,10 @@
 from flask import Blueprint, render_template, redirect, request, session
 
 from util.web_sync import get_channels, get_latest_messages, get_surrounding_messages, get_title_for_channel, \
-    process_preferences, get_pinned_messages, search_messages, get_reply_thread
+    process_preferences, get_pinned_messages, search_messages, get_reply_thread, pick_theme, themes
 
 messages_bp = Blueprint("messages", __name__, template_folder='templates', static_folder='../data/attachments',
                         static_url_path='/discord/explore/attachments')
-
-THEME_PLEROMA = {
-    "accent": "#e2b188",
-    "bg": "#0f161e",
-    "highlight": "#151e2b",
-    "text": "#b9b9ba"
-}
-
-THEME_CATPPUCCIN = {
-    "bg": "#1e1e2e",
-    "text": "#cdd6f4",
-    "highlight": "#313244",
-    "accent": "#cba6f7"
-}
-
-THEME_MONOKAI = {
-    "text": "#FCFCFA",
-    "accent": "#AB9DF2",
-    "highlight": "#2e2b2e",
-    "bg": "#221F22"
-}
-
-THEME_DISCORD = {
-    "text": "#fff",
-    "bg": "#000000",
-    "highlight": "#101011",
-    "accent": "#5965F1"
-}
-
-def _pick_theme():
-
-    if "theme" not in session:
-        return THEME_PLEROMA
-
-    if session["theme"] == "Pleroma":
-        return THEME_PLEROMA
-    elif session["theme"] == "Catppuccin":
-        return THEME_CATPPUCCIN
-    elif session["theme"] == "Discord":
-        return THEME_DISCORD
-    elif session["theme"] == "Monokai":
-        return THEME_MONOKAI
-
-    return THEME_PLEROMA
 
 
 @messages_bp.route("/discord/explore", methods=["GET", "POST"])
@@ -58,7 +14,8 @@ def explore_index():
         return redirect("/discord/explore", 303)
 
     channels = get_channels()
-    theme = _pick_theme()
+    theme = pick_theme()
+    theme_names = themes()
 
     if "q" in request.args:
         messages = search_messages(request.args["q"])
@@ -66,7 +23,7 @@ def explore_index():
                                theme=theme)
 
     return render_template("messages.html", messages=[], channels=channels, preferences=True,
-                           theme=theme)
+                           theme=theme, theme_names=theme_names)
 
 
 @messages_bp.route("/discord/explore/<channel_id>")
@@ -81,7 +38,7 @@ def explore_channel(channel_id: str):
 
     show_more = "more" in session and session["more"] == "1"
 
-    theme = _pick_theme()
+    theme = pick_theme()
 
     if "p" in request.args and request.args["p"] == "1":
         messages = get_pinned_messages(int(channel_id))
@@ -119,7 +76,7 @@ def explore_thread(channel_id: str, thread_id: str):
 
     show_more = "more" in session and session["more"] == "1"
 
-    theme = _pick_theme()
+    theme = pick_theme()
 
     if "m" in request.args:
         if not request.args["m"].isnumeric():
