@@ -610,6 +610,9 @@ THEMES = [
 ]
 
 def pick_theme():
+    if "theme" not in session:
+        return THEMES[0]
+
     for theme in THEMES:
         if theme["name"] == session["theme"]:
             return theme
