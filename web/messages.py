@@ -3,8 +3,8 @@ from flask import Blueprint, render_template, redirect, request, session
 from util.web_sync import get_channels, get_latest_messages, get_surrounding_messages, get_title_for_channel, \
     process_preferences, get_pinned_messages, search_messages, get_reply_thread
 
-messages_bp = Blueprint("messages", __name__, template_folder='templates', static_folder='static',
-                        static_url_path='/static')
+messages_bp = Blueprint("messages", __name__, template_folder='templates', static_folder='../data/attachments',
+                        static_url_path='/discord/explore/attachments')
 
 THEME_PLEROMA = {
     "accent": "#e2b188",
