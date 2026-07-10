@@ -5,7 +5,7 @@
     <title>Messages</title>
     <style>
         :root {
-            color-scheme: dark;
+            color-scheme: {{theme.base}};
             background-color: {{theme.bg}};
             color: {{theme.text}};
             font-family: "Tiresias PCFont", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
@@ -58,10 +58,9 @@
                 <br>
                 <label for="theme">Theme:</label>
                 <select name="theme" id="theme">
-                    <option value="Pleroma" {% if session.theme == "Pleroma" %}selected{% endif %}>Pleroma</option>
-                    <option value="Catppuccin" {% if session.theme == "Catppuccin" %}selected{% endif %}>Catppuccin Mocha Mauve</option>
-                    <option value="Monokai" {% if session.theme == "Monokai" %}selected{% endif %}>Monokai</option>
-                    <option value="Discord" {% if session.theme == "Discord" %}selected{% endif %}>Discord</option>
+                    {% for theme in theme_names %}
+                    <option value="{{theme}}" {% if session.theme == theme %}selected{% endif %}>{{theme}}</option>
+                    {% endfor %}
                 </select>
                 <br>
                 <button type="submit">Apply preferences</button>
@@ -84,6 +83,13 @@
             <br>
             {% for message in messages %}
             <div style="display: flex; flex-direction: row; {% if message.is_highlight %}background-color: {{theme.highlight}}; {% endif %} margin: 8px 0;">
+                {% if message.recurse %}
+                <div style="width: {{20 * (message.recurse or 0)}}px; position: relative;">
+                    <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 100%;
+                                background: repeating-linear-gradient(to right, {{theme.highlight}} 0px, {{theme.highlight}} 6px, transparent 6px, transparent 20px);">
+                    </div>
+                </div>
+                {% endif %}
                 <img alt="Profile picture of {{message.author_name}}" height="48" src="{{message.author_pfp}}"
                      style="margin: 4px; flex-shrink: 0;"
                      width="48">

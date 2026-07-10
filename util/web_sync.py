@@ -1,6 +1,6 @@
 import os.path
+from pprint import pprint
 
-from certifi import where
 from discord import Message, TextChannel, Thread, ChannelType, Embed
 from discord.abc import GuildChannel
 from flask import request, session
@@ -360,6 +360,9 @@ def _process_message(c: Connection, msg):
     if msg[7] is not None:
         output["reply_to"] = msg[7]
 
+    if len(msg) == 9:
+        output["recurse"] = msg[8]
+
     output["thread_available"] = "reply_to" in output or "reply_ids" in output
 
     return output
@@ -466,52 +469,65 @@ def get_surrounding_messages(message_id: int, show_more: bool = False):
 
     return response
 
+def _replies(c: Connection, message_id: int, recurse: int = 0):
+    if recurse == 10:
+        return []
 
-def get_reply_thread(message_id: int):
+    output = []
+
+    messages = c.execute(
+        select(web_messages_list.c.id, web_messages_list.c.content, web_authors_list.c.author_name,
+                   web_authors_list.c.author_pfp, web_authors_list.c.author_username, web_messages_list.c.created_at,
+                   web_messages_list.c.channel_id, web_messages_list.c.reply_msg)
+        .join(web_authors_list, web_authors_list.c.id == web_messages_list.c.author_id)
+        .where(web_messages_list.c.reply_msg == message_id)
+    ).fetchall()
+
+    for message in messages:
+        output.append([*message, recurse])
+        output.extend(_replies(c, message[0], recurse + 1))
+
+    return output
+
+def get_reply_thread(message_id: int, recurse: int = 0):
     with engine.begin() as c:
+        # First message
+        first_msg = c.execute(
+            select(web_messages_list.c.id, web_messages_list.c.reply_msg)
+            .where(web_messages_list.c.id == message_id)
+        ).fetchone()
+
+        if first_msg is None:
+            return []
+
+        while first_msg is not None:
+            next_msg = c.execute(
+                select(web_messages_list.c.id, web_messages_list.c.reply_msg)
+                .where(web_messages_list.c.id == first_msg[1])
+            ).fetchone()
+
+            if next_msg is None:
+                break
+
+            first_msg = next_msg
+
         target_db = c.execute(
             select(web_messages_list.c.id, web_messages_list.c.content, web_authors_list.c.author_name,
                    web_authors_list.c.author_pfp, web_authors_list.c.author_username, web_messages_list.c.created_at,
                    web_messages_list.c.channel_id, web_messages_list.c.reply_msg)
             .join(web_authors_list, web_authors_list.c.id == web_messages_list.c.author_id)
-            .where(web_messages_list.c.id == message_id)
+            .where(web_messages_list.c.id == first_msg[0])
         ).fetchone()
         if target_db is None:
             print("Target not found")
             return []
 
-        replies = c.execute(
-            select(web_messages_list.c.id, web_messages_list.c.content, web_authors_list.c.author_name,
-                   web_authors_list.c.author_pfp, web_authors_list.c.author_username, web_messages_list.c.created_at,
-                   web_messages_list.c.channel_id, web_messages_list.c.reply_msg)
-            .join(web_authors_list, web_authors_list.c.id == web_messages_list.c.author_id)
-            .where(web_messages_list.c.reply_msg == target_db[0])
-        ).fetchall()
+        replies = _replies(c, first_msg[0], recurse=1)
 
         msgs_db = [
-            target_db,
+            [*target_db, 0],
             *replies
         ]
-
-        if target_db[7] is not None:
-            last_message_above = target_db
-
-            while True:
-                last_message_above = c.execute(
-                    select(web_messages_list.c.id, web_messages_list.c.content, web_authors_list.c.author_name,
-                           web_authors_list.c.author_pfp, web_authors_list.c.author_username, web_messages_list.c.created_at,
-                           web_messages_list.c.channel_id, web_messages_list.c.reply_msg)
-                    .join(web_authors_list, web_authors_list.c.id == web_messages_list.c.author_id)
-                    .where(web_messages_list.c.id == last_message_above[7])
-                ).fetchone()
-
-                if last_message_above is None:
-                    break
-
-                msgs_db = [
-                    last_message_above,
-                    *msgs_db
-                ]
 
         msgs = _process_messages(c, msgs_db)
 
@@ -539,13 +555,83 @@ def get_title_for_channel(id: int):
     else:
         return f"{prefix}Channel #{channel[0]}"
 
+
+THEMES = [
+    {
+        "name": "Pleroma Dark",
+        "base": "dark",
+        "accent": "#e2b188",
+        "bg": "#0f161e",
+        "highlight": "#151e2b",
+        "text": "#b9b9ba"
+    },
+    {
+        "name": "Pleroma Light",
+        "base": "light",
+        "accent": "#f55b1b",
+        "bg": "#f2f6f9",
+        "highlight": "#d6dfed",
+        "text": "#304055"
+    },
+    {
+        "name": "Catppuccin Mocha",
+        "base": "dark",
+        "bg": "#1e1e2e",
+        "text": "#cdd6f4",
+        "highlight": "#313244",
+        "accent": "#cba6f7"
+    },
+    {
+        "name": "Catppuccin Latte",
+        "base": "light",
+        "bg": "#eff1f5",
+        "text": "#4c4f69",
+        "highlight": "#ccd0da",
+        "accent": "#8839ef"
+    },
+    {
+        "name": "Monokai",
+        "base": "dark",
+        "text": "#FCFCFA",
+        "accent": "#FF6188",
+        "highlight": "#2e2b2e",
+        "bg": "#221F22"
+    },
+    {
+        "name": "Discord Onyx",
+        "base": "dark",
+        "text": "#fff",
+        "bg": "#000000",
+        "highlight": "#101011",
+        "accent": "#5965F1"
+    },
+    {
+        "name": "Discord flashbang",
+        "base": "light",
+        "text": "#000000",
+        "bg": "#FBFBFB",
+        "highlight": "#F3F3F4",
+        "accent": "#5965F1"
+    }
+]
+
+def pick_theme():
+    for theme in THEMES:
+        if theme["name"] == session["theme"]:
+            return theme
+
+    return THEMES[0]
+
+def themes():
+    return [theme["name"] for theme in THEMES]
+
 def process_preferences():
     if "more_msgs" in request.form and request.form["more_msgs"] == "on":
         session["more"] = "1"
     else:
         session["more"] = "0"
 
-    if "theme" in request.form and request.form["theme"] in ["Pleroma", "Monokai", "Catppuccin", "Discord"]:
+    if "theme" in request.form and request.form["theme"] in themes():
         session["theme"] = request.form["theme"]
 
 
