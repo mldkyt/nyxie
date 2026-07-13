@@ -10,6 +10,7 @@ bot = discord.Bot(intents=discord.Intents.all())
 
 for filename in os.listdir("cogs"):
     if filename.endswith(".py"):
+        lunamon_logger.info(f"Loading {filename[:-3]}")
         bot.load_extension(f"cogs.{filename[:-3]}")
 
 
