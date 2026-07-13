@@ -790,6 +790,7 @@ dependencies = [
     { name = "psycopg2" },
     { name = "py-cord", extra = ["speed"] },
     { name = "python-dotenv" },
+    { name = "python-ntfy" },
     { name = "pytz" },
     { name = "sqlalchemy" },
 ]
@@ -806,6 +807,7 @@ requires-dist = [
     { name = "psycopg2", specifier = ">=2.9.12" },
     { name = "py-cord", extras = ["speed"], specifier = "==2.8.0" },
     { name = "python-dotenv", specifier = "==1.2.2" },
+    { name = "python-ntfy", specifier = ">=0.11.2" },
     { name = "pytz", specifier = ">=2025.2" },
     { name = "sqlalchemy", specifier = "==2.0.51" },
 ]
@@ -1359,6 +1361,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/82/ed/0301aeeac3e5353ef3d94b6ec08bbcabd04a72018415dcb29e588514bba8/python_dotenv-1.2.2.tar.gz", hash = "sha256:2c371a91fbd7ba082c2c1dc1f8bf89ca22564a087c2c287cd9b662adde799cf3", size = 50135, upload-time = "2026-03-01T16:00:26.196Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0b/d7/1959b9648791274998a9c3526f6d0ec8fd2233e4d4acce81bbae76b44b2a/python_dotenv-1.2.2-py3-none-any.whl", hash = "sha256:1d8214789a24de455a8b8bd8ae6fe3c6b69a5e3d64aa8a8e5d68e694bbcb285a", size = 22101, upload-time = "2026-03-01T16:00:25.09Z" },
+]
+
+[[package]]
+name = "python-ntfy"
+version = "0.11.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f1/bd/24561afca65c4eb2f42e544a619ef855b1428deb7ee0804f8eeb05e9b28b/python_ntfy-0.11.2.tar.gz", hash = "sha256:fc02284e04978074c7d7c03c51d0ae1f772514df7eee845c7854362fa3d3d611", size = 7135, upload-time = "2026-05-28T09:39:21.201Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9a/9d/777a2db1579aacc3f1165251f21bb40bb1396725bb7a9339adea5c4e1b7e/python_ntfy-0.11.2-py3-none-any.whl", hash = "sha256:c51f8a19cf159e098498b6d9a839a3d8e7fe1feefe2dd611b2b058aac5f5fde3", size = 8429, upload-time = "2026-05-28T09:39:20.246Z" },
 ]
 
 [[package]]
