@@ -5,8 +5,8 @@
 {
   "languages": {
     "Python": {
-      "language_servers": ["!pylsp", "..."],
-      "enable_language_server": true
-    }
-  }
+      "language_servers": ["!pylsp", "!pyright", "..."],
+      "enable_language_server": true,
+    },
+  },
 }
