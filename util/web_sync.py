@@ -409,7 +409,12 @@ def _process_message(c: Connection, msg):
         output["thread"] = {"id": thread[0], "name": thread[1]}
 
     replies = c.execute(
-        select(web_messages_list.c.id).where(web_messages_list.c.reply_msg == msg[0])
+        select(web_messages_list.c.id)
+        .join(web_authors_list, web_authors_list.c.id == web_messages_list.c.author_id)
+        .where(
+            (web_messages_list.c.reply_msg == msg[0])
+            & (web_authors_list.c.consent == 1)
+        )
     ).fetchall()
 
     if len(replies) > 0:
@@ -430,7 +435,18 @@ def _process_message(c: Connection, msg):
         ]
 
     if msg[7] is not None:
-        output["reply_to"] = msg[7]
+        reply_to = c.execute(
+            select(web_messages_list.c.id)
+            .join(
+                web_authors_list, web_messages_list.c.author_id == web_authors_list.c.id
+            )
+            .where(
+                (web_messages_list.c.id == msg[7]) & (web_authors_list.c.consent == 1)
+            )
+        ).fetchone()
+
+        if reply_to is not None:
+            output["reply_to"] = msg[7]
 
     if len(msg) == 9:
         output["recurse"] = msg[8]
