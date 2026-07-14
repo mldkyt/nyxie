@@ -252,7 +252,7 @@ def _embed_to_text(embed: Embed):
     return output
 
 
-def _get_reference_message(message: Message):
+def _get_reference_message(c: Connection, message: Message):
     if message.reference is None:
         return None
     if message.reference.resolved is None:
@@ -260,7 +260,13 @@ def _get_reference_message(message: Message):
     if isinstance(message.reference.resolved, DeletedReferencedMessage):
         return None
 
-    return message.reference.resolved.id
+    reply_to = c.execute(
+        select(web_messages_list.c.id).where(
+            web_messages_list.c.id == message.reference.resolved.id
+        )
+    ).fetchone()
+
+    return message.reference.resolved.id if reply_to is not None else None
 
 
 async def _add_message(c: Connection, message: Message):
