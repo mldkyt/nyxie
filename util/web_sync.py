@@ -272,7 +272,7 @@ def _get_reference_message(c: Connection, message: Message):
 async def _add_message(c: Connection, message: Message):
     _add_or_update_author(c, message)
     add_or_update_channel(c, message.channel)
-    reply_msg = _get_reference_message(message)
+    reply_msg = _get_reference_message(c, message)
     if message.thread is not None:
         await _add_or_update_thread(c, message.thread)
 
@@ -307,7 +307,7 @@ async def _add_message(c: Connection, message: Message):
 async def _update_message(c: Connection, message: Message):
     _add_or_update_author(c, message)
     add_or_update_channel(c, message.channel)
-    reply_msg = _get_reference_message(message)
+    reply_msg = _get_reference_message(c, message)
     if message.thread is not None:
         await _add_or_update_thread(c, message.thread)
 
