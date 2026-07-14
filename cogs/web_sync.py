@@ -1,13 +1,24 @@
 import datetime
 
-from discord import Cog, Bot, Message, RawMessageUpdateEvent, RawMessageDeleteEvent, Thread, ChannelType
+from discord import (
+    Bot,
+    ChannelType,
+    Cog,
+    Color,
+    Embed,
+    Member,
+    Message,
+    RawMessageDeleteEvent,
+    RawMessageUpdateEvent,
+    Thread,
+)
 from discord.abc import GuildChannel
 from sqlalchemy import delete, update
 
-from constants import GUILD
-from database import engine, web_channels_list, web_messages_list
+from constants import GUILD, OWNER
+from database import engine, web_authors_list, web_channels_list, web_messages_list
 from logger import lunamon_logger
-from util.web_sync import add_message, remove_message, unpin_all_messages
+from util.web_sync import Consent, add_message, remove_message, unpin_all_messages
 
 
 class WebSync(Cog):
@@ -26,10 +37,30 @@ class WebSync(Cog):
                     except Exception:
                         lunamon_logger.exception("Failed to add message to web UI:")
 
+        self.bot.add_view(Consent())
+        lunamon_logger.info("WebSync cog loaded")
+
     @Cog.listener()
     async def on_message(self, message: Message):
         try:
+            if (
+                str(message.author.id) == OWNER
+                and message.content == "lm!send_consent_msg"
+            ):
+                await message.channel.send(
+                    embed=Embed(
+                        title="Public Message View",
+                        color=Color.green(),
+                        description="This server implements a unique way to view messages outside of Discord without an account. [You can see it in action here](https://mldchan.dev/discord/explore). However, I want your consent to show messages on here. This helps non-Discord users find out what my community is like, and make things like frequently asked questions and project discussions more accessible.",
+                    ),
+                    view=Consent(),
+                )
+
+                await message.delete()
+                return
+
             await add_message(message)
+
         except Exception:
             lunamon_logger.exception("Error adding message:")
 
@@ -49,12 +80,23 @@ class WebSync(Cog):
                 return
             if not channel.permissions_for(guild.me).read_messages:
                 return
-            message = payload.cached_message or await channel.fetch_message(payload.message_id)
+            message = payload.cached_message or await channel.fetch_message(
+                payload.message_id
+            )
             if message.is_system():
                 return
-            await add_message(message) # will update
+            await add_message(message)  # will update
         except Exception:
             lunamon_logger.exception("Error editing message:")
+
+    @Cog.listener()
+    async def on_member_remove(self, member: Member):
+        with engine.begin() as c:
+            c.execute(
+                update(web_authors_list)
+                .where(web_authors_list.c.id == member.id)
+                .values(consent=0)
+            )
 
     @Cog.listener()
     async def on_raw_message_delete(self, payload: RawMessageDeleteEvent):
@@ -79,8 +121,9 @@ class WebSync(Cog):
         try:
             with engine.begin() as c:
                 c.execute(
-                    delete(web_channels_list)
-                    .where(web_channels_list.c.id == channel.id)
+                    delete(web_channels_list).where(
+                        web_channels_list.c.id == channel.id
+                    )
                 )
         except Exception:
             lunamon_logger.exception("Failed removing channel:")
@@ -94,7 +137,9 @@ class WebSync(Cog):
                 lunamon_logger.exception("Failed to add message to web UI:")
 
     @Cog.listener()
-    async def on_guild_channel_pins_update(self, channel: GuildChannel | Thread, last_pin: datetime.datetime):
+    async def on_guild_channel_pins_update(
+        self, channel: GuildChannel | Thread, last_pin: datetime.datetime
+    ):
         if channel.type in [ChannelType.public_thread, ChannelType.private_thread]:
             return
 

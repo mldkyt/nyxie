@@ -66,6 +66,7 @@ web_authors_list = Table(
     Column("author_name", VARCHAR, nullable=False),
     Column("author_pfp", VARCHAR, nullable=False),
     Column("author_username", VARCHAR),  # the same way usernames on Discord are unique
+    Column("consent", Integer, server_default="0"),
 )
 
 web_channels_list = Table(
