@@ -39,6 +39,7 @@ def _add_author(c: Connection, message: Message):
             author_name=message.author.display_name,
             author_pfp=message.author.display_avatar.url,
             author_username=username,
+            consent=1 if message.author.bot else 0,
         )
     )
 
@@ -59,6 +60,13 @@ def _update_author(c: Connection, message: Message):
             author_username=username,
         )
     )
+
+    if message.author.bot:
+        c.execute(
+            update(web_authors_list)
+            .where(web_authors_list.c.id == message.author.id)
+            .values(consent=1)
+        )
 
 
 def _add_or_update_author(c: Connection, message: Message):
