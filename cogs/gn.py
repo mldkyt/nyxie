@@ -34,7 +34,7 @@ class GnNotification(Cog):
     @tasks.loop(seconds=60)
     async def check(self):
         # Morning check
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(datetime.timezone.utc)
         if now.hour == 6 and now.minute == 0:
             token = "".join(random.choices(string.ascii_letters + string.digits, k=16))
 
@@ -43,7 +43,7 @@ class GnNotification(Cog):
                     insert(gn).values(
                         auth_code=token,
                         type="morning",
-                        expiry=datetime.datetime.now() + datetime.timedelta(hours=1),
+                        expiry=datetime.datetime.now() + datetime.timedelta(hours=10),
                     )
                 )
 
@@ -69,7 +69,7 @@ class GnNotification(Cog):
                     insert(gn).values(
                         auth_code=token,
                         type="evening",
-                        expiry=datetime.datetime.now() + datetime.timedelta(hours=1),
+                        expiry=datetime.datetime.now() + datetime.timedelta(hours=6),
                     )
                 )
 
