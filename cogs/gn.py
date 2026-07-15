@@ -55,6 +55,7 @@ class GnNotification(Cog):
                         label="Post",
                         url=f"{API_ENDPOINT}/api/lunamon/gn",
                         body=json.dumps({"token": token}),
+                        headers={"Content-Type": "application/json"},
                     )
                 ],
             )
@@ -80,6 +81,7 @@ class GnNotification(Cog):
                         label="Post",
                         url=f"{API_ENDPOINT}/api/lunamon/gn",
                         body=json.dumps({"token": token}),
+                        headers={"Content-Type": "application/json"},
                     )
                 ],
             )
