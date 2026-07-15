@@ -2,12 +2,17 @@ import datetime
 import random
 
 from flask import Blueprint, make_response, request
+from mastodon import Mastodon
 from sqlalchemy import delete, select
 
 from database import engine, gn
-from util.akkoma import akkoma_cache
 
 gn_bp = Blueprint("gn", __name__)
+
+mastodon = Mastodon(
+    client_id="data/pytooter_clientcred.secret",
+    access_token="data/pytooter_usercred.secret",
+)
 
 
 def quick_response(msg: str, code: int):
@@ -48,7 +53,7 @@ def post_gn():
             ]
         )
 
-        akkoma_cache.client.toot(message)
+        mastodon.toot(message)
 
     elif gn_d[0] == "evening":
         message = random.choice(
@@ -62,7 +67,7 @@ def post_gn():
             ]
         )
 
-        akkoma_cache.client.toot(message)
+        mastodon.toot(message)
 
     with engine.begin() as c:
         c.execute(delete(gn).where((gn.c.id == gn_d[1])))
