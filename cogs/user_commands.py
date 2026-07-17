@@ -7,19 +7,17 @@ import string
 import subprocess
 import sys
 import time
-import typing
 
 import aiohttp
-import bs4
 import deepl
 import discord
 import pytz
-from bs4 import BeautifulSoup
 from deepl import Language
-from discord import Bot, ButtonStyle, Interaction, InteractionType, Message
+from discord import Bot, ButtonStyle, File, Interaction, InteractionType, Message
 from discord.ext import commands, tasks
 from discord.ext.commands import BucketType, cooldown
 from discord.ui import (
+    ActionRow,
     Button,
     Container,
     DesignerView,
@@ -27,23 +25,27 @@ from discord.ui import (
     Section,
     Separator,
     TextDisplay,
-    Thumbnail, ActionRow,
+    Thumbnail,
 )
 from markdownify import markdownify
-from mastodon.return_types import Status, Poll, Account
+from mastodon.return_types import Account, Poll, Status
 
 from constants import (
     CHANNEL_MEMES,
     CHANNEL_MODERATION,
     DEEPL_API_KEY,
+    FORGEJO_OWNER,
+    FORGEJO_PROJECT,
     GUILD,
     OWNER,
-    VERSION, FORGEJO_OWNER, FORGEJO_PROJECT,
+    VERSION,
 )
+from database import engine
 from logger import lunamon_logger
 from util.akkoma import akkoma_cache
 from util.keysmash_generator import keysmash_ai
 from util.storage import get_data, set_data
+from util.yuri_util import get_some_yuri
 
 dm_cache = []
 
@@ -103,9 +105,9 @@ class RefreshTimeView(discord.ui.View):
                 f"Server clock: {utc_time.strftime('%a %d %b %Y, %H:%M:%S %Z (%z)')}\n"
                 f"Your time: <t:{int(utc_time.timestamp())}:F>"
             )
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("An error occurred:")
-            await interaction.response.send_message(f"error :(", ephemeral=True)
+            await interaction.response.send_message("error :(", ephemeral=True)
 
 
 class ReadReceiptComponent(discord.ui.View):
@@ -141,7 +143,7 @@ class ReadReceiptComponent(discord.ui.View):
                 content=f"{data['message']}\n*Read by {', '.join([f'<@{i}>' for i in data['readUsers']])}*"
             )
             set_data(f"read_receipt/{interaction.message.id}", data)
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("An error occurred:")
             await interaction.respond(
                 "error :(\n-# this error was automatically reported", ephemeral=True
@@ -278,7 +280,7 @@ class PickerComponent(discord.ui.View):
             meow = generate_meow()
             await interaction.respond(f"✅ Message sent\n{meow} :3", ephemeral=True)
             dm_cache.append(f"{meow} by {interaction.user.mention} :3")
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
@@ -289,7 +291,7 @@ class PickerComponent(discord.ui.View):
                 f"✅ Message sent\n:{colon_three} :3", ephemeral=True
             )
             dm_cache.append(f"{colon_three} by {interaction.user.mention} :3")
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
@@ -299,7 +301,7 @@ class PickerComponent(discord.ui.View):
             dm_cache.append(
                 f"{interaction.user.mention} said that you're such a cute girl~ :3"
             )
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
@@ -309,7 +311,7 @@ class PickerComponent(discord.ui.View):
             dm_cache.append(
                 f"{interaction.user.mention} said that you're such a pretty girl~ :3"
             )
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
@@ -319,7 +321,7 @@ class PickerComponent(discord.ui.View):
             dm_cache.append(
                 f"{interaction.user.mention} said that you're such a gorgeous girl~ :3"
             )
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
@@ -329,7 +331,7 @@ class PickerComponent(discord.ui.View):
             dm_cache.append(
                 f"{interaction.user.mention} said that you're such a coool girl~ :3"
             )
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
@@ -341,7 +343,7 @@ class PickerComponent(discord.ui.View):
             dm_cache.append(
                 f"{interaction.user.mention} said that you're such a goooood girl~ :3"
             )
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
@@ -349,7 +351,7 @@ class PickerComponent(discord.ui.View):
         try:
             await interaction.respond(f"✅ meow -> <@{OWNER}>", ephemeral=True)
             dm_cache.append(f"{interaction.user.mention} meowd at you :3")
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
@@ -357,7 +359,7 @@ class PickerComponent(discord.ui.View):
         try:
             await interaction.respond("✅ *purrrrrrr*", ephemeral=True)
             dm_cache.append(f"{interaction.user.mention} has *purrrrr* :3")
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
@@ -367,7 +369,7 @@ class PickerComponent(discord.ui.View):
             dm_cache.append(
                 f"{interaction.user.mention} has give you girlkiss :3333333333"
             )
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
@@ -375,7 +377,7 @@ class PickerComponent(discord.ui.View):
         try:
             await interaction.respond("✅ >///<", ephemeral=True)
             dm_cache.append(f"{interaction.user.mention} has booped you :3")
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
@@ -383,7 +385,7 @@ class PickerComponent(discord.ui.View):
         try:
             await interaction.respond("✅ *paws at Lunya*", ephemeral=True)
             dm_cache.append(f"{interaction.user.mention} *paws at you* :3")
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
@@ -391,7 +393,7 @@ class PickerComponent(discord.ui.View):
         try:
             await interaction.respond("✅ beeeeep", ephemeral=True)
             dm_cache.append(f"{interaction.user.mention} beeped at you :3")
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
@@ -418,7 +420,7 @@ class PickerComponent(discord.ui.View):
             set_data("clicker", click_data)
 
             dm_cache.append(f"{interaction.user.mention} clicked at you :3")
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("An error occurred:")
             await interaction.respond("An error occurred", ephemeral=True)
 
@@ -477,7 +479,9 @@ def generate_status_embed(status: Status, pinned=False):
     pinned_post = "Pinned post by " if pinned else ""
 
     content = markdownify(status.content)
-    desc = content if len(status.spoiler_text) == 0 else f"CW: {status.spoiler_text}\n\n"
+    desc = (
+        content if len(status.spoiler_text) == 0 else f"CW: {status.spoiler_text}\n\n"
+    )
 
     if len(status.spoiler_text) > 0:
         if len(status.media_attachments) > 0 and len(content) > 0:
@@ -507,6 +511,7 @@ def generate_status_embed(status: Status, pinned=False):
     )
 
     return emb
+
 
 async def get_posts_under_hashtags(hashtag) -> list[discord.Embed] | None:
     # Lookup_str: #art for example
@@ -583,9 +588,13 @@ async def search_posts(query, media_type, start_time, count):
     for i in statuses.statuses:
         if len(i.spoiler_text) > 0:
             continue
-        if media_type == "image" and not any(j.type == "image" for j in i.media_attachments):
+        if media_type == "image" and not any(
+            j.type == "image" for j in i.media_attachments
+        ):
             continue
-        if media_type == "video" and not any(j.type == "video" for j in i.media_attachments):
+        if media_type == "video" and not any(
+            j.type == "video" for j in i.media_attachments
+        ):
             continue
 
         emb = generate_status_embed(i)
@@ -642,10 +651,11 @@ class UserCommands(discord.Cog):
             interaction.custom_id == "more_yuri_pwease_uwu"
             and interaction.type == InteractionType.component
         ):
-            yuri = akkoma_cache.get_yuribot_post()
+            with engine.begin() as c:
+                yuri_filename, yuri_source = get_some_yuri(c)
 
             gallery = MediaGallery()
-            gallery.add_item(yuri.media_attachments[0].url)
+            gallery.add_item(f"attachment://{yuri_filename.split('/')[-1]}")
 
             container = Container()
             container.add_item(gallery)
@@ -658,15 +668,16 @@ class UserCommands(discord.Cog):
                         custom_id="more_yuri_pwease_uwu",
                     ),
                     Button(
-                        label="source is fedi",
+                        label="source",
                         style=ButtonStyle.link,
-                        url=yuri.url,
+                        url=yuri_source,
                     ),
                 )
             )
 
             await interaction.respond(
                 view=DesignerView(container),
+                file=File(yuri_filename),
             )
 
     user_commands = discord.SlashCommandGroup(
@@ -733,7 +744,7 @@ class UserCommands(discord.Cog):
                 f"```",
                 ephemeral=not public,
             )
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("Error occured in /user information")
             await ctx.respond(
                 "An error occurred while executing the command.", ephemeral=True
@@ -768,7 +779,7 @@ class UserCommands(discord.Cog):
                 return
 
             await ctx.respond(message, view=PickerComponent(type))
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("Error occured in /user picker")
             await ctx.respond(
                 "An error occurred while executing the command.", ephemeral=True
@@ -815,7 +826,7 @@ class UserCommands(discord.Cog):
                     f"-# from user not found in db",
                     ephemeral=not public,
                 )
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("Error occured in /user clicker")
             await ctx.respond(
                 "an error occurred while executing the command.", ephemeral=True
@@ -834,7 +845,7 @@ class UserCommands(discord.Cog):
                 return
 
             await ctx.respond(message, view=ReadReceiptComponent())
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("Error occured in /user read_receipt")
             await ctx.respond(
                 "An error occurred while executing the command.", ephemeral=True
@@ -862,7 +873,7 @@ class UserCommands(discord.Cog):
                 f"Your time: <t:{int(utc_time.timestamp())}:F>",
                 view=RefreshTimeView(),
             )
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("Error occured in /user time")
             await ctx.respond(
                 "An error occurred while executing the command.", ephemeral=True
@@ -929,12 +940,14 @@ class UserCommands(discord.Cog):
         public_response: bool = False,
     ):
         try:
-            post = akkoma_cache.client.status_post(text, spoiler_text=cw, visibility=visibility)
+            post = akkoma_cache.client.status_post(
+                text, spoiler_text=cw, visibility=visibility
+            )
             await ctx.respond(
                 f"Post created! {post.url}",
                 ephemeral=not public_response,
             )
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("An error occurred:")
             await ctx.respond("Failed to create status :(", ephemeral=True)
 
@@ -1044,7 +1057,7 @@ class UserCommands(discord.Cog):
 
                 if len(os.listdir("temp")) == 0:
                     os.rmdir("temp")
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("An error occurred:")
             await ctx.respond("Failed to create post :(", ephemeral=True)
 
@@ -1094,7 +1107,7 @@ class UserCommands(discord.Cog):
             c = ctx.respond("Member was banned successfully!", ephemeral=True)
 
             await asyncio.gather(a, b, c)
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("Error occured from /user ban_from_lunya")
             await ctx.respond("An error occured banning this user.", ephemeral=True)
 
@@ -1191,7 +1204,7 @@ class UserCommands(discord.Cog):
 
             # Delete
             shutil.rmtree("temp")
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("Error occured when borrowing a meme")
             await ctx.respond("Error!", ephemeral=True)
 
@@ -1205,7 +1218,7 @@ class UserCommands(discord.Cog):
                 f"Licensed under GNU AGPL v3.0. Software's source code is [here](<https://git.lunya.pet/{FORGEJO_OWNER}/{FORGEJO_PROJECT}>)",
                 ephemeral=True,
             )
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("Error occured when printing version, HOW????")
             await ctx.respond("Error!", ephemeral=True)
 
@@ -1220,10 +1233,11 @@ class UserCommands(discord.Cog):
     @cooldown(1, 10, BucketType.default)
     async def yuri(self, ctx: discord.ApplicationContext):
         try:
-            yuri = akkoma_cache.get_yuribot_post()
+            with engine.begin() as c:
+                yuri_filename, yuri_source = get_some_yuri(c)
 
             gallery = MediaGallery()
-            gallery.add_item(yuri.media_attachments[0].url)
+            gallery.add_item(f"attachment://{yuri_filename.split('/')[-1]}")
 
             container = Container()
             container.add_item(gallery)
@@ -1236,15 +1250,16 @@ class UserCommands(discord.Cog):
                         custom_id="more_yuri_pwease_uwu",
                     ),
                     Button(
-                        label="source is fedi",
+                        label="source",
                         style=ButtonStyle.link,
-                        url=yuri.url,
+                        url=yuri_source,
                     ),
                 )
             )
 
             await ctx.respond(
                 view=DesignerView(container),
+                file=File(yuri_filename),
             )
         except Exception as e:
             lunamon_logger.exception(
@@ -1293,7 +1308,7 @@ class UserCommands(discord.Cog):
             await ctx.respond(
                 f"Translated from {translated.detected_source_lang}:\n\n{translated.text}"
             )
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("Error when translate message")
             await ctx.respond("An error occurred", ephemeral=True)
 
@@ -1322,7 +1337,7 @@ class UserCommands(discord.Cog):
             await owner.send(message)
 
             dm_cache.clear()
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("Error occured when handling queue events")
 
 

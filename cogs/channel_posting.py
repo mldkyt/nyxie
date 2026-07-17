@@ -2,7 +2,7 @@ from asyncio import gather
 from datetime import datetime
 from random import choice, randint
 
-from discord import Bot, ButtonStyle, Cog, Guild, MediaGalleryItem, TextChannel
+from discord import Bot, ButtonStyle, Cog, File, Guild, MediaGalleryItem, TextChannel
 from discord.ext.tasks import loop
 from discord.ui import (
     ActionRow,
@@ -21,8 +21,10 @@ from constants import (
     GUILD,
     VERSION,
 )
+from database import engine
 from logger import lunamon_logger
 from util.akkoma import akkoma_cache
+from util.yuri_util import get_some_yuri
 
 DEBUG = False
 
@@ -38,28 +40,33 @@ async def post_yuri(bot: Bot):
         lunamon_logger.warning("Yuri channel not found :(")
         return
 
-    yuri = akkoma_cache.get_yuribot_post()
-    if yuri is None:
-        lunamon_logger.warning("No yuri :(")
-        return  # :(
+    with engine.begin() as c:
+        try:
+            yuri_filename, yuri_source = get_some_yuri(c)
+        except Exception:
+            return
 
     component = Container(
         TextDisplay("# Daily Yuri"),
         Separator(),
-        MediaGallery(MediaGalleryItem(url=yuri.media_attachments[0].url)),
-        TextDisplay(f"-# Tags: {yuri.media_attachments[0].description}"),
+        MediaGallery(
+            MediaGalleryItem(url=f"attachment://{yuri_filename.split('/')[-1]}")
+        ),
         Separator(),
         ActionRow(
             Button(
                 label="Open yuri on fedi",
                 style=ButtonStyle.url,
-                url=yuri.url,
+                url=yuri_source,
             )
         ),
         TextDisplay(f"-# Lunamon {VERSION}"),
     )
 
-    await chan.send(view=DesignerView(component))
+    await chan.send(
+        view=DesignerView(component),
+        file=File(yuri_filename),
+    )
 
 
 async def post_yaoi(bot: Bot):

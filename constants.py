@@ -23,7 +23,6 @@ CHANNEL_MODERATION = os.getenv("CHANNEL_MODERATION")
 CHANNEL_SUGGESTIONS = os.getenv("CHANNEL_SUGGESTIONS")
 
 FEDI_YAOIBOT_ID = os.getenv("FEDI_YAOIBOT_ID")
-FEDI_YURIBOT_ID = os.getenv("FEDI_YURIBOT_ID")
 
 FORGEJO_INSTANCE = os.getenv("FORGEJO_INSTANCE")
 FORGEJO_TOKEN = os.getenv("FORGEJO_TOKEN")
@@ -31,14 +30,13 @@ FORGEJO_OWNER = os.getenv("FORGEJO_OWNER")
 FORGEJO_PROJECT = os.getenv("FORGEJO_PROJECT")
 
 DEEPL_API_KEY = os.getenv("DEEPL_API_KEY")
+WEB_TOKEN = os.getenv("WEB_TOKEN")
 
 
 def validate_values(l: dict[str, str | None]):
     for k, v in l.items():
         if v is None:
-            lunamon_logger.warning(
-                f"CONSTANTS: The constant value for {k} is NOT set!"
-            )
+            lunamon_logger.warning(f"CONSTANTS: The constant value for {k} is NOT set!")
 
 
 validate_values(
@@ -52,12 +50,12 @@ validate_values(
         "CHANNEL_MEOW": CHANNEL_MEOW,
         "CHANNEL_MODERATION": CHANNEL_MODERATION,
         "CHANNEL_SUGGESTIONS": CHANNEL_SUGGESTIONS,
-        "FEDI_YURIBOT_ID": FEDI_YURIBOT_ID,
         "FEDI_YAOIBOT_ID": FEDI_YAOIBOT_ID,
         "FORGEJO_INSTANCE": FORGEJO_INSTANCE,
         "FORGEJO_TOKEN": FORGEJO_TOKEN,
         "FORGEJO_OWNER": FORGEJO_OWNER,
         "FORGEJO_PROJECT": FORGEJO_PROJECT,
         "DEEPL_API_KEY": DEEPL_API_KEY,
+        "WEB_TOKEN": WEB_TOKEN,
     }
 )
