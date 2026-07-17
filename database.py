@@ -123,3 +123,13 @@ gn = Table(
     Column("auth_code", VARCHAR),
     Column("expiry", DateTime(timezone=True)),
 )
+
+# priority gets decreased by one every single time the image is fetched, so that yuri is "infinite
+yuri_db = Table(
+    "yuri",
+    md_obj,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("priority", Integer, default=10000, nullable=False),
+    Column("filename", VARCHAR, nullable=False),
+    Column("source", VARCHAR, nullable=False),
+)

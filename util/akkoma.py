@@ -4,7 +4,7 @@ import random
 from mastodon import Mastodon
 from mastodon.return_types import Status
 
-from constants import FEDI_YURIBOT_ID, FEDI_YAOIBOT_ID
+from constants import FEDI_YAOIBOT_ID
 from logger import lunamon_logger
 
 
@@ -14,10 +14,13 @@ class AkkomaCache:
 
     def safelogin(self):
         try:
-            self.client = Mastodon(client_id="data/pytooter_clientcred.secret", access_token="data/pytooter_usercred.secret")
+            self.client = Mastodon(
+                client_id="data/pytooter_clientcred.secret",
+                access_token="data/pytooter_usercred.secret",
+            )
 
             self.user = self.client.me()
-            
+
             self.logged_in = True
         except Exception:
             lunamon_logger.exception("[Akkoma] Safelogin failed")
@@ -41,19 +44,6 @@ class AkkomaCache:
 
         return self.latest_lunya_posts
 
-    def get_yuribot_post(self) -> Status | None:
-        if not self.logged_in:
-            lunamon_logger.error("[Akkoma] Cannot fetch yuri :( not logged in...")
-            return None
-
-        if FEDI_YURIBOT_ID is None:
-            return None
-
-        posts = [i for i in self.client.account_statuses(FEDI_YURIBOT_ID, only_media=True, limit=100)]
-        random_post = random.choice(posts)
-
-        return random_post
-
     def get_yaoibot_post(self) -> Status | None:
         if not self.logged_in:
             lunamon_logger.error("[Akkoma] Cannot fetch yaoi :( not logged in...")
@@ -62,7 +52,12 @@ class AkkomaCache:
         if FEDI_YAOIBOT_ID is None:
             return None
 
-        posts = [i for i in self.client.account_statuses(FEDI_YAOIBOT_ID, only_media=True, limit=100)]
+        posts = [
+            i
+            for i in self.client.account_statuses(
+                FEDI_YAOIBOT_ID, only_media=True, limit=100
+            )
+        ]
         random_post = random.choice(posts)
 
         return random_post
