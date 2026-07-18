@@ -13,7 +13,7 @@ from web.gn_api import quick_response
 yuri_bp = Blueprint("yuri", __name__)
 
 
-@yuri_bp.route("/api/yuri", methods=["POST"])
+@yuri_bp.route("/api/lunamon/yuri", methods=["POST"])
 def yuri_post_route():
     # Verify WEB_TOKEN exists
     if not WEB_TOKEN:
@@ -62,7 +62,7 @@ def yuri_post_route():
     return "Added yuri OK"
 
 
-@yuri_bp.route("/api/yaoi", methods=["POST"])
+@yuri_bp.route("/api/lunamon/yaoi", methods=["POST"])
 def yaoi_post_route():
     # Verify WEB_TOKEN exists
     if not WEB_TOKEN:
