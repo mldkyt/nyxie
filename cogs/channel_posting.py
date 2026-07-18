@@ -2,17 +2,16 @@ from asyncio import gather
 from datetime import datetime
 from random import choice, randint
 
-from discord import Bot, ButtonStyle, Cog, File, Guild, MediaGalleryItem, TextChannel
-from discord.ext.tasks import loop
-from discord.ui import (
-    ActionRow,
-    Button,
-    Container,
-    DesignerView,
-    MediaGallery,
-    Separator,
-    TextDisplay,
+from discord import (
+    Bot,
+    Cog,
+    Embed,
+    EmbedFooter,
+    File,
+    Guild,
+    TextChannel,
 )
+from discord.ext.tasks import loop
 
 from constants import (
     CHANNEL_MEOW,
@@ -46,27 +45,14 @@ async def post_yuri(bot: Bot):
         except Exception:
             return
 
-    component = Container(
-        TextDisplay("# Daily Yuri"),
-        Separator(),
-        MediaGallery(
-            MediaGalleryItem(url=f"attachment://{yuri_filename.split('/')[-1]}")
-        ),
-        Separator(),
-        ActionRow(
-            Button(
-                label="Open yuri on fedi",
-                style=ButtonStyle.url,
-                url=yuri_source,
-            )
-        ),
-        TextDisplay(f"-# Lunamon {VERSION}"),
+    embed = Embed(
+        title="Daily yuri",
+        image="attachment://{yuri_filename.split('/')[-1]}",
+        footer=EmbedFooter(text=f"Lunamon {VERSION}"),
+        description="[source]({yuri_source})",
     )
 
-    await chan.send(
-        view=DesignerView(component),
-        file=File(yuri_filename),
-    )
+    await chan.send(embed=embed, file=File(yuri_filename))
 
 
 async def post_yaoi(bot: Bot):
@@ -81,22 +67,13 @@ async def post_yaoi(bot: Bot):
     if yaoi is None:
         return  # :(
 
-    component = Container(
-        TextDisplay("# Daily Yaoi"),
-        Separator(),
-        MediaGallery(MediaGalleryItem(url=yaoi.media_attachments[0].url)),
-        Separator(),
-        ActionRow(
-            Button(
-                label="Open yaoi on fedi",
-                style=ButtonStyle.url,
-                url=yaoi.url,
-            )
-        ),
-        TextDisplay(f"-# Lunamon {VERSION}"),
+    embed = Embed(
+        title="Daily yaoi",
+        image=yaoi.media_attachments[0].url,
+        description="[source]({yaoi_source})",
     )
 
-    await chan.send(view=DesignerView(component))
+    await chan.send(embed=embed)
 
 
 def generate_meow():

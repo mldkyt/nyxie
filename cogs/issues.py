@@ -6,7 +6,6 @@ import aiohttp
 from aiohttp import ClientResponseError
 from discord import (
     Bot,
-    ButtonStyle,
     Cog,
     InputTextStyle,
     Interaction,
@@ -15,14 +14,8 @@ from discord import (
 )
 from discord.ext.tasks import loop
 from discord.ui import (
-    ActionRow,
-    Button,
-    Container,
-    DesignerView,
     InputText,
     Modal,
-    Separator,
-    TextDisplay,
 )
 from sqlalchemy import delete, insert, select
 
@@ -30,8 +23,10 @@ from constants import (
     CHANNEL_MODERATION,
     CHANNEL_SUGGESTIONS,
     FORGEJO_INSTANCE,
+    FORGEJO_OWNER,
+    FORGEJO_PROJECT,
     FORGEJO_TOKEN,
-    GUILD, FORGEJO_OWNER, FORGEJO_PROJECT,
+    GUILD,
 )
 from database import engine, suggestion_messages, suggestion_messages_comments
 from logger import lunamon_logger
@@ -46,14 +41,22 @@ class ForgejoCreateIssueModal(Modal):
 
         self.field_title = InputText(
             label="title",
-            placeholder=random.choice(["fix this bug", "optimize this", "add shenanigans", "[feat] meowing"])
+            placeholder=random.choice(
+                ["fix this bug", "optimize this", "add shenanigans", "[feat] meowing"]
+            ),
         )
         self.add_item(self.field_title)
 
         self.field_body = InputText(
             label="body",
-            placeholder=random.choice(["i like meowing", "this is a detailed description...", "lain iwakura is an...",
-                                       "add this new fancy feature that will revolutionize the world..."]),
+            placeholder=random.choice(
+                [
+                    "i like meowing",
+                    "this is a detailed description...",
+                    "lain iwakura is an...",
+                    "add this new fancy feature that will revolutionize the world...",
+                ]
+            ),
             style=InputTextStyle.paragraph,
         )
         self.add_item(self.field_body)
@@ -61,13 +64,14 @@ class ForgejoCreateIssueModal(Modal):
     async def callback(self, interaction: Interaction):
         try:
             async with aiohttp.ClientSession() as sess:
-                async with sess.post(f"https://{FORGEJO_INSTANCE}/api/v1/repos/{self.user}/{self.repo}/issues",
-                                     headers={
-                                         "Authorization": f"Bearer {FORGEJO_TOKEN}"
-                                     }, json={
-                            "title": self.field_title.value,
-                            "body": f"User {interaction.user.display_name} ({interaction.user.name}, {interaction.user.id}) submitted the following:\n\n{self.field_body.value}",
-                        }) as res:
+                async with sess.post(
+                    f"https://{FORGEJO_INSTANCE}/api/v1/repos/{self.user}/{self.repo}/issues",
+                    headers={"Authorization": f"Bearer {FORGEJO_TOKEN}"},
+                    json={
+                        "title": self.field_title.value,
+                        "body": f"User {interaction.user.display_name} ({interaction.user.name}, {interaction.user.id}) submitted the following:\n\n{self.field_body.value}",
+                    },
+                ) as res:
                     res.raise_for_status()
                     res_b = await res.json()
 
@@ -76,10 +80,12 @@ class ForgejoCreateIssueModal(Modal):
                         f"https://{FORGEJO_INSTANCE}/{self.user}/{self.repo}/issues/{res_b['number']}",
                         ephemeral=True,
                     )
-        except Exception as e:
+        except Exception:
             lunamon_logger.exception("An error occurred:")
-            await interaction.respond("an error occurred, please try again later and probably tell Lunya",
-                                      ephemeral=True)
+            await interaction.respond(
+                "an error occurred, please try again later and probably tell Lunya",
+                ephemeral=True,
+            )
 
 
 class Issues(Cog):
@@ -95,15 +101,14 @@ class Issues(Cog):
     async def on_ready(self):
         async with aiohttp.ClientSession() as sess:
             async with sess.get(
-                    f"https://{FORGEJO_INSTANCE}/api/v1/repos/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/labels",
-                    headers={
-                        "Authorization": f"Bearer {FORGEJO_TOKEN}"
-                    }) as res:
+                f"https://{FORGEJO_INSTANCE}/api/v1/repos/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/labels",
+                headers={"Authorization": f"Bearer {FORGEJO_TOKEN}"},
+            ) as res:
                 res.raise_for_status()
                 labels = await res.json()
 
                 for i in labels:
-                    self.labels.append((i['id'], i['name']))
+                    self.labels.append((i["id"], i["name"]))
 
         self.queue_suggestions.start()
         self.update_thread_titles.start()
@@ -138,19 +143,24 @@ class Issues(Cog):
 
             # Verify repo
             async with aiohttp.ClientSession() as sess:
-                async with sess.get(f"https://{FORGEJO_INSTANCE}/api/v1/repos/{owner}/{repo}", headers={
-                    'Authorization': f'Bearer {FORGEJO_TOKEN}'
-                }) as req:
+                async with sess.get(
+                    f"https://{FORGEJO_INSTANCE}/api/v1/repos/{owner}/{repo}",
+                    headers={"Authorization": f"Bearer {FORGEJO_TOKEN}"},
+                ) as req:
                     req.raise_for_status()
 
             modal = ForgejoCreateIssueModal(owner, repo)
             await interaction.response.send_modal(modal)
         except ClientResponseError as e:
-            await interaction.respond(f"An error occured while contacting the server, {e.status} {e.message}",
-                                      ephemeral=True)
-            lunamon_logger.warning(f"Repo doesn't exist: %s %s", e.status, e.message)
+            await interaction.respond(
+                f"An error occured while contacting the server, {e.status} {e.message}",
+                ephemeral=True,
+            )
+            lunamon_logger.warning("Repo doesn't exist: %s %s", e.status, e.message)
         except Exception:
-            lunamon_logger.exception("Error handling on_interaction inside Bug Reporting")
+            lunamon_logger.exception(
+                "Error handling on_interaction inside Bug Reporting"
+            )
 
     @Cog.listener()
     async def on_message(self, message: Message):
@@ -168,30 +178,31 @@ class Issues(Cog):
         with engine.begin() as c:
             a = c.execute(
                 select(
-                    suggestion_messages.c.id,
-                    suggestion_messages.c.tracker_id
-                )
-                .where(suggestion_messages.c.thread_id == str(message.channel.id))
+                    suggestion_messages.c.id, suggestion_messages.c.tracker_id
+                ).where(suggestion_messages.c.thread_id == str(message.channel.id))
             ).fetchone()
 
         if a is not None:
             # Add comment
             async with aiohttp.ClientSession() as sess:
                 async with sess.post(
-                        f"https://{FORGEJO_INSTANCE}/api/v1/repos/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/issues/{a[1]}/comments",
-                        headers={
-                            "Authorization": f"Bearer {FORGEJO_TOKEN}"
-                        }, json={
-                            "body": f"{message.author.display_name} ({message.author.name}; {message.author.id}) said:\n\n{message.content}"
-                        }) as res:
+                    f"https://{FORGEJO_INSTANCE}/api/v1/repos/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/issues/{a[1]}/comments",
+                    headers={"Authorization": f"Bearer {FORGEJO_TOKEN}"},
+                    json={
+                        "body": f"{message.author.display_name} ({message.author.name}; {message.author.id}) said:\n\n{message.content}"
+                    },
+                ) as res:
                     res.raise_for_status()
 
                     out = await res.json()
 
                     with engine.begin() as c:
                         c.execute(
-                            insert(suggestion_messages_comments)
-                            .values(suggestion_id=a[0], comment_id=out["id"], message_id=str(message.id))
+                            insert(suggestion_messages_comments).values(
+                                suggestion_id=a[0],
+                                comment_id=out["id"],
+                                message_id=str(message.id),
+                            )
                         )
 
             # Attachments
@@ -203,7 +214,9 @@ class Issues(Cog):
                 async with aiohttp.ClientSession() as sess:
                     async with sess.get(attachment.url) as req:
                         if not req.ok:
-                            lunamon_logger.warning("Failed to download %s", attachment.filename)
+                            lunamon_logger.warning(
+                                "Failed to download %s", attachment.filename
+                            )
                             continue
 
                         data = await req.read()
@@ -213,29 +226,31 @@ class Issues(Cog):
 
             # Upload
             for attachment in message.attachments:
-                if not os.path.exists(f'tmp/{attachment.filename}'):
-                    lunamon_logger.warning("Tried to upload non-existent file %s", attachment.filename)
+                if not os.path.exists(f"tmp/{attachment.filename}"):
+                    lunamon_logger.warning(
+                        "Tried to upload non-existent file %s", attachment.filename
+                    )
                     continue
 
                 async with aiohttp.ClientSession() as sess:
                     async with sess.post(
-                            f"https://{FORGEJO_INSTANCE}/api/v1/repos/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/issues/comments/{out['id']}/assets",
-                            headers={
-                                "Authorization": f"Bearer {FORGEJO_TOKEN}"
-                            },
-                            data={
-                                "attachment": open(f"tmp/{attachment.filename}", "rb")
-                            }) as res:
+                        f"https://{FORGEJO_INSTANCE}/api/v1/repos/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/issues/comments/{out['id']}/assets",
+                        headers={"Authorization": f"Bearer {FORGEJO_TOKEN}"},
+                        data={"attachment": open(f"tmp/{attachment.filename}", "rb")},
+                    ) as res:
                         if not res.ok:
                             text = await res.text()
-                            lunamon_logger.warning("File failed to upload: %s: %s %s", attachment.filename,
-                                                   str(res.status), text)
+                            lunamon_logger.warning(
+                                "File failed to upload: %s: %s %s",
+                                attachment.filename,
+                                str(res.status),
+                                text,
+                            )
 
             # Delete locally
             for attachment in message.attachments:
                 if os.path.exists(f"tmp/{attachment.filename}"):
                     os.remove(f"tmp/{attachment.filename}")
-
 
     @Cog.listener()
     async def on_message_delete(self, message: Message):
@@ -250,37 +265,38 @@ class Issues(Cog):
             a = c.execute(
                 select(
                     suggestion_messages_comments.c.id,
-                    suggestion_messages_comments.c.comment_id
-                )
-                .where(suggestion_messages_comments.c.message_id == str(message.id))
+                    suggestion_messages_comments.c.comment_id,
+                ).where(suggestion_messages_comments.c.message_id == str(message.id))
             ).fetchone()
 
         if a is not None:
             # Delete comment
             async with aiohttp.ClientSession() as sess:
                 async with sess.delete(
-                        f"https://{FORGEJO_INSTANCE}/api/v1/repos/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/issues/comments/{a[1]}",
-                        headers={
-                            "Authorization": f"Bearer {FORGEJO_TOKEN}"
-                        }) as res:
+                    f"https://{FORGEJO_INSTANCE}/api/v1/repos/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/issues/comments/{a[1]}",
+                    headers={"Authorization": f"Bearer {FORGEJO_TOKEN}"},
+                ) as res:
                     res.raise_for_status()
 
                     with engine.begin() as c:
                         c.execute(
-                            delete(suggestion_messages_comments)
-                            .where(suggestion_messages_comments.c.id == a[0])
+                            delete(suggestion_messages_comments).where(
+                                suggestion_messages_comments.c.id == a[0]
+                            )
                         )
 
     async def on_delete_close_issue(self, message: Message):
         if message.channel.id == int(CHANNEL_SUGGESTIONS):
-            self.suggestion_queue = [i for i in self.suggestion_queue
-                                     if i[0] != message.id]
+            self.suggestion_queue = [
+                i for i in self.suggestion_queue if i[0] != message.id
+            ]
 
             a = None
             with engine.begin() as c:
                 a = c.execute(
-                    select(suggestion_messages)
-                    .where(suggestion_messages.c.message_id == str(message.id))
+                    select(suggestion_messages).where(
+                        suggestion_messages.c.message_id == str(message.id)
+                    )
                 ).fetchone()
 
             if a is not None:
@@ -290,30 +306,32 @@ class Issues(Cog):
     async def close_issue(self, a: tuple[int, str, int, str, str]):
         async with aiohttp.ClientSession() as sess:
             async with sess.patch(
-                    f"https://{FORGEJO_INSTANCE}/api/v1/repos/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/issues/{a[2]}",
-                    headers={
-                        "Authorization": f"Bearer {FORGEJO_TOKEN}"
-                    }, json={
-                        "state": "closed"
-                    }) as res:
+                f"https://{FORGEJO_INSTANCE}/api/v1/repos/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/issues/{a[2]}",
+                headers={"Authorization": f"Bearer {FORGEJO_TOKEN}"},
+                json={"state": "closed"},
+            ) as res:
                 res.raise_for_status()
 
-        reply_msg = await self.bot.get_guild(int(GUILD)).get_channel(int(CHANNEL_SUGGESTIONS)).get_thread(int(a[4])).fetch_message(int(a[3]))
+        reply_msg = (
+            await self.bot.get_guild(int(GUILD))
+            .get_channel(int(CHANNEL_SUGGESTIONS))
+            .get_thread(int(a[4]))
+            .fetch_message(int(a[3]))
+        )
         await reply_msg.delete()
-        thread = self.bot.get_guild(int(GUILD)).get_channel(int(CHANNEL_SUGGESTIONS)).get_thread(int(a[4]))
+        thread = (
+            self.bot.get_guild(int(GUILD))
+            .get_channel(int(CHANNEL_SUGGESTIONS))
+            .get_thread(int(a[4]))
+        )
         await thread.archive()
 
-        component = Container(
-            TextDisplay("# Issue Closed"),
-            Separator(),
-            ActionRow(
-                Button(label="Forgejo", style=ButtonStyle.url, url=f"https://{FORGEJO_INSTANCE}/lunya/DiscordServer/issues/{a[2]}"),
-                Button(label="Thread", style=ButtonStyle.url, url=thread.jump_url)
-            )
+        logs_channel = self.bot.get_guild(int(GUILD)).get_channel(
+            int(CHANNEL_MODERATION)
         )
-
-        logs_channel = self.bot.get_guild(int(GUILD)).get_channel(int(CHANNEL_MODERATION))
-        await logs_channel.send(view=DesignerView(component))
+        await logs_channel.send(
+            f"# Issue created\n\n[Forgejo](https://{FORGEJO_INSTANCE}/luna/DiscordServer/issues/{a[2]}), {thread.jump_url}"
+        )
 
     @loop(seconds=1)
     async def queue_suggestions(self):
@@ -326,18 +344,20 @@ class Issues(Cog):
                 self.suggestion_queue.append(a)
                 return
 
-            lunamon_logger.info("Suggestions queue: 1 active, %d queued", len(self.suggestion_queue))
+            lunamon_logger.info(
+                "Suggestions queue: 1 active, %d queued", len(self.suggestion_queue)
+            )
 
             async with aiohttp.ClientSession() as sess:
                 async with sess.post(
-                        f"https://{FORGEJO_INSTANCE}/api/v1/repos/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/issues",
-                        headers={
-                            "Authorization": f"Bearer {FORGEJO_TOKEN}"
-                        }, json={
-                            "title": f"[Suggestion] {a[1][:30]}...",
-                            "body": f"User {a[2].display_name} ({a[2].name}, {a[2].id}) suggested the following in the Discord server suggestions channel:\n\n{a[1]}",
-                            "labels": self.get_labels("Status/Update Title")
-                        }) as res:
+                    f"https://{FORGEJO_INSTANCE}/api/v1/repos/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/issues",
+                    headers={"Authorization": f"Bearer {FORGEJO_TOKEN}"},
+                    json={
+                        "title": f"[Suggestion] {a[1][:30]}...",
+                        "body": f"User {a[2].display_name} ({a[2].name}, {a[2].id}) suggested the following in the Discord server suggestions channel:\n\n{a[1]}",
+                        "labels": self.get_labels("Status/Update Title"),
+                    },
+                ) as res:
                     res.raise_for_status()
                     res_b = await res.json()
 
@@ -354,7 +374,9 @@ class Issues(Cog):
                 async with aiohttp.ClientSession() as sess:
                     async with sess.get(attachment.url) as req:
                         if not req.ok:
-                            lunamon_logger.warning("Failed to download %s", attachment.filename)
+                            lunamon_logger.warning(
+                                "Failed to download %s", attachment.filename
+                            )
                             continue
 
                         data = await req.read()
@@ -364,23 +386,26 @@ class Issues(Cog):
 
             # Upload
             for attachment in message.attachments:
-                if not os.path.exists(f'tmp/{attachment.filename}'):
-                    lunamon_logger.warning("Tried to upload non-existent file %s", attachment.filename)
+                if not os.path.exists(f"tmp/{attachment.filename}"):
+                    lunamon_logger.warning(
+                        "Tried to upload non-existent file %s", attachment.filename
+                    )
                     continue
 
                 async with aiohttp.ClientSession() as sess:
                     async with sess.post(
-                            f"https://{FORGEJO_INSTANCE}/api/v1/repos/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/issues/{res_b['number']}/assets",
-                            headers={
-                                "Authorization": f"Bearer {FORGEJO_TOKEN}"
-                            },
-                            data={
-                                "attachment": open(f"tmp/{attachment.filename}", "rb")
-                            }) as res:
+                        f"https://{FORGEJO_INSTANCE}/api/v1/repos/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/issues/{res_b['number']}/assets",
+                        headers={"Authorization": f"Bearer {FORGEJO_TOKEN}"},
+                        data={"attachment": open(f"tmp/{attachment.filename}", "rb")},
+                    ) as res:
                         if not res.ok:
                             text = await res.text()
-                            lunamon_logger.warning("File failed to upload: %s: %s %s", attachment.filename,
-                                                   str(res.status), text)
+                            lunamon_logger.warning(
+                                "File failed to upload: %s: %s %s",
+                                attachment.filename,
+                                str(res.status),
+                                text,
+                            )
 
             # Delete locally
             for attachment in message.attachments:
@@ -391,40 +416,36 @@ class Issues(Cog):
             reply = await thread.send(
                 f"{message.author.mention}\n"
                 f"[You can track your suggestion here](https://{FORGEJO_INSTANCE}/lunya/DiscordServer/issues/{res_b['number']}). "
-                f"You can close the issue by deleting the suggestion, and you'll be able to see posted comments here. ")
+                f"You can close the issue by deleting the suggestion, and you'll be able to see posted comments here. "
+            )
 
             with engine.begin() as c:
                 c.execute(
-                    insert(suggestion_messages)
-                    .values(message_id=str(a[0]), tracker_id=res_b['number'], reply_id=str(reply.id), thread_id=str(thread.id))
+                    insert(suggestion_messages).values(
+                        message_id=str(a[0]),
+                        tracker_id=res_b["number"],
+                        reply_id=str(reply.id),
+                        thread_id=str(thread.id),
+                    )
                 )
-
-            component = Container(
-                TextDisplay("# Issue Created"),
-                Separator(),
-                ActionRow(
-                    Button(label="Forgejo", style=ButtonStyle.link, url=f"https://{FORGEJO_INSTANCE}/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/issues/{res_b['number']}"),
-                    Button(label="Message", style=ButtonStyle.link, url=message.jump_url),
-                    Button(label="Thread", style=ButtonStyle.link, url=thread.jump_url)
-                )
-            )
 
             logs_channel = guild.get_channel(int(CHANNEL_MODERATION))
-            await logs_channel.send(view=DesignerView(component))
+            await logs_channel.send(
+                f"# Issue created\n\n[Forgejo](https://{FORGEJO_INSTANCE}/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/issues/{res_b['number']}), {message.jump_url}, {thread.jump_url}"
+            )
         except Exception:
-            lunamon_logger.exception("An error occured during suggestion queue execution:")
+            lunamon_logger.exception(
+                "An error occured during suggestion queue execution:"
+            )
 
     @loop(minutes=5)
     async def update_thread_titles(self):
         async with aiohttp.ClientSession() as sess:
             async with sess.get(
-                    f"https://{FORGEJO_INSTANCE}/api/v1/repos/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/issues",
-                    headers={
-                        "Authorization": f"Bearer {FORGEJO_TOKEN}"
-                    }, params={
-                        "type": "issues",
-                        "state": "open"
-                    }) as res:
+                f"https://{FORGEJO_INSTANCE}/api/v1/repos/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/issues",
+                headers={"Authorization": f"Bearer {FORGEJO_TOKEN}"},
+                params={"type": "issues", "state": "open"},
+            ) as res:
                 res.raise_for_status()
                 issues_json = await res.json()
 
@@ -434,8 +455,9 @@ class Issues(Cog):
         with engine.begin() as c:
             for i in issues_json:
                 thread_id = c.execute(
-                    select(suggestion_messages.c.thread_id)
-                    .where(suggestion_messages.c.tracker_id == i["number"])
+                    select(suggestion_messages.c.thread_id).where(
+                        suggestion_messages.c.tracker_id == i["number"]
+                    )
                 ).fetchone()
 
                 if thread_id is None:
@@ -444,8 +466,11 @@ class Issues(Cog):
                 issues_numbers[thread_id[0]] = i
 
         for issue_thread_id, issue in issues_numbers.items():
-            thread = self.bot.get_guild(int(GUILD)).get_channel(int(CHANNEL_SUGGESTIONS)).get_thread(
-                int(issue_thread_id))
+            thread = (
+                self.bot.get_guild(int(GUILD))
+                .get_channel(int(CHANNEL_SUGGESTIONS))
+                .get_thread(int(issue_thread_id))
+            )
             if thread is None:
                 continue
             if thread.archived:
@@ -453,8 +478,11 @@ class Issues(Cog):
 
             if thread.name.strip() != issue["title"].strip():
                 await thread.edit(name=issue["title"].strip())
-                lunamon_logger.info("Updated thread name for issue %d to %s on Discord", issue["number"],
-                                    issue["title"])
+                lunamon_logger.info(
+                    "Updated thread name for issue %d to %s on Discord",
+                    issue["number"],
+                    issue["title"],
+                )
 
 
 def setup(bot: Bot):

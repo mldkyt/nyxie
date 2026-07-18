@@ -13,19 +13,21 @@ import deepl
 import discord
 import pytz
 from deepl import Language
-from discord import Bot, ButtonStyle, File, Interaction, InteractionType, Message
+from discord import (
+    Bot,
+    Embed,
+    EmbedField,
+    EmbedFooter,
+    File,
+    Interaction,
+    Message,
+)
 from discord.ext import commands, tasks
 from discord.ext.commands import BucketType, cooldown
 from discord.ui import (
-    ActionRow,
     Button,
-    Container,
-    DesignerView,
-    MediaGallery,
-    Section,
-    Separator,
-    TextDisplay,
-    Thumbnail,
+    View,
+    button,
 )
 from markdownify import markdownify
 from mastodon.return_types import Account, Poll, Status
@@ -425,6 +427,31 @@ class PickerComponent(discord.ui.View):
             await interaction.respond("An error occurred", ephemeral=True)
 
 
+class MoreYuriView(View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @button(
+        label="more yuri!",
+        style=discord.ButtonStyle.primary,
+        custom_id="more_yuri_pwease_uwu",
+    )
+    async def more_yuri(self, button: Button, interaction: Interaction):
+        with engine.begin() as c:
+            yuri_filename, yuri_source = get_some_yuri(c)
+
+        embed = Embed(
+            title="Yuri :3",
+            description=f"[source]({yuri_source})",
+            image=f"attachment://{yuri_filename.split('/')[-1]}",
+            footer=EmbedFooter(f"Lunamon {VERSION}"),
+        )
+
+        await interaction.respond(
+            embed=embed, file=File(yuri_filename), view=MoreYuriView(), ephemeral=True
+        )
+
+
 def generate_user_embed(account: Account):
     desc_start = markdownify(account.note)
     desc = desc_start[:1500]
@@ -643,42 +670,8 @@ class UserCommands(discord.Cog):
         self.bot.add_view(PickerComponent("click"))
         self.bot.add_view(ReadReceiptComponent())
         self.bot.add_view(RefreshTimeView())
+        self.bot.add_view(MoreYuriView())
         self.handle_queue.start()
-
-    @discord.Cog.listener()
-    async def on_interaction(self, interaction: Interaction):
-        if (
-            interaction.custom_id == "more_yuri_pwease_uwu"
-            and interaction.type == InteractionType.component
-        ):
-            with engine.begin() as c:
-                yuri_filename, yuri_source = get_some_yuri(c)
-
-            gallery = MediaGallery()
-            gallery.add_item(f"attachment://{yuri_filename.split('/')[-1]}")
-
-            container = Container()
-            container.add_item(gallery)
-            container.add_item(Separator())
-            container.add_item(
-                ActionRow(
-                    Button(
-                        label="more yuri :3",
-                        style=ButtonStyle.primary,
-                        custom_id="more_yuri_pwease_uwu",
-                    ),
-                    Button(
-                        label="source",
-                        style=ButtonStyle.link,
-                        url=yuri_source,
-                    ),
-                )
-            )
-
-            await interaction.respond(
-                view=DesignerView(container),
-                file=File(yuri_filename),
-            )
 
     user_commands = discord.SlashCommandGroup(
         name="user",
@@ -1089,20 +1082,14 @@ class UserCommands(discord.Cog):
 
             logs_channel = guild.get_channel(int(CHANNEL_MODERATION))
 
-            component = Container(
-                TextDisplay("# Member Banned"),
-                Separator(),
-                TextDisplay(
-                    "A member was banned externally using the user command by Lunya."
-                ),
-                Section(
-                    TextDisplay("**User**: "),
-                    TextDisplay(user.display_name),
-                    accessory=Thumbnail(user.display_avatar.url),
-                ),
+            embed = Embed(
+                title="Member banned",
+                description="A member was banned externally using the user command by Lunya",
+                fields=[EmbedField(name="User", value=user.display_name)],
+                thumbnail=user.display_avatar.url,
             )
 
-            b = logs_channel.send(view=DesignerView(component))
+            b = logs_channel.send(embed=embed)
 
             c = ctx.respond("Member was banned successfully!", ephemeral=True)
 
@@ -1236,30 +1223,15 @@ class UserCommands(discord.Cog):
             with engine.begin() as c:
                 yuri_filename, yuri_source = get_some_yuri(c)
 
-            gallery = MediaGallery()
-            gallery.add_item(f"attachment://{yuri_filename.split('/')[-1]}")
-
-            container = Container()
-            container.add_item(gallery)
-            container.add_item(Separator())
-            container.add_item(
-                ActionRow(
-                    Button(
-                        label="more yuri :3",
-                        style=ButtonStyle.primary,
-                        custom_id="more_yuri_pwease_uwu",
-                    ),
-                    Button(
-                        label="source",
-                        style=ButtonStyle.link,
-                        url=yuri_source,
-                    ),
-                )
+            embed = Embed(
+                title="Yuri :3",
+                description=f"[source]({yuri_source})",
+                image=f"attachment://{yuri_filename.split('/')[-1]}",
+                footer=EmbedFooter(f"Lunamon {VERSION}"),
             )
 
             await ctx.respond(
-                view=DesignerView(container),
-                file=File(yuri_filename),
+                embed=embed, file=File(yuri_filename), view=MoreYuriView()
             )
         except Exception as e:
             lunamon_logger.exception(
