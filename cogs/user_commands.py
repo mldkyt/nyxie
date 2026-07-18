@@ -440,6 +440,10 @@ class MoreYuriView(View):
         with engine.begin() as c:
             yuri_filename, yuri_source = get_some_yuri(c)
 
+        if not yuri_filename:
+            await interaction.respond("No more yuri :(", ephemeral=True)
+            return
+
         embed = Embed(
             title="Yuri :3",
             description=f"[source]({yuri_source})",
@@ -1222,6 +1226,10 @@ class UserCommands(discord.Cog):
         try:
             with engine.begin() as c:
                 yuri_filename, yuri_source = get_some_yuri(c)
+
+            if not yuri_filename:
+                await ctx.respond("No yuri found :(", ephemeral=True)
+                return
 
             embed = Embed(
                 title="Yuri :3",

@@ -23,8 +23,7 @@ from constants import (
 )
 from database import engine
 from logger import lunamon_logger
-from util.akkoma import akkoma_cache
-from util.yuri_util import get_some_yuri
+from util.yuri_util import get_some_yaoi, get_some_yuri
 
 DEBUG = False
 
@@ -41,10 +40,11 @@ async def post_yuri(bot: Bot):
         return
 
     with engine.begin() as c:
-        try:
-            yuri_filename, yuri_source = get_some_yuri(c)
-        except Exception:
-            return
+        yuri_filename, yuri_source = get_some_yuri(c)
+
+    if not yuri_filename:
+        lunamon_logger.warning("No yuri found")
+        return
 
     embed = Embed(
         title="Daily yuri",
@@ -65,18 +65,21 @@ async def post_yaoi(bot: Bot):
     if not isinstance(chan, TextChannel):
         return
 
-    yaoi = akkoma_cache.get_yaoibot_post()
-    if yaoi is None:
-        return  # :(
+    with engine.begin() as c:
+        yaoi_filename, yaoi_source = get_some_yaoi(c)
+
+    if not yaoi_filename:
+        lunamon_logger.warning("No yaoi found")
+        return
 
     embed = Embed(
         title="Daily yaoi",
-        image=yaoi.media_attachments[0].url,
-        description=f"[source]({yaoi.url})",
+        image=f"attachment://{yaoi_filename.split('/')[-1]}",
+        description=f"[source]({yaoi_source})",
         color=Color.nitro_pink(),
     )
 
-    await chan.send(embed=embed)
+    await chan.send(embed=embed, file=File(yaoi_filename))
 
 
 def generate_meow():
