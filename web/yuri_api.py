@@ -7,7 +7,7 @@ from sqlalchemy import insert, select
 from werkzeug.utils import secure_filename
 
 from constants import WEB_TOKEN
-from database import engine, yuri_db
+from database import engine, yaoi_db, yuri_db
 from web.gn_api import quick_response
 
 yuri_bp = Blueprint("yuri", __name__)
@@ -60,3 +60,52 @@ def yuri_post_route():
             return "Already exists, OK"
 
     return "Added yuri OK"
+
+
+@yuri_bp.route("/api/yaoi", methods=["POST"])
+def yaoi_post_route():
+    # Verify WEB_TOKEN exists
+    if not WEB_TOKEN:
+        raise ValueError("WEB_TOKEN should have been set when this module is loaded!")
+
+    # Verify request
+    if request.headers.get("Authorization", "") != WEB_TOKEN:
+        return quick_response("Unauthorized", 403)
+
+    if not os.path.exists("data/yaoi"):
+        os.makedirs("data/yaoi")
+
+    # Get metadata
+    metadata = request.form.get("json")
+    if not metadata:
+        return quick_response("No JSON data", 400)
+
+    metadata = json.loads(metadata)
+    if not metadata.get("source"):
+        return quick_response("No source", 400)
+
+    # Save file
+    file = request.files.get("file")
+
+    if not file or not file.filename:
+        return quick_response("No file added", 400)
+
+    filename = f"data/yaoi/{secure_filename(file.filename)}"
+    if not os.path.exists(filename):
+        file.save(filename)
+
+    with engine.begin() as c:
+        existing = c.execute(
+            select(yaoi_db.c.id).where(yaoi_db.c.filename == filename)
+        ).fetchone()
+        if not existing:
+            c.execute(
+                insert(yaoi_db).values(
+                    filename=filename,
+                    source=metadata.get("source"),
+                )
+            )
+        else:
+            return "Already exists, OK"
+
+    return "Added yaoi OK"
