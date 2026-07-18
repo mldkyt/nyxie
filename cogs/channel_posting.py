@@ -5,6 +5,7 @@ from random import choice, randint
 from discord import (
     Bot,
     Cog,
+    Color,
     Embed,
     EmbedFooter,
     File,
@@ -47,9 +48,10 @@ async def post_yuri(bot: Bot):
 
     embed = Embed(
         title="Daily yuri",
-        image="attachment://{yuri_filename.split('/')[-1]}",
+        image=f"attachment://{yuri_filename.split('/')[-1]}",
         footer=EmbedFooter(text=f"Lunamon {VERSION}"),
-        description="[source]({yuri_source})",
+        description=f"[source]({yuri_source})",
+        color=Color.nitro_pink(),
     )
 
     await chan.send(embed=embed, file=File(yuri_filename))
@@ -70,7 +72,8 @@ async def post_yaoi(bot: Bot):
     embed = Embed(
         title="Daily yaoi",
         image=yaoi.media_attachments[0].url,
-        description="[source]({yaoi_source})",
+        description=f"[source]({yaoi.url})",
+        color=Color.nitro_pink(),
     )
 
     await chan.send(embed=embed)
@@ -116,7 +119,9 @@ class ChannelPosting(Cog):
         now = datetime.now()
 
         if (now.hour == 0 and now.minute == 0) or DEBUG:
-            await gather(post_yuri(self.bot), post_yaoi(self.bot), post_meow(self.bot))
+            await post_meow(self.bot)
+        if (now.hour in [0, 4, 8, 12, 16, 20] and now.minute == 0) or DEBUG:
+            await gather(post_yuri(self.bot), post_yaoi(self.bot))
 
 
 def setup(bot: Bot):
