@@ -30,6 +30,9 @@ FORGEJO_PROJECT = os.getenv("FORGEJO_PROJECT")
 DEEPL_API_KEY = os.getenv("DEEPL_API_KEY")
 WEB_TOKEN = os.getenv("WEB_TOKEN")
 
+MCAPTCHA_DOMAIN = os.getenv("MCAPTCHA_DOMAIN")
+MCAPTCHA_SITEKEY = os.getenv("MCAPTCHA_SITEKEY")
+MCAPTCHA_SECRET = os.getenv("MCAPTCHA_SECRET")
 
 def validate_values(l: dict[str, str | None]):
     for k, v in l.items():
@@ -54,5 +57,8 @@ validate_values(
         "FORGEJO_PROJECT": FORGEJO_PROJECT,
         "DEEPL_API_KEY": DEEPL_API_KEY,
         "WEB_TOKEN": WEB_TOKEN,
+        "MCAPTCHA_DOMAIN": MCAPTCHA_DOMAIN,
+        "MCAPTCHA_SITEKEY": MCAPTCHA_SITEKEY,
+        "MCAPTCHA_SECRET": MCAPTCHA_SECRET,
     }
 )

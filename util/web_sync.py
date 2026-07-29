@@ -1,5 +1,9 @@
+import datetime
 import os.path
+import random
+import string
 
+import requests
 from discord import (
     ButtonStyle,
     ChannelType,
@@ -12,18 +16,20 @@ from discord import (
 )
 from discord.abc import GuildChannel
 from discord.ui import Button, View, button
-from flask import request, session
+from flask import request, session, redirect, render_template
 from markdown_it import MarkdownIt
 from sqlalchemy import Connection, delete, insert, select, update
 
+from constants import MCAPTCHA_SECRET, MCAPTCHA_SITEKEY, MCAPTCHA_DOMAIN
 from database import (
     engine,
     web_authors_list,
     web_channels_list,
     web_messages_attachments_list,
-    web_messages_list,
+    web_messages_list, web_codes,
 )
 from logger import lunamon_logger
+from web.gn_api import quick_response
 
 
 def _add_author(c: Connection, message: Message):
@@ -928,3 +934,47 @@ class Consent(View):
                     view=RemoveConsent(),
                     ephemeral=True,
                 )
+
+def verify_captcha():
+    if "tempcode" in session:
+        with engine.begin() as c:
+            c.execute(
+                delete(web_codes)
+                .where(web_codes.c.expires_at < datetime.datetime.now())
+            )
+
+            verify = c.execute(
+                select(web_codes)
+                .where(web_codes.c.code == session["tempcode"])
+            ).fetchone()
+
+            if verify is not None:
+                return None
+
+    if not request.form.get("mcaptcha__token"):
+        return render_template("captcha.html", mcaptcha_domain=f"https://{MCAPTCHA_DOMAIN}/widget/?sitekey={MCAPTCHA_SITEKEY}")
+
+    payload = {
+        "token": request.form["mcaptcha__token"],
+        "key": MCAPTCHA_SITEKEY,  # captcha site key
+        # mCaptcha account secret; available in settings
+        "secret": MCAPTCHA_SECRET,
+    }
+    resp = requests.post(
+        f"https://{MCAPTCHA_DOMAIN}/api/v1/pow/siteverify", json=payload
+    )
+    resp = resp.json()
+
+    if not resp["valid"]:
+        return quick_response("Captcha failed", 400)
+
+    token = "".join(random.choices(string.ascii_letters + string.digits, k=32))
+
+    with engine.begin() as c:
+        c.execute(
+            insert(web_codes)
+            .values(code=token, expires_at=datetime.datetime.now() + datetime.timedelta(minutes=30))
+        )
+
+    session["tempcode"] = token
+    return redirect(request.url, 303)

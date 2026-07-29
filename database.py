@@ -143,3 +143,11 @@ yaoi_db = Table(
     Column("filename", VARCHAR, nullable=False),
     Column("source", VARCHAR, nullable=False),
 )
+
+web_codes = Table(
+    "web_codes",
+    md_obj,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("code", VARCHAR, nullable=False),
+    Column("expires_at", DateTime(timezone=True), nullable=False),
+)
