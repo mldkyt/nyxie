@@ -84,7 +84,7 @@ def get_some_yuri(conn: Connection) -> tuple[str | None, str | None]:
     yuri = conn.execute(
         select(yuri_db.c.id, yuri_db.c.filename, yuri_db.c.source).where(
             yuri_db.c.priority == top_priority
-        ).where(yuri_db.c.approved == 1)
+        ).where(yuri_db.c.approved == True)
     ).fetchall()
 
     yuri = random.choice(yuri)
@@ -110,7 +110,7 @@ def get_some_yaoi(conn: Connection) -> tuple[str | None, str | None]:
     yaoi = conn.execute(
         select(yaoi_db.c.id, yaoi_db.c.filename, yaoi_db.c.source).where(
             yaoi_db.c.priority == top_priority
-        ).where(yaoi_db.c.approved == 1)
+        ).where(yaoi_db.c.approved == True)
     ).fetchall()
 
     yaoi = random.choice(yaoi)
