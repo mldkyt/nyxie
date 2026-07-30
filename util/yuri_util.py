@@ -1,12 +1,47 @@
 import os
 import random
 
-from discord import ButtonStyle, Button, Interaction
+from discord import ButtonStyle, Button, Interaction, Embed, File
 from discord.ui import View, button
 from sqlalchemy import Connection, select, update, delete
 from sqlalchemy.sql.functions import max
 
 from database import yaoi_db, yuri_db, engine
+
+
+async def respond_with_next_yuri(ctx: Interaction) -> bool:
+    with engine.begin() as c:
+        yuri = c.execute(
+            select(yuri_db.c.id, yuri_db.c.filename)
+            .where(yuri_db.c.approved == False)
+        ).fetchone()
+
+        if yuri is not None:
+            await ctx.respond(view=YuriApproval("yuri", yuri[0]),
+                              embed=Embed(
+                                  title="Approve this yuri",
+                                  image=f"attachment://{yuri[1].split('/')[-1]}",
+                              ),
+                              file=File(yuri[1]),
+                              ephemeral=True)
+            return True
+
+        yaoi = c.execute(
+            select(yaoi_db.c.id, yaoi_db.c.filename)
+            .where(yaoi_db.c.approved == False)
+        ).fetchone()
+
+        if yaoi is not None:
+            await ctx.respond(view=YuriApproval("yaoi", yaoi[0]),
+                              embed=Embed(
+                                  title="Approve this yaoi",
+                                  image=f"attachment://{yaoi[1].split('/')[-1]}",
+                              ),
+                              file=File(yaoi[1]),
+                              ephemeral=True)
+            return True
+
+    return False
 
 
 class YuriApproval(View):
@@ -32,7 +67,8 @@ class YuriApproval(View):
                     .values(approved=True)
                 )
 
-        await ctx.respond("Approved content", ephemeral=True)
+        if not await respond_with_next_yuri(ctx):
+            await ctx.respond("All done!", ephemeral=True)
 
     @button(label="Reject", style=ButtonStyle.red)
     async def reject_yuri(self, button: Button, ctx: Interaction):
@@ -68,7 +104,8 @@ class YuriApproval(View):
                     .where(yaoi_db.c.id == self.content_id)
                 )
 
-        await ctx.respond("Rejected content", ephemeral=True)
+        if not await respond_with_next_yuri(ctx):
+            await ctx.respond("All done!", ephemeral=True)
 
 
 

@@ -24,7 +24,7 @@ from constants import (
 )
 from database import engine, yuri_db, yaoi_db
 from logger import lunamon_logger
-from util.yuri_util import get_some_yaoi, get_some_yuri, YuriApproval
+from util.yuri_util import get_some_yaoi, get_some_yuri, YuriApproval, respond_with_next_yuri
 
 DEBUG = False
 
@@ -130,38 +130,8 @@ class ChannelPosting(Cog):
     @slash_command(name="approve_content")
     @default_permissions(manage_guild=True)
     async def manage_content(self, ctx: ApplicationContext):
-        with engine.begin() as c:
-            yuri = c.execute(
-                select(yuri_db.c.id, yuri_db.c.filename)
-                .where(yuri_db.c.approved == False)
-            ).fetchone()
-
-            if yuri is not None:
-                await ctx.respond(view=YuriApproval("yuri", yuri[0]),
-                                  embed=Embed(
-                                      title="Approve this yuri",
-                                      image=f"attachment://{yuri[1].split('/')[-1]}",
-                                  ),
-                                  file=File(yuri[1]),
-                                  ephemeral=True)
-                return
-
-            yaoi = c.execute(
-                select(yaoi_db.c.id, yaoi_db.c.filename)
-                .where(yaoi_db.c.approved == False)
-            ).fetchone()
-
-            if yaoi is not None:
-                await ctx.respond(view=YuriApproval("yaoi", yaoi[0]),
-                                  embed=Embed(
-                                      title="Approve this yaoi",
-                                      image=f"attachment://{yaoi[1].split('/')[-1]}",
-                                  ),
-                                  file=File(yaoi[1]),
-                                  ephemeral=True)
-                return
-
-        await ctx.respond("No content to approve", ephemeral=True)
+        if not await respond_with_next_yuri(ctx.interaction):
+            await ctx.respond("All done!", ephemeral=True)
 
 
 def setup(bot: Bot):
