@@ -9,7 +9,7 @@ from database import yaoi_db, yuri_db
 def get_some_yuri(conn: Connection) -> tuple[str | None, str | None]:
     """Returns relative path to yuri and source link and ticks it"""
 
-    top_priority = conn.execute(select(max(yuri_db.c.priority))).fetchone()
+    top_priority = conn.execute(select(max(yuri_db.c.priority)).where(yuri_db.c.approved == 1)).fetchone()
     if not top_priority:
         return None, None
 
@@ -18,7 +18,7 @@ def get_some_yuri(conn: Connection) -> tuple[str | None, str | None]:
     yuri = conn.execute(
         select(yuri_db.c.id, yuri_db.c.filename, yuri_db.c.source).where(
             yuri_db.c.priority == top_priority
-        )
+        ).where(yuri_db.c.approved == 1)
     ).fetchall()
 
     yuri = random.choice(yuri)
@@ -35,7 +35,7 @@ def get_some_yuri(conn: Connection) -> tuple[str | None, str | None]:
 def get_some_yaoi(conn: Connection) -> tuple[str | None, str | None]:
     """Returns relative path to yaoi and source link and ticks it"""
 
-    top_priority = conn.execute(select(max(yaoi_db.c.priority))).fetchone()
+    top_priority = conn.execute(select(max(yaoi_db.c.priority)).where(yaoi_db.c.approved == 1)).fetchone()
     if not top_priority:
         return None, None
 
@@ -44,7 +44,7 @@ def get_some_yaoi(conn: Connection) -> tuple[str | None, str | None]:
     yaoi = conn.execute(
         select(yaoi_db.c.id, yaoi_db.c.filename, yaoi_db.c.source).where(
             yaoi_db.c.priority == top_priority
-        )
+        ).where(yaoi_db.c.approved == 1)
     ).fetchall()
 
     yaoi = random.choice(yaoi)
