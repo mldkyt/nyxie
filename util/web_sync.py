@@ -20,7 +20,7 @@ from flask import request, session, redirect, render_template
 from markdown_it import MarkdownIt
 from sqlalchemy import Connection, delete, insert, select, update
 
-from constants import MCAPTCHA_SECRET, MCAPTCHA_SITEKEY, MCAPTCHA_DOMAIN
+from constants import MCAPTCHA_SECRET, MCAPTCHA_SITEKEY, MCAPTCHA_DOMAIN, MEMBER_ROLE
 from database import (
     engine,
     web_authors_list,
@@ -359,7 +359,8 @@ async def add_message(message: Message):
         return
     if message.channel.type == ChannelType.private:
         return
-    perms = message.channel.permissions_for(message.guild.default_role)
+    role = message.guild.get_role(int(MEMBER_ROLE)) or message.guild.default_role
+    perms = message.channel.permissions_for(role)
     if not perms.read_messages or not perms.view_channel:
         return
 

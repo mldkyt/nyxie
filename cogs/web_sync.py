@@ -15,7 +15,7 @@ from discord import (
 from discord.abc import GuildChannel
 from sqlalchemy import delete, update
 
-from constants import GUILD, OWNER
+from constants import GUILD, OWNER, MEMBER_ROLE
 from database import engine, web_authors_list, web_channels_list, web_messages_list
 from logger import lunamon_logger
 from util.web_sync import Consent, add_message, remove_message, unpin_all_messages
@@ -29,8 +29,11 @@ class WebSync(Cog):
     @Cog.listener()
     async def on_ready(self):
         guild = self.bot.get_guild(int(GUILD))
+        await guild.fetch_roles()
+        member_role = guild.get_role(int(MEMBER_ROLE)) or guild.default_role
+
         for channel in guild.text_channels:
-            if channel.permissions_for(guild.default_role).read_messages:
+            if channel.permissions_for(member_role).read_messages:
                 async for message in channel.history(limit=1000):
                     try:
                         await add_message(message)
