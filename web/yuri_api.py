@@ -1,6 +1,5 @@
 import json
 import os
-from pprint import pprint
 
 from flask import Blueprint, request
 from sqlalchemy import insert, select

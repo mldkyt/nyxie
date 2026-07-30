@@ -1,6 +1,7 @@
 from asyncio import gather
 from datetime import datetime
 from random import choice, randint
+from sqlalchemy import select
 
 from discord import (
     Bot,
@@ -10,7 +11,7 @@ from discord import (
     EmbedFooter,
     File,
     Guild,
-    TextChannel,
+    TextChannel, slash_command, default_permissions, ApplicationContext,
 )
 from discord.ext.tasks import loop
 
@@ -21,9 +22,9 @@ from constants import (
     GUILD,
     VERSION,
 )
-from database import engine
+from database import engine, yuri_db, yaoi_db
 from logger import lunamon_logger
-from util.yuri_util import get_some_yaoi, get_some_yuri
+from util.yuri_util import get_some_yaoi, get_some_yuri, YuriApproval, respond_with_next_yuri
 
 DEBUG = False
 
@@ -125,6 +126,12 @@ class ChannelPosting(Cog):
             await post_meow(self.bot)
         if (now.hour in [0, 4, 8, 12, 16, 20] and now.minute == 0) or DEBUG:
             await gather(post_yuri(self.bot), post_yaoi(self.bot))
+
+    @slash_command(name="approve_content")
+    @default_permissions(manage_guild=True)
+    async def manage_content(self, ctx: ApplicationContext):
+        if not await respond_with_next_yuri(ctx.interaction):
+            await ctx.respond("All done!", ephemeral=True)
 
 
 def setup(bot: Bot):
