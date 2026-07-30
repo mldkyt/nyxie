@@ -132,6 +132,7 @@ yuri_db = Table(
     Column("priority", Integer, default=10000, nullable=False),
     Column("filename", VARCHAR, nullable=False),
     Column("source", VARCHAR, nullable=False),
+    Column("approved", BOOLEAN, nullable=False, server_default="0"),
 )
 
 # priority gets decreased by one every single time the image is fetched, so that yaoi is "infinite
@@ -142,6 +143,7 @@ yaoi_db = Table(
     Column("priority", Integer, default=10000, nullable=False),
     Column("filename", VARCHAR, nullable=False),
     Column("source", VARCHAR, nullable=False),
+    Column("approved", BOOLEAN, nullable=False, server_default="0"),
 )
 
 web_codes = Table(
