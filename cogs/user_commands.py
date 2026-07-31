@@ -242,47 +242,6 @@ class UserCommands(discord.Cog):
                 "An error occurred while executing the command.", ephemeral=True
             )
 
-    @discord.message_command(
-        name="Borrow Meme",
-        description="Repost the message inside of the memes channel of Lunya's Discord server",
-        integration_types=[discord.IntegrationType.user_install],
-    )
-    async def borrow_meme(
-        self, ctx: discord.ApplicationContext, message: discord.Message
-    ):
-        try:
-            if ctx.user.id != int(OWNER):
-                await ctx.respond(
-                    "You are not authorized to use this command!", ephemeral=True
-                )
-                return
-
-            await ctx.respond("Meme will repost in Lunya server", ephemeral=True)
-
-            # Download all attachments
-            if not os.path.exists("temp"):
-                os.mkdir("temp")
-
-            for i in message.attachments:
-                with open("temp/" + i.filename, "wb") as f:
-                    await i.save(f)
-
-            # Send it
-            memes = self.bot.get_guild(int(GUILD)).get_channel(int(CHANNEL_MEMES))
-            await memes.send(
-                content=message.content,
-                files=[
-                    discord.File(f"temp/{i.filename}", i.filename)
-                    for i in message.attachments
-                ],
-            )
-
-            # Delete
-            shutil.rmtree("temp")
-        except Exception as e:
-            capture_exception(e)
-            await ctx.respond("Error!", ephemeral=True)
-
     @discord.slash_command(name="version", description="Print bot version")
     async def version(self, ctx: discord.ApplicationContext):
         try:
