@@ -112,7 +112,7 @@ class YuriApproval(View):
 def get_some_yuri(conn: Connection) -> tuple[str | None, str | None]:
     """Returns relative path to yuri and source link and ticks it"""
 
-    top_priority = conn.execute(select(max(yuri_db.c.priority)).where(yuri_db.c.approved == 1)).fetchone()
+    top_priority = conn.execute(select(max(yuri_db.c.priority)).where(yuri_db.c.approved == True)).fetchone()
     if not top_priority:
         return None, None
 
@@ -138,7 +138,7 @@ def get_some_yuri(conn: Connection) -> tuple[str | None, str | None]:
 def get_some_yaoi(conn: Connection) -> tuple[str | None, str | None]:
     """Returns relative path to yaoi and source link and ticks it"""
 
-    top_priority = conn.execute(select(max(yaoi_db.c.priority)).where(yaoi_db.c.approved == 1)).fetchone()
+    top_priority = conn.execute(select(max(yaoi_db.c.priority)).where(yaoi_db.c.approved == True)).fetchone()
     if not top_priority:
         return None, None
 
