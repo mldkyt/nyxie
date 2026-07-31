@@ -115,15 +115,6 @@ web_messages_attachments_list = Table(
     ),
 )
 
-gn = Table(
-    "gn",
-    md_obj,
-    Column("id", Integer, primary_key=True, autoincrement=True),
-    Column("type", VARCHAR),
-    Column("auth_code", VARCHAR),
-    Column("expiry", DateTime(timezone=True)),
-)
-
 # priority gets decreased by one every single time the image is fetched, so that yuri is "infinite
 yuri_db = Table(
     "yuri",
