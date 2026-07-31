@@ -13,11 +13,11 @@ from discord import (
     Thread,
 )
 from discord.abc import GuildChannel
+from sentry_sdk import capture_exception
 from sqlalchemy import delete, update
 
 from constants import GUILD, OWNER, MEMBER_ROLE
-from database import engine, web_authors_list, web_channels_list, web_messages_list
-from logger import lunamon_logger
+from database import engine, web_authors_list, web_channels_list
 from util.web_sync import Consent, add_message, remove_message, unpin_all_messages
 
 
@@ -37,11 +37,10 @@ class WebSync(Cog):
                 async for message in channel.history(limit=1000):
                     try:
                         await add_message(message)
-                    except Exception:
-                        lunamon_logger.exception("Failed to add message to web UI:")
+                    except Exception as e:
+                        capture_exception(e)
 
         self.bot.add_view(Consent())
-        lunamon_logger.info("WebSync cog loaded")
 
     @Cog.listener()
     async def on_message(self, message: Message):
@@ -64,8 +63,8 @@ class WebSync(Cog):
 
             await add_message(message)
 
-        except Exception:
-            lunamon_logger.exception("Error adding message:")
+        except Exception as e:
+            capture_exception(e)
 
     @Cog.listener()
     async def on_raw_message_edit(self, payload: RawMessageUpdateEvent):
@@ -89,8 +88,8 @@ class WebSync(Cog):
             if message.is_system():
                 return
             await add_message(message)  # will update
-        except Exception:
-            lunamon_logger.exception("Error editing message:")
+        except Exception as e:
+            capture_exception(e)
 
     @Cog.listener()
     async def on_member_remove(self, member: Member):
@@ -105,8 +104,8 @@ class WebSync(Cog):
     async def on_raw_message_delete(self, payload: RawMessageDeleteEvent):
         try:
             remove_message(payload.message_id)
-        except Exception:
-            lunamon_logger.exception("Error deleting message:")
+        except Exception as e:
+            capture_exception(e)
 
     @Cog.listener()
     async def on_guild_channel_create(self, channel: GuildChannel):
@@ -114,10 +113,10 @@ class WebSync(Cog):
             async for message in channel.history(limit=1000):
                 try:
                     await add_message(message)
-                except Exception:
-                    lunamon_logger.exception("Failed to add message to web UI:")
-        except Exception:
-            lunamon_logger.exception("Failed adding new channel:")
+                except Exception as e:
+                    capture_exception(e)
+        except Exception as e:
+            capture_exception(e)
 
     @Cog.listener()
     async def on_guild_channel_delete(self, channel: GuildChannel):
@@ -128,16 +127,16 @@ class WebSync(Cog):
                         web_channels_list.c.id == channel.id
                     )
                 )
-        except Exception:
-            lunamon_logger.exception("Failed removing channel:")
+        except Exception as e:
+            capture_exception(e)
 
     @Cog.listener()
     async def on_guild_channel_update(self, before: GuildChannel, after: GuildChannel):
         async for message in after.history(limit=1000):
             try:
                 await add_message(message)
-            except Exception:
-                lunamon_logger.exception("Failed to add message to web UI:")
+            except Exception as e:
+                capture_exception(e)
 
     @Cog.listener()
     async def on_guild_channel_pins_update(

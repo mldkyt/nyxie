@@ -1,26 +1,27 @@
 import os
 
 import discord
+import sentry_sdk
 from discord.ext import commands
+from sentry_sdk import capture_exception
 
-from constants import DISCORD_TOKEN
-from logger import lunamon_logger
+from constants import DISCORD_TOKEN, SENTRY_SDK
 
 bot = discord.Bot(intents=discord.Intents.all())
 
+if SENTRY_SDK:
+    sentry_sdk.init(
+        SENTRY_SDK,
+        send_default_pii=True,
+        max_request_body_size="always",
+        traces_sample_rate=0,
+        send_client_reports=False,
+        auto_session_tracking=False,
+    )
+
 for filename in os.listdir("cogs"):
     if filename.endswith(".py"):
-        lunamon_logger.info(f"Loading {filename[:-3]}")
         bot.load_extension(f"cogs.{filename[:-3]}")
-
-
-@bot.event
-async def on_ready():
-    if not bot.user:
-        return
-
-    lunamon_logger.info(f"{bot.user.display_name} has connected to Discord!")
-
 
 @bot.event
 async def on_application_command_error(ctx: discord.ApplicationContext, error):
@@ -65,7 +66,6 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error):
         )
         return
 
-    lunamon_logger.exception("An error occurred:")
     try:
         # respond
         await ctx.respond(
@@ -73,9 +73,9 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error):
             ephemeral=True,
         )
     except Exception as e:
-        pass
-    raise error
+        capture_exception(e)
+
+    capture_exception(error)
 
 
-lunamon_logger.info("Starting Lunamon")
 bot.run(DISCORD_TOKEN)

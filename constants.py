@@ -2,8 +2,6 @@ import os
 
 from dotenv import load_dotenv
 
-from logger import lunamon_logger
-
 load_dotenv()
 
 VERSION = "@VERSION@"
@@ -36,10 +34,12 @@ MCAPTCHA_SECRET = os.getenv("MCAPTCHA_SECRET")
 
 MEMBER_ROLE = os.getenv("MEMBER_ROLE")
 
+SENTRY_SDK = os.getenv("SENTRY_SDK")
+
 def validate_values(l: dict[str, str | None]):
     for k, v in l.items():
         if v is None:
-            lunamon_logger.warning(f"CONSTANTS: The constant value for {k} is NOT set!")
+            print(f"CONSTANTS: The constant value for {k} is NOT set!")
 
 
 validate_values(
@@ -63,5 +63,6 @@ validate_values(
         "MCAPTCHA_SITEKEY": MCAPTCHA_SITEKEY,
         "MCAPTCHA_SECRET": MCAPTCHA_SECRET,
         "MEMBER_ROLE": MEMBER_ROLE,
+        "SENTRY_SDK": SENTRY_SDK,
     }
 )

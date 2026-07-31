@@ -28,7 +28,6 @@ from database import (
     web_messages_attachments_list,
     web_messages_list, web_codes,
 )
-from logger import lunamon_logger
 from web.gn_api import quick_response
 
 
@@ -207,11 +206,6 @@ async def _add_attachments(c: Connection, message: Message):
         with open(
             f"data/attachments/{message.id}/{i}-{attachment.filename}", "wb"
         ) as f:
-            lunamon_logger.debug(
-                "Saving attachment %s for message %s",
-                attachment.filename,
-                str(message.id),
-            )
             await attachment.save(f)
 
         c.execute(

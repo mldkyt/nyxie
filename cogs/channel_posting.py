@@ -1,7 +1,6 @@
 from asyncio import gather
 from datetime import datetime
 from random import choice, randint
-from sqlalchemy import select
 
 from discord import (
     Bot,
@@ -22,9 +21,8 @@ from constants import (
     GUILD,
     VERSION,
 )
-from database import engine, yuri_db, yaoi_db
-from logger import lunamon_logger
-from util.yuri_util import get_some_yaoi, get_some_yuri, YuriApproval, respond_with_next_yuri
+from database import engine
+from util.yuri_util import get_some_yaoi, get_some_yuri, respond_with_next_yuri
 
 DEBUG = False
 
@@ -32,19 +30,16 @@ DEBUG = False
 async def post_yuri(bot: Bot):
     guild = bot.get_guild(int(GUILD))
     if not isinstance(guild, Guild):
-        lunamon_logger.warning("Guild not found")
         return
 
     chan = guild.get_channel(int(CHANNEL_YURI))
     if not isinstance(chan, TextChannel):
-        lunamon_logger.warning("Yuri channel not found :(")
         return
 
     with engine.begin() as c:
         yuri_filename, yuri_source = get_some_yuri(c)
 
     if not yuri_filename:
-        lunamon_logger.warning("No yuri found")
         return
 
     embed = Embed(
@@ -70,7 +65,6 @@ async def post_yaoi(bot: Bot):
         yaoi_filename, yaoi_source = get_some_yaoi(c)
 
     if not yaoi_filename:
-        lunamon_logger.warning("No yaoi found")
         return
 
     embed = Embed(
