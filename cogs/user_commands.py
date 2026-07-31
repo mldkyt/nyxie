@@ -319,50 +319,6 @@ class UserCommands(discord.Cog):
             )
 
     @user_commands.command(
-        name="ban_from_lunya",
-        description="Ban user from Lunya's Discord server",
-        integration_types=[discord.IntegrationType.user_install],
-    )
-    async def ban_from_lunya(
-        self, ctx: discord.ApplicationContext, user: discord.User, reason: str
-    ):
-        try:
-            # Verify right user
-            if ctx.user.id != int(OWNER):
-                await ctx.respond(
-                    "You are not authorized to use this command!", ephemeral=True
-                )
-                return
-
-            # Get guild
-
-            guild = self.bot.get_guild(int(GUILD))
-
-            # Ban user
-
-            a = guild.ban(user, reason=reason, delete_message_seconds=7 * 24 * 3600)
-
-            # Log message
-
-            logs_channel = guild.get_channel(int(CHANNEL_MODERATION))
-
-            embed = Embed(
-                title="Member banned",
-                description="A member was banned externally using the user command by Lunya",
-                fields=[EmbedField(name="User", value=user.display_name)],
-                thumbnail=user.display_avatar.url,
-            )
-
-            b = logs_channel.send(embed=embed)
-
-            c = ctx.respond("Member was banned successfully!", ephemeral=True)
-
-            await asyncio.gather(a, b, c)
-        except Exception as e:
-            capture_exception(e)
-            await ctx.respond("An error occured banning this user.", ephemeral=True)
-
-    @user_commands.command(
         name="uwwwu",
         description="UwUify text",
         integration_types=[discord.IntegrationType.user_install],
