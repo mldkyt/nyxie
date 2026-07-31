@@ -4,6 +4,7 @@ from discord.ext.pages import Paginator
 from discord.ext.tasks import loop
 from sentry_sdk import capture_exception
 
+from constants import OWNER
 from util.verification import unverified_members, RejoinView
 
 
@@ -21,6 +22,10 @@ class Verification(Cog):
     @default_permissions(administrator=True)
     async def list_unverified(self, ctx: ApplicationContext):
         """List unverified users"""
+        if ctx.user.id != int(OWNER):
+            await ctx.respond("This command is not available for you", ephemeral=True)
+            return
+
         await ctx.defer(ephemeral=True)
 
         members: list[Member] = []
@@ -46,6 +51,10 @@ class Verification(Cog):
     @default_permissions(administrator=True)
     async def kick_unverified(self, ctx: ApplicationContext, confirm: bool = False, i_really_want_to_kick_members: bool = False):
         """Kick unverified users"""
+        if ctx.user.id != int(OWNER):
+            await ctx.respond("This command is not available for you", ephemeral=True)
+            return
+
         if not confirm or not i_really_want_to_kick_members:
             await ctx.respond("The action was not confirmed", ephemeral=True)
             return
