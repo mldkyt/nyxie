@@ -47,7 +47,7 @@ from database import engine
 from util.akkoma import akkoma_cache
 from util.keysmash_generator import keysmash_ai
 from util.storage import get_data, set_data
-from util.yuri_util import get_some_yuri
+from util.yuri_util import get_some_yuri, get_some_yaoi
 
 dm_cache = []
 
@@ -1239,6 +1239,37 @@ class UserCommands(discord.Cog):
 
             await ctx.respond(
                 embed=embed, file=File(yuri_filename), view=MoreYuriView()
+            )
+        except Exception as e:
+            await ctx.respond(f"Error: {str(e)}", ephemeral=True)
+
+    @discord.slash_command(
+        name="yaoi",
+        description="boys,,,, men,,,,",
+        integration_types=[
+            discord.IntegrationType.user_install,
+            discord.IntegrationType.guild_install,
+        ],
+    )
+    @cooldown(1, 10, BucketType.default)
+    async def yaol(self, ctx: discord.ApplicationContext):
+        try:
+            with engine.begin() as c:
+                yaoi_filename, yaoi_source = get_some_yaoi(c)
+
+            if not yaoi_filename:
+                await ctx.respond("No yuri found :(", ephemeral=True)
+                return
+
+            embed = Embed(
+                title="Yaoi :3",
+                description=f"[source]({yaoi_source})",
+                image=f"attachment://{yaoi_filename.split('/')[-1]}",
+                footer=EmbedFooter(f"Lunamon {VERSION}"),
+            )
+
+            await ctx.respond(
+                embed=embed, file=File(yaoi_filename), view=MoreYuriView()
             )
         except Exception as e:
             await ctx.respond(f"Error: {str(e)}", ephemeral=True)
