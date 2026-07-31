@@ -4,13 +4,12 @@ import os
 import random
 import string
 
-from discord import Bot, Cog, Message
+from discord import Bot, Cog
 from discord.ext import tasks
 from python_ntfy import HttpAction, NtfyClient
 from sqlalchemy import insert
 
 from database import engine, gn
-from logger import lunamon_logger
 
 NTFY_URL = os.getenv("NTFY_URL")
 NTFY_TOKEN = os.getenv("NTFY_TOKEN")
@@ -28,7 +27,6 @@ class GnNotification(Cog):
 
     @Cog.listener()
     async def on_ready(self) -> None:
-        lunamon_logger.info("Cog gn notification loaded")
         self.check.start()
 
     @tasks.loop(seconds=60)
@@ -89,7 +87,6 @@ class GnNotification(Cog):
 
 def setup(bot: Bot):
     if not NTFY_URL or not NTFY_TOKEN:
-        lunamon_logger.warning("Gn notifications are disabled due to missing config")
         return
 
     bot.add_cog(GnNotification(bot))

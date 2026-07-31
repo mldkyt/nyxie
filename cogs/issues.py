@@ -30,7 +30,6 @@ from constants import (
     GUILD,
 )
 from database import engine, suggestion_messages, suggestion_messages_comments
-from logger import lunamon_logger
 
 
 class ForgejoCreateIssueModal(Modal):
@@ -157,7 +156,6 @@ class Issues(Cog):
                 f"An error occured while contacting the server, {e.status} {e.message}",
                 ephemeral=True,
             )
-            lunamon_logger.warning("Repo doesn't exist: %s %s", e.status, e.message)
         except Exception as e:
             capture_exception(e)
 
@@ -213,9 +211,6 @@ class Issues(Cog):
                 async with aiohttp.ClientSession() as sess:
                     async with sess.get(attachment.url) as req:
                         if not req.ok:
-                            lunamon_logger.warning(
-                                "Failed to download %s", attachment.filename
-                            )
                             continue
 
                         data = await req.read()
@@ -226,9 +221,6 @@ class Issues(Cog):
             # Upload
             for attachment in message.attachments:
                 if not os.path.exists(f"tmp/{attachment.filename}"):
-                    lunamon_logger.warning(
-                        "Tried to upload non-existent file %s", attachment.filename
-                    )
                     continue
 
                 async with aiohttp.ClientSession() as sess:
@@ -237,14 +229,7 @@ class Issues(Cog):
                         headers={"Authorization": f"Bearer {FORGEJO_TOKEN}"},
                         data={"attachment": open(f"tmp/{attachment.filename}", "rb")},
                     ) as res:
-                        if not res.ok:
-                            text = await res.text()
-                            lunamon_logger.warning(
-                                "File failed to upload: %s: %s %s",
-                                attachment.filename,
-                                str(res.status),
-                                text,
-                            )
+                        pass
 
             # Delete locally
             for attachment in message.attachments:
@@ -343,10 +328,6 @@ class Issues(Cog):
                 self.suggestion_queue.append(a)
                 return
 
-            lunamon_logger.info(
-                "Suggestions queue: 1 active, %d queued", len(self.suggestion_queue)
-            )
-
             async with aiohttp.ClientSession() as sess:
                 async with sess.post(
                     f"https://{FORGEJO_INSTANCE}/api/v1/repos/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/issues",
@@ -373,9 +354,6 @@ class Issues(Cog):
                 async with aiohttp.ClientSession() as sess:
                     async with sess.get(attachment.url) as req:
                         if not req.ok:
-                            lunamon_logger.warning(
-                                "Failed to download %s", attachment.filename
-                            )
                             continue
 
                         data = await req.read()
@@ -386,9 +364,6 @@ class Issues(Cog):
             # Upload
             for attachment in message.attachments:
                 if not os.path.exists(f"tmp/{attachment.filename}"):
-                    lunamon_logger.warning(
-                        "Tried to upload non-existent file %s", attachment.filename
-                    )
                     continue
 
                 async with aiohttp.ClientSession() as sess:
@@ -397,14 +372,7 @@ class Issues(Cog):
                         headers={"Authorization": f"Bearer {FORGEJO_TOKEN}"},
                         data={"attachment": open(f"tmp/{attachment.filename}", "rb")},
                     ) as res:
-                        if not res.ok:
-                            text = await res.text()
-                            lunamon_logger.warning(
-                                "File failed to upload: %s: %s %s",
-                                attachment.filename,
-                                str(res.status),
-                                text,
-                            )
+                        pass
 
             # Delete locally
             for attachment in message.attachments:
@@ -475,11 +443,6 @@ class Issues(Cog):
 
             if thread.name.strip() != issue["title"].strip():
                 await thread.edit(name=issue["title"].strip())
-                lunamon_logger.info(
-                    "Updated thread name for issue %d to %s on Discord",
-                    issue["number"],
-                    issue["title"],
-                )
 
 
 def setup(bot: Bot):

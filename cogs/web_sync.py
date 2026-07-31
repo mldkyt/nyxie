@@ -17,8 +17,7 @@ from sentry_sdk import capture_exception
 from sqlalchemy import delete, update
 
 from constants import GUILD, OWNER, MEMBER_ROLE
-from database import engine, web_authors_list, web_channels_list, web_messages_list
-from logger import lunamon_logger
+from database import engine, web_authors_list, web_channels_list
 from util.web_sync import Consent, add_message, remove_message, unpin_all_messages
 
 
@@ -42,7 +41,6 @@ class WebSync(Cog):
                         capture_exception(e)
 
         self.bot.add_view(Consent())
-        lunamon_logger.info("WebSync cog loaded")
 
     @Cog.listener()
     async def on_message(self, message: Message):

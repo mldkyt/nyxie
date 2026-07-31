@@ -6,7 +6,6 @@ from sqlalchemy import select, insert, delete
 
 from constants import GUILD
 from database import engine, dm_channels
-from logger import lunamon_logger
 from util.dm import dm_cache
 
 
@@ -23,7 +22,6 @@ class DM(Cog):
 
     async def ensure_channel(self, user_id: int, r=0) -> TextChannel:
         if r > 3:
-            lunamon_logger.error("Failed to ensure DM channel for %d", user_id)
             e = RecursionError("Too many attempts to create a channel were performed")
             capture_exception(e)
             raise e

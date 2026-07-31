@@ -4,8 +4,6 @@ from mastodon import Mastodon
 from mastodon.return_types import Status
 from sentry_sdk import capture_exception
 
-from logger import lunamon_logger
-
 
 class AkkomaCache:
     def __init__(self) -> None:
@@ -31,7 +29,6 @@ class AkkomaCache:
 
     def get_latest_posts(self) -> list[Status]:
         if not self.logged_in:
-            lunamon_logger.error("[Akkoma] Not logged in yet, cannot get_latest_posts")
             return []
 
         if (

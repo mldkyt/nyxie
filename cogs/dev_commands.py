@@ -3,7 +3,6 @@ from discord import ApplicationContext, Bot, Member
 from sentry_sdk import capture_exception
 
 from constants import GUILD, OWNER
-from logger import lunamon_logger
 from util.dm import dm_cache
 from util.storage import get_data, set_data
 
@@ -14,8 +13,6 @@ class DevCommands(discord.Cog):
 
     @discord.Cog.listener()
     async def on_ready(self):
-        lunamon_logger.info("Dev Commands Cog is ready!")
-
         # Set status if in configuration file
         status_data = get_data("status")
         if "mode" in status_data and "status" in status_data:

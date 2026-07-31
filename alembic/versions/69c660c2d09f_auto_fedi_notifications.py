@@ -13,7 +13,6 @@ from typing import Sequence, Union
 import sqlalchemy as sa
 
 from alembic import op
-from logger import lunamon_logger
 
 # revision identifiers, used by Alembic.
 revision: str = "69c660c2d09f"
@@ -34,8 +33,6 @@ def upgrade() -> None:
     )
 
     if os.path.exists("data/fedi_notifications.json"):
-        lunamon_logger.info("Found: data/fedi_notifications.json, migrating...")
-
         with open("data/fedi_notifications.json") as f:
             data = json.load(f)
 

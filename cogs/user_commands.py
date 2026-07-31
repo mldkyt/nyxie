@@ -44,7 +44,6 @@ from constants import (
     VERSION,
 )
 from database import engine
-from logger import lunamon_logger
 from util.akkoma import akkoma_cache
 from util.keysmash_generator import keysmash_ai
 from util.storage import get_data, set_data
@@ -1127,7 +1126,6 @@ class UserCommands(discord.Cog):
 
             await ctx.respond(uwuified, ephemeral=not private)
         except Exception as e:
-            lunamon_logger.exception("Error occured in /user uwwwu")
             await ctx.respond(f"An error occured! {e=}", ephemeral=True)
 
     @discord.slash_command(name="uwuify", description="UwUify text")
@@ -1243,9 +1241,6 @@ class UserCommands(discord.Cog):
                 embed=embed, file=File(yuri_filename), view=MoreYuriView()
             )
         except Exception as e:
-            lunamon_logger.exception(
-                "Error occured when posting yuri, the world is gonna end"
-            )
             await ctx.respond(f"Error: {str(e)}", ephemeral=True)
 
     @discord.slash_command(
