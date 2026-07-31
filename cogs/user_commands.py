@@ -307,17 +307,6 @@ class UserCommands(discord.Cog):
         except Exception as e:
             await ctx.respond(f"Error: {str(e)}", ephemeral=True)
 
-    @discord.slash_command(
-        name="sotruebestie",
-        description="So true bestie",
-        integration_types=[discord.IntegrationType.user_install],
-    )
-    async def so_true_bestie(self, ctx: discord.ApplicationContext):
-        try:
-            await ctx.respond(file=discord.File("rom/sotruebestie.gif"))
-        except Exception as e:
-            capture_exception(e)
-
     @tasks.loop(seconds=5)
     async def handle_queue(self):
         try:
