@@ -6,7 +6,6 @@ import shutil
 import string
 import subprocess
 import sys
-import time
 
 import aiohttp
 import deepl
@@ -20,7 +19,6 @@ from discord import (
     EmbedFooter,
     File,
     Interaction,
-    Message,
 )
 from discord.ext import commands, tasks
 from discord.ext.commands import BucketType, cooldown
@@ -29,8 +27,6 @@ from discord.ui import (
     View,
     button,
 )
-from markdownify import markdownify
-from mastodon.return_types import Account, Poll, Status
 from sentry_sdk import capture_exception
 
 from constants import (
@@ -42,7 +38,6 @@ from constants import (
     VERSION,
 )
 from database import engine
-from util.akkoma import akkoma_cache
 from util.keysmash_generator import keysmash_ai
 from util.storage import get_data, set_data
 from util.yuri_util import get_some_yuri, get_some_yaoi
@@ -176,190 +171,6 @@ class MoreYuriView(View):
         await interaction.respond(
             embed=embed, file=File(yuri_filename), view=MoreYuriView(), ephemeral=True
         )
-
-
-def generate_user_embed(account: Account):
-    desc_start = markdownify(account.note)
-    desc = desc_start[:1500]
-    if desc != desc_start:
-        desc = desc + "..."
-
-    emb = discord.Embed(
-        title=f"{account.display_name} ({account.acct})",
-        description=desc,
-        thumbnail=account.avatar,
-        fields=[
-            discord.EmbedField(
-                name="Statuses", value=str(account.statuses_count), inline=True
-            ),
-            discord.EmbedField(
-                name="Followers", value=str(account.followers_count), inline=True
-            ),
-            discord.EmbedField(
-                name="Following", value=str(account.following_count), inline=True
-            ),
-        ],
-        url=account.url,
-        color=discord.Color.from_rgb(255, 119, 255),
-    )
-
-    if "@" in account.acct:
-        emb.set_footer(
-            text="The information may not be accurate as it comes from a remote instance."
-        )
-
-    return emb
-
-
-def generate_status_embed(status: Status, pinned=False):
-    image_url = (
-        status.media_attachments[0].url
-        if len(status.media_attachments) > 0 and len(status.spoiler_text) == 0
-        else None
-    )
-
-    reaction_string = ""
-
-    if status.favourites_count > 0:
-        reaction_string += f"{status.favourites_count} favorites | "
-    if status.replies_count > 0:
-        reaction_string += f"{status.replies_count} replies | "
-    if status.reblogs_count > 0:
-        reaction_string += f"{status.reblogs_count} reblogs | "
-
-    reaction_string = reaction_string[:-3]
-
-    pinned_post = "Pinned post by " if pinned else ""
-
-    content = markdownify(status.content)
-    desc = (
-        content if len(status.spoiler_text) == 0 else f"CW: {status.spoiler_text}\n\n"
-    )
-
-    if len(status.spoiler_text) > 0:
-        if len(status.media_attachments) > 0 and len(content) > 0:
-            desc += "(Open the link in order to view the text and media)"
-        elif len(status.media_attachments) > 0 and len(content) == 0:
-            desc += "(Open the link in order to view the media)"
-        else:
-            desc += "(Open the link in order to view the text)"
-
-    if status.poll is not None:
-        desc += get_poll_str(status.poll)
-
-    emb = discord.Embed(
-        title=f"{'Pinned ' if pinned else ''}Note by {status.account.display_name} ({status.account.acct})",
-        url=status.url,
-        description=desc[:1500],
-        image=image_url,
-        author=discord.EmbedAuthor(
-            name=f"{pinned_post}{status.account.display_name} ({status.account.acct})",
-            icon_url=status.account.avatar,
-            url=status.account.url,
-        ),
-        color=discord.Color.from_rgb(255, 119, 255),
-        footer=discord.EmbedFooter(text=reaction_string)
-        if len(reaction_string) > 0
-        else None,
-    )
-
-    return emb
-
-
-async def get_posts_under_hashtags(hashtag) -> list[discord.Embed] | None:
-    # Lookup_str: #art for example
-    embeds = []
-
-    hashtag = list(akkoma_cache.client.timeline_hashtag(hashtag))
-
-    for i in hashtag[3:]:
-        embeds.append(generate_status_embed(i))
-
-    return embeds
-
-
-def get_poll_str(poll: Poll) -> str:
-    message = "\n\n**[Poll]**\n"
-    counts = poll.votes_count
-
-    for option in poll.options:
-        if counts == 0 or option.votes_count is None:
-            message += f"**{option.title}** - {option.votes_count} votes\n"
-        else:
-            message += f"**{option.title}** - {option.votes_count} votes ({int(option.votes_count / counts * 100)}%)\n"
-
-    message += "\n"
-
-    if poll.multiple:
-        message += "**Multiple Choices** - "
-
-    expires_at = poll.expires_at
-    if expires_at is not None:
-        message += f"**Expires at {expires_at.strftime('%Y/%m/%d %H:%M:%S %Z')}**\n"
-
-    return message.rstrip()
-
-
-async def search(
-    query: str, content_type: str, media_type: str, count: int
-) -> tuple[list[discord.Embed], int] | None:
-    start_time = time.time()
-    if content_type == "posts":
-        return await search_posts(query, media_type, start_time, count)
-    elif content_type == "users":
-        return await search_users(query, start_time, count)
-
-    raise ValueError(
-        f"content_type is out of range: {content_type} is not a valid value"
-    )
-
-
-async def search_users(query, start_time, count):
-    users = akkoma_cache.client.search_v2(query)
-    embeds = []
-
-    for i in users.accounts:
-        emb = generate_user_embed(i)
-
-        if emb is None:
-            continue
-
-        embeds.append(emb)
-
-        if len(embeds) >= count:
-            break
-
-    end_time = time.time()
-    diff = round((end_time - start_time) * 1000)
-    return (embeds, diff) if len(embeds) > 0 else None
-
-
-async def search_posts(query, media_type, start_time, count):
-    statuses = akkoma_cache.client.search_v2(query)
-    embeds = []
-
-    for i in statuses.statuses:
-        if len(i.spoiler_text) > 0:
-            continue
-        if media_type == "image" and not any(
-            j.type == "image" for j in i.media_attachments
-        ):
-            continue
-        if media_type == "video" and not any(
-            j.type == "video" for j in i.media_attachments
-        ):
-            continue
-
-        emb = generate_status_embed(i)
-        embeds.append(emb)
-
-        if len(embeds) >= count:
-            break
-
-    end_time = time.time()
-    diff = round((end_time - start_time) * 1000)
-    return (embeds[:count], diff) if len(embeds) > 0 else None
-
 
 async def uwuify(text: str) -> str | None:
     # Send request
@@ -506,188 +317,6 @@ class UserCommands(discord.Cog):
             await ctx.respond(
                 "An error occurred while executing the command.", ephemeral=True
             )
-
-    fedi_group = discord.SlashCommandGroup(
-        name="fedi",
-        description="Fedi commands",
-        integration_types=[discord.IntegrationType.user_install],
-    )
-
-    @fedi_group.command(
-        name="search",
-        description="Search on fedi",
-        integration_types=[discord.IntegrationType.user_install],
-    )
-    @discord.option(name="media_type", choices=["image", "video"])
-    @discord.option(name="content_type", choices=["posts", "users"])
-    @discord.option(name="count", min=1, max=10)
-    async def search(
-        self,
-        ctx: discord.ApplicationContext,
-        q: str,
-        content_type: str = "posts",
-        media_type: str = "all",
-        count: int = 3,
-    ):
-        try:
-            # Verify right user
-            if ctx.user.id != int(OWNER):
-                await ctx.respond(
-                    "You are not authorized to use this command!", ephemeral=True
-                )
-                return
-
-            await ctx.defer()
-
-            # Let's attempt to generate embed based on search function
-            emb = await search(q, content_type, media_type, count)
-
-            if emb is None:
-                await ctx.followup.send("Error! No result")
-                return
-
-            await ctx.followup.send(
-                embeds=emb[0], content=f"Searching finished in {emb[1]} ms"
-            )
-        except Exception as e:
-            capture_exception(e)
-            await ctx.followup.send(f"Error! Server error: {e=}")
-
-    @fedi_group.command(
-        name="post",
-        description="Create a post on fedi",
-        integration_types=[discord.IntegrationType.user_install],
-    )
-    @discord.option(name="visibility", choices=["public", "unlisted", "private"])
-    async def post(
-        self,
-        ctx: discord.ApplicationContext,
-        text: str,
-        cw: str = "",
-        visibility: str = "public",
-        public_response: bool = False,
-    ):
-        try:
-            post = akkoma_cache.client.status_post(
-                text, spoiler_text=cw, visibility=visibility
-            )
-            await ctx.respond(
-                f"Post created! {post.url}",
-                ephemeral=not public_response,
-            )
-        except Exception as e:
-            capture_exception(e)
-            await ctx.respond("Failed to create status :(", ephemeral=True)
-
-    @discord.message_command(
-        name="post this on fedi",
-        integration_types=[discord.IntegrationType.user_install],
-    )
-    @cooldown(1, 10, BucketType.default)
-    async def post_message(self, ctx: discord.ApplicationContext, message: Message):
-        try:
-            owner = self.bot.get_user(int(OWNER))
-            await ctx.respond("posting to fedi. see dms for activity", ephemeral=True)
-
-            # get files
-            if not os.path.exists("temp"):
-                os.mkdir("temp")
-
-            async def get_file(a: discord.Attachment):
-                async with aiohttp.ClientSession() as sess:
-                    async with sess.get(a.url) as req:
-                        content = await req.read()
-                        with open(f"temp/{a.filename}", "wb") as f:
-                            f.write(content)
-
-            await asyncio.gather(*[get_file(i) for i in message.attachments])
-
-            media_ids = []
-
-            if len(message.attachments) > 0:
-                for i in message.attachments:
-                    await owner.send(f"Alt text for {i.filename} ({i.url}):")
-                    resp = await self.bot.wait_for(
-                        "message", check=lambda msg: msg.author == owner
-                    )
-
-                    media_ids.append(
-                        akkoma_cache.client.media_post(
-                            f"temp/{i.filename}", description=resp.content
-                        )
-                    )
-
-            cw = ""
-            text = message.content
-
-            # edits
-            while True:
-                await owner.send(
-                    "post is ready to be created, please issue following commands if needed: [edit content, edit cw, no media, no content, post]"
-                )
-                resp = await self.bot.wait_for(
-                    "message", check=lambda msg: msg.author == owner
-                )
-
-                if resp.content == "edit content":
-                    await owner.send("new content:")
-                    resp = await self.bot.wait_for(
-                        "message", check=lambda msg: msg.author == owner
-                    )
-
-                    text = resp.content
-                    await resp.add_reaction("✅")
-                elif resp.content == "edit cw":
-                    await owner.send("new cw:")
-                    resp = await self.bot.wait_for(
-                        "message", check=lambda msg: msg.author == owner
-                    )
-
-                    cw = resp.content
-                    await resp.add_reaction("✅")
-                elif resp.content == "no cw":
-                    cw = ""
-                    await resp.add_reaction("✅")
-                elif resp.content == "no media":
-                    media_ids = []
-                    if os.path.exists("temp"):
-                        for i in message.attachments:
-                            os.unlink(f"temp/{i.filename}")
-
-                        if len(os.listdir("temp")) == 0:
-                            os.rmdir("temp")
-
-                    await resp.add_reaction("✅")
-                elif resp.content == "no content":
-                    text = ""
-                    await resp.add_reaction("✅")
-                elif resp.content == "post":
-                    if len(text) == 0 and len(media_ids) == 0:
-                        await owner.send(
-                            "failed to post: no text AND media found, at least one is needed"
-                        )
-                        return
-
-                    break
-                elif resp.content == "cancel":
-                    await owner.send("canceling")
-                    return
-
-            status = akkoma_cache.client.status_post(
-                text, media_ids=media_ids, spoiler_text=cw
-            )
-
-            await owner.send(f"post stolen\n{status.url or status.uri}")
-
-            if os.path.exists("temp"):
-                for i in message.attachments:
-                    os.unlink(f"temp/{i.filename}")
-
-                if len(os.listdir("temp")) == 0:
-                    os.rmdir("temp")
-        except Exception as e:
-            capture_exception(e)
-            await ctx.respond("Failed to create post :(", ephemeral=True)
 
     @user_commands.command(
         name="ban_from_lunya",
