@@ -172,23 +172,6 @@ class MoreYuriView(View):
             embed=embed, file=File(yuri_filename), view=MoreYuriView(), ephemeral=True
         )
 
-async def uwuify(text: str) -> str | None:
-    # Send request
-    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=1)) as session:
-        async with session.post(
-            "https://uwu.pm/api/v1/uwu", json={"text": text, "provider": "uwwwupp"}
-        ) as res:
-            if res.status != 200:
-                return None
-
-            res = await res.json()
-
-            if "uwu" not in res or res["uwu"] is None:
-                return None
-
-            return res["uwu"]
-
-
 class UserCommands(discord.Cog):
     def __init__(self, bot: discord.Bot):
         self.bot = bot
@@ -317,61 +300,6 @@ class UserCommands(discord.Cog):
             await ctx.respond(
                 "An error occurred while executing the command.", ephemeral=True
             )
-
-    @user_commands.command(
-        name="uwwwu",
-        description="UwUify text",
-        integration_types=[discord.IntegrationType.user_install],
-    )
-    async def uwuify_text(
-        self, ctx: discord.ApplicationContext, text: str, private: bool = True
-    ):
-        try:
-            # Verify right user
-            if ctx.user.id != int(OWNER):
-                await ctx.respond(
-                    "You are not authorized to use this command!", ephemeral=True
-                )
-                return
-
-            # Send request
-            uwuified = await uwuify(text)
-            if uwuified is None:
-                await ctx.respond("An error occured!", ephemeral=True)
-                return
-
-            await ctx.respond(uwuified, ephemeral=not private)
-        except Exception as e:
-            await ctx.respond(f"An error occured! {e=}", ephemeral=True)
-
-    @discord.slash_command(name="uwuify", description="UwUify text")
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    async def uwuify_text_public(
-        self,
-        ctx: discord.ApplicationContext,
-        text: str,
-        use_ai: discord.Option(
-            bool,
-            description="Do you want to use the latest cutting-edge AI to uwuify?",
-            default=True,
-        ),
-    ):
-        try:
-            # Cutting-edge AI check
-            if use_ai:
-                await ctx.respond(keysmash_ai(), ephemeral=True)
-                return
-
-            # Send request
-            uwuified = await uwuify(text)
-            if uwuified is None:
-                await ctx.respond("An error occured!", ephemeral=True)
-                return
-
-            await ctx.respond(uwuified, ephemeral=True)
-        except Exception as e:
-            capture_exception(e)
-            await ctx.respond(f"An error occured! {e=}", ephemeral=True)
 
     @discord.message_command(
         name="Borrow Meme",
