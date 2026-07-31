@@ -1,11 +1,9 @@
 import datetime
-import datetime
 import random
 import string
 import subprocess
 import sys
 
-import deepl
 import discord
 import pytz
 from discord import (
@@ -25,7 +23,6 @@ from discord.ui import (
 from sentry_sdk import capture_exception
 
 from constants import (
-    DEEPL_API_KEY,
     OWNER,
     VERSION,
 )
@@ -33,9 +30,6 @@ from database import engine
 from util.yuri_util import get_some_yuri, get_some_yaoi
 
 dm_cache = []
-
-deepl_client = deepl.DeepLClient(DEEPL_API_KEY)
-
 
 def generate_meow():
     meow = random.choice(["meow", "nya", "mraow", "mwrmmwra"])

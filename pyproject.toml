@@ -13,4 +13,6 @@ dependencies = [
     "gunicorn>=26.0.0",
     "psycopg2>=2.9.12",
     "sentry-sdk>=2.66.1",
+    "markdown-it-py>=4.2.0",
+    "requests>=2.34.2",
 ]
