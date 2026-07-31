@@ -2,6 +2,7 @@ import datetime
 
 from mastodon import Mastodon
 from mastodon.return_types import Status
+from sentry_sdk import capture_exception
 
 from logger import lunamon_logger
 
@@ -20,8 +21,8 @@ class AkkomaCache:
             self.user = self.client.me()
 
             self.logged_in = True
-        except Exception:
-            lunamon_logger.exception("[Akkoma] Safelogin failed")
+        except Exception as e:
+            capture_exception(e)
 
     logged_in = False
 

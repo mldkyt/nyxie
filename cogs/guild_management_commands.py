@@ -2,6 +2,7 @@ import aiohttp
 from aiohttp import ClientResponseError
 from discord import Cog, Bot, SlashCommandGroup, Permissions, ApplicationContext
 from discord.ui import View, Button
+from sentry_sdk import capture_exception
 
 from constants import GUILD, OWNER, FORGEJO_INSTANCE, FORGEJO_TOKEN
 from logger import lunamon_logger
@@ -41,8 +42,8 @@ class GuildManagementCommands(Cog):
         except ClientResponseError as e:
             await ctx.respond(f"An error occured while contacting the server, {e.status} {e.message}", ephemeral=True)
             lunamon_logger.warning(f"Repo %s/%s doesn't exist: %s %s", owner, repo, e.status, e.message)
-        except Exception:
-            lunamon_logger.exception("An error occured")
+        except Exception as e:
+            capture_exception(e)
             await ctx.respond("An error occured, forgejo is down or repo doesn't exist", ephemeral=True)
 
 

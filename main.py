@@ -85,7 +85,7 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error):
             ephemeral=True,
         )
     except Exception as e:
-        pass
+        capture_exception(e)
 
     capture_exception(error)
 

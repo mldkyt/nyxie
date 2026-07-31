@@ -1,5 +1,6 @@
 import discord
 from discord import ApplicationContext, Bot, Member
+from sentry_sdk import capture_exception
 
 from constants import GUILD, OWNER
 from logger import lunamon_logger
@@ -78,7 +79,7 @@ class DevCommands(discord.Cog):
             await self.bot.change_presence(activity=activity)
             await ctx.respond(f"Status set to {mode}: {status}!", ephemeral=True)
         except Exception as e:
-            lunamon_logger.exception("An error occurred:")
+            capture_exception(e)
 
     @dev_group.command(name="send_test_dm")
     async def send_test_dm(self, ctx: ApplicationContext, user: Member, message: str):
@@ -91,8 +92,8 @@ class DevCommands(discord.Cog):
 
             dm_cache.add_dm_to_send(user.id, message)
             await ctx.respond("Dm will be sent", ephemeral=True)
-        except Exception:
-            lunamon_logger.exception("Error")
+        except Exception as e:
+            capture_exception(e)
             await ctx.respond("an error occured", ephemeral=True)
 
 

@@ -17,6 +17,7 @@ from discord.ui import (
     InputText,
     Modal,
 )
+from sentry_sdk import capture_exception
 from sqlalchemy import delete, insert, select
 
 from constants import (
@@ -80,8 +81,8 @@ class ForgejoCreateIssueModal(Modal):
                         f"https://{FORGEJO_INSTANCE}/{self.user}/{self.repo}/issues/{res_b['number']}",
                         ephemeral=True,
                     )
-        except Exception:
-            lunamon_logger.exception("An error occurred:")
+        except Exception as e:
+            capture_exception(e)
             await interaction.respond(
                 "an error occurred, please try again later and probably tell Lunya",
                 ephemeral=True,
@@ -157,10 +158,8 @@ class Issues(Cog):
                 ephemeral=True,
             )
             lunamon_logger.warning("Repo doesn't exist: %s %s", e.status, e.message)
-        except Exception:
-            lunamon_logger.exception(
-                "Error handling on_interaction inside Bug Reporting"
-            )
+        except Exception as e:
+            capture_exception(e)
 
     @Cog.listener()
     async def on_message(self, message: Message):
@@ -433,10 +432,8 @@ class Issues(Cog):
             await logs_channel.send(
                 f"# Issue created\n\n[Forgejo](https://{FORGEJO_INSTANCE}/{FORGEJO_OWNER}/{FORGEJO_PROJECT}/issues/{res_b['number']}), {message.jump_url}, {thread.jump_url}"
             )
-        except Exception:
-            lunamon_logger.exception(
-                "An error occured during suggestion queue execution:"
-            )
+        except Exception as e:
+            capture_exception(e)
 
     @loop(minutes=5)
     async def update_thread_titles(self):
