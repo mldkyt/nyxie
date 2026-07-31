@@ -105,45 +105,6 @@ class RefreshTimeView(discord.ui.View):
             await interaction.response.send_message("error :(", ephemeral=True)
 
 
-class ReadReceiptComponent(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-
-    @discord.ui.button(
-        label="Mark as read",
-        style=discord.ButtonStyle.primary,
-        custom_id="read_receipt",
-    )
-    async def mark_as_read(
-        self, button: discord.ui.Button, interaction: discord.Interaction
-    ):
-        try:
-            data = get_data(f"read_receipt/{interaction.message.id}")
-
-            if "readUsers" not in data:
-                data["readUsers"] = []
-
-            if "message" not in data:
-                data["message"] = interaction.message.content
-
-            if str(interaction.user.id) in data["readUsers"]:
-                await interaction.respond(
-                    "already marked as read! thank you <3", ephemeral=True
-                )
-                return
-
-            data["readUsers"].append(str(interaction.user.id))
-
-            await interaction.edit(
-                content=f"{data['message']}\n*Read by {', '.join([f'<@{i}>' for i in data['readUsers']])}*"
-            )
-            set_data(f"read_receipt/{interaction.message.id}", data)
-        except Exception as e:
-            capture_exception(e)
-            await interaction.respond(
-                "error :(\n-# this error was automatically reported", ephemeral=True
-            )
-
 class MoreYuriView(View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -179,7 +140,6 @@ class UserCommands(discord.Cog):
 
     @discord.Cog.listener()
     async def on_ready(self):
-        self.bot.add_view(ReadReceiptComponent())
         self.bot.add_view(RefreshTimeView())
         self.bot.add_view(MoreYuriView())
         self.handle_queue.start()
@@ -248,25 +208,6 @@ class UserCommands(discord.Cog):
                 f"```",
                 ephemeral=not public,
             )
-        except Exception as e:
-            capture_exception(e)
-            await ctx.respond(
-                "An error occurred while executing the command.", ephemeral=True
-            )
-
-    @user_commands.command(
-        name="read_receipt",
-        description="Send read receipt message which allows well accepting a read receipt",
-    )
-    async def read_receipt(self, ctx: discord.ApplicationContext, message: str):
-        try:
-            if ctx.user.id != int(OWNER):
-                await ctx.respond(
-                    "You are not authorized to use this command!", ephemeral=True
-                )
-                return
-
-            await ctx.respond(message, view=ReadReceiptComponent())
         except Exception as e:
             capture_exception(e)
             await ctx.respond(
