@@ -1,26 +1,21 @@
-import asyncio
 import datetime
-import os.path
+import datetime
 import random
-import shutil
 import string
 import subprocess
 import sys
 
-import aiohttp
 import deepl
 import discord
 import pytz
-from deepl import Language
 from discord import (
     Bot,
     Embed,
-    EmbedField,
     EmbedFooter,
     File,
     Interaction,
 )
-from discord.ext import commands, tasks
+from discord.ext import tasks
 from discord.ext.commands import BucketType, cooldown
 from discord.ui import (
     Button,
@@ -30,16 +25,11 @@ from discord.ui import (
 from sentry_sdk import capture_exception
 
 from constants import (
-    CHANNEL_MEMES,
-    CHANNEL_MODERATION,
     DEEPL_API_KEY,
-    GUILD,
     OWNER,
     VERSION,
 )
 from database import engine
-from util.keysmash_generator import keysmash_ai
-from util.storage import get_data, set_data
 from util.yuri_util import get_some_yuri, get_some_yaoi
 
 dm_cache = []
@@ -136,7 +126,6 @@ class MoreYuriView(View):
 class UserCommands(discord.Cog):
     def __init__(self, bot: discord.Bot):
         self.bot = bot
-        self.target_language = Language.ENGLISH_AMERICAN
 
     @discord.Cog.listener()
     async def on_ready(self):
@@ -317,51 +306,6 @@ class UserCommands(discord.Cog):
             )
         except Exception as e:
             await ctx.respond(f"Error: {str(e)}", ephemeral=True)
-
-    @discord.slash_command(
-        name="targetlang",
-        description="Set target language for translator",
-        integration_types=[discord.IntegrationType.user_install],
-    )
-    async def set_target_language(self, ctx: discord.ApplicationContext, lang: str):
-        if ctx.user.id != int(OWNER):
-            await ctx.respond(
-                "You are not authorized to use this command!", ephemeral=True
-            )
-            return
-
-        if lang == "en":
-            lang = Language.ENGLISH_AMERICAN
-
-        self.target_language = lang
-        await ctx.respond(f"targetlang = {lang}", ephemeral=True)
-
-    @discord.message_command(
-        name="Translate Message",
-        description="Translate message to target language",
-        integration_types=[discord.IntegrationType.user_install],
-    )
-    async def translate(
-        self, ctx: discord.ApplicationContext, message: discord.Message
-    ):
-        try:
-            if ctx.user.id != int(OWNER):
-                await ctx.respond(
-                    "You are not authorized to use this command!", ephemeral=True
-                )
-                return
-
-            original = message.clean_content
-            translated = deepl_client.translate_text(
-                original, target_lang=self.target_language
-            )
-
-            await ctx.respond(
-                f"Translated from {translated.detected_source_lang}:\n\n{translated.text}"
-            )
-        except Exception as e:
-            capture_exception(e)
-            await ctx.respond("An error occurred", ephemeral=True)
 
     @discord.slash_command(
         name="sotruebestie",

@@ -6,7 +6,6 @@ requires-python = ">=3.11"
 dependencies = [
     "pytz>=2025.2",
     "py-cord[speed]==2.8.0",
-    "deepl==1.30.0",
     "python-dotenv==1.2.2",
     "alembic==1.18.5",
     "sqlalchemy==2.0.51",
