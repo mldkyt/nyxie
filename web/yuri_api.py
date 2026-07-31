@@ -7,7 +7,7 @@ from werkzeug.utils import secure_filename
 
 from constants import WEB_TOKEN
 from database import engine, yaoi_db, yuri_db
-from web.gn_api import quick_response
+from web.util import quick_response
 
 yuri_bp = Blueprint("yuri", __name__)
 

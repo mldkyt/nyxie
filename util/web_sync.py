@@ -28,7 +28,7 @@ from database import (
     web_messages_attachments_list,
     web_messages_list, web_codes,
 )
-from web.gn_api import quick_response
+from web.util import quick_response
 
 
 def _add_author(c: Connection, message: Message):

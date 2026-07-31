@@ -34,31 +34,6 @@ dm_channels = Table(
     Column("channel_id", VARCHAR, primary_key=True),
 )
 
-suggestion_messages = Table(
-    "suggestion_messages",
-    md_obj,
-    Column("id", Integer, primary_key=True, autoincrement=True),
-    Column("message_id", VARCHAR),
-    Column("tracker_id", Integer),
-    Column("reply_id", VARCHAR),
-    Column("thread_id", VARCHAR),
-)
-
-suggestion_messages_comments = Table(
-    "suggestion_messages_comments",
-    md_obj,
-    Column("id", Integer, primary_key=True, autoincrement=True),
-    Column("suggestion_id", Integer, nullable=False),
-    Column("comment_id", Integer, nullable=False),
-    Column("message_id", VARCHAR, nullable=False),
-    ForeignKeyConstraint(
-        ["comment_id"],
-        ["suggestion_messages.id"],
-        onupdate="CASCADE",
-        ondelete="CASCADE",
-    ),
-)
-
 web_authors_list = Table(
     "authors",
     md_obj,
@@ -113,15 +88,6 @@ web_messages_attachments_list = Table(
     ForeignKeyConstraint(
         ["message_id"], ["messages.id"], onupdate="CASCADE", ondelete="CASCADE"
     ),
-)
-
-gn = Table(
-    "gn",
-    md_obj,
-    Column("id", Integer, primary_key=True, autoincrement=True),
-    Column("type", VARCHAR),
-    Column("auth_code", VARCHAR),
-    Column("expiry", DateTime(timezone=True)),
 )
 
 # priority gets decreased by one every single time the image is fetched, so that yuri is "infinite

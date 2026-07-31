@@ -8,8 +8,5 @@ WORKS ON MY MACHINE: This project is mainly intended to be used by mldkyt for th
 
 - Yuri posting
 - Yaoi posting
-- Status
 - DMs without DMing
-- Good night reminder notifications
-- Project issue management
 - User commands for mldkyt

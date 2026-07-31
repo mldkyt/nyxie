@@ -10,12 +10,10 @@ COPY uv.lock .
 
 RUN uv sync
 
-COPY masto_auth.py .
 COPY webmain.py .
 COPY main.py .
 COPY constants.py .
 COPY database.py .
-COPY rom/ rom/.
 COPY cogs/ cogs/.
 COPY util/ util/.
 COPY alembic.ini .
