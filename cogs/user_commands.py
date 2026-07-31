@@ -37,8 +37,6 @@ from constants import (
     CHANNEL_MEMES,
     CHANNEL_MODERATION,
     DEEPL_API_KEY,
-    FORGEJO_OWNER,
-    FORGEJO_PROJECT,
     GUILD,
     OWNER,
     VERSION,
@@ -1205,7 +1203,7 @@ class UserCommands(discord.Cog):
                 f"# Lunamon version {VERSION}\n\n"
                 f"Python {sys.version} on {sys.platform}\n"
                 f"py-cord {discord.__version__}\n"
-                f"Licensed under GNU AGPL v3.0. Software's source code is [here](<https://git.lunya.pet/{FORGEJO_OWNER}/{FORGEJO_PROJECT}>)",
+                f"Licensed under GNU AGPL v3.0. Software's source code is [here](<https://git.mldkyt.com/mldkyt/mldmon>)",
                 ephemeral=True,
             )
         except Exception as e:
