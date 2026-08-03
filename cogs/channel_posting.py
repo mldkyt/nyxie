@@ -131,8 +131,8 @@ class ChannelPosting(Cog):
 
     @slash_command(name="approve_content")
     @default_permissions(manage_guild=True)
-    async def manage_content(self, ctx: ApplicationContext):
-        if not await respond_with_next_yuri(ctx.interaction):
+    async def manage_content(self, ctx: ApplicationContext, reapprove: bool = False):
+        if not await respond_with_next_yuri(ctx.interaction, reapprove=reapprove):
             await ctx.respond("All done!", ephemeral=True)
 
 

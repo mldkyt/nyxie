@@ -2,15 +2,25 @@ import os
 import random
 
 from discord import ButtonStyle, Button, Interaction, Embed, File
-from discord.ui import View, button
+from discord.ui import View, button, Modal, InputText
 from sqlalchemy import Connection, select, update, delete
 from sqlalchemy.sql.functions import max
 
 from database import yaoi_db, yuri_db, engine
 
 
-async def respond_with_next_yuri(ctx: Interaction) -> bool:
+async def respond_with_next_yuri(ctx: Interaction, reapprove: bool = False) -> bool:
     with engine.begin() as c:
+        if reapprove:
+            c.execute(
+                update(yuri_db)
+                .values(approved=False)
+            )
+            c.execute(
+                update(yaoi_db)
+                .values(approved=False)
+            )
+
         yuri = c.execute(
             select(yuri_db.c.id, yuri_db.c.filename)
             .where(yuri_db.c.approved == False)
@@ -42,6 +52,34 @@ async def respond_with_next_yuri(ctx: Interaction) -> bool:
             return True
 
     return False
+
+
+class YuriCWModal(Modal):
+    def __init__(self, type: str, id: int):
+        super().__init__(title=f"CW this {type}")
+        self.type = type
+        self.content_id = id
+        self.cw = InputText(label="CW", placeholder="suggestive")
+        self.add_item(self.cw)
+
+    async def callback(self, interaction: Interaction):
+        new_cw = self.cw.value or ""
+
+        with engine.begin() as c:
+            if self.type == "yuri":
+                c.execute(
+                    update(yuri_db)
+                    .where(yuri_db.c.id == self.content_id)
+                    .values(cw=new_cw)
+                )
+            elif self.type == "yaoi":
+                c.execute(
+                    update(yaoi_db)
+                    .where(yaoi_db.c.id == self.content_id)
+                    .values(cw=new_cw)
+                )
+
+        await interaction.respond("CW" + ("updated" if len(new_cw) > 0 else "removed"), ephemeral=True)
 
 
 class YuriApproval(View):
@@ -106,6 +144,10 @@ class YuriApproval(View):
 
         if not await respond_with_next_yuri(ctx):
             await ctx.respond("All done!", ephemeral=True)
+            
+    @button(label="Set CW", style=ButtonStyle.secondary)
+    async def set_cw(self, button: Button, interaction: Interaction):
+        await interaction.response.send_modal(YuriCWModal(self.type, self.content_id))
 
 
 
