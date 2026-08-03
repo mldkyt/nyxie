@@ -131,7 +131,7 @@ class ChannelPosting(Cog):
 
         if (now.hour == 0 and now.minute == 0) or DEBUG:
             await post_meow(self.bot)
-        if (now.hour in [0, 4, 8, 12, 16, 20] and now.minute == 0) or DEBUG:
+        if (now.minute % 30 == 0) or DEBUG:
             await gather(post_yuri(self.bot), post_yaoi(self.bot))
 
     @slash_command(name="approve_content")
