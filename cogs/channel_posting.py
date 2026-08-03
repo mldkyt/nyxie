@@ -23,6 +23,7 @@ from constants import (
     VERSION,
 )
 from database import engine
+from util.yaoibot import YaoiBot
 from util.yuri_util import get_some_yaoi, get_some_yuri, respond_with_next_yuri
 from util.yuribot import YuriBot
 
@@ -31,6 +32,10 @@ DEBUG = False
 yuribot = None
 if os.path.exists("data/yuribot_usercred.secret"):
     yuribot = YuriBot()
+
+yaoibot = None
+if os.path.exists("data/yaoibot_usercred.secret"):
+    yaoibot = YaoiBot()
 
 async def post_yuri(bot: Bot):
     guild = bot.get_guild(int(GUILD))
@@ -88,6 +93,9 @@ async def post_yaoi(bot: Bot):
     )
 
     await chan.send(embed=embed, file=File(yaoi_filename, spoiler=len(cw.strip()) > 0))
+
+    if yaoibot is not None:
+        yaoibot.also_post_on_fedi(yaoi_filename, yaoi_source, cw)
 
 
 def generate_meow():
