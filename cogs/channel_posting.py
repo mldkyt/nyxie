@@ -26,7 +26,7 @@ from database import engine
 from util.yuri_util import get_some_yaoi, get_some_yuri, respond_with_next_yuri
 from util.yuribot import YuriBot
 
-DEBUG = True
+DEBUG = False
 
 yuribot = None
 if os.path.exists("data/yuribot_usercred.secret"):
