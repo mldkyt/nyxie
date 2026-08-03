@@ -45,7 +45,7 @@ async def post_yuri(bot: Bot):
     embed = Embed(
         title="Daily yuri",
         image=f"attachment://{yuri_filename.split('/')[-1]}",
-        footer=EmbedFooter(text=f"Lunamon {VERSION}"),
+        footer=EmbedFooter(text=f"mldmon {VERSION}"),
         description=f"[source]({yuri_source})",
         color=Color.nitro_pink(),
     )

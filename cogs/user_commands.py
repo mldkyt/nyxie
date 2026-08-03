@@ -110,7 +110,7 @@ class MoreYuriView(View):
             title="Yuri :3",
             description=f"[source]({yuri_source})",
             image=f"attachment://{yuri_filename.split('/')[-1]}",
-            footer=EmbedFooter(f"Lunamon {VERSION}"),
+            footer=EmbedFooter(f"mldmon {VERSION}"),
         )
 
         await interaction.respond(
@@ -183,7 +183,7 @@ class UserCommands(discord.Cog):
             )
 
             await ctx.respond(
-                f"# Lunamon version {VERSION}\n"
+                f"# mldmon version {VERSION}\n"
                 f"```\n"
                 f"{uname.stdout.strip()}\n"
                 f"{uptime.stdout.strip()}\n"
@@ -229,7 +229,7 @@ class UserCommands(discord.Cog):
     async def version(self, ctx: discord.ApplicationContext):
         try:
             await ctx.respond(
-                f"# Lunamon version {VERSION}\n\n"
+                f"# mldmon version {VERSION}\n\n"
                 f"Python {sys.version} on {sys.platform}\n"
                 f"py-cord {discord.__version__}\n"
                 f"Licensed under GNU AGPL v3.0. Software's source code is [here](<https://git.mldkyt.com/mldkyt/mldmon>)",
@@ -261,7 +261,7 @@ class UserCommands(discord.Cog):
                 title="Yuri :3",
                 description=f"[source]({yuri_source})",
                 image=f"attachment://{yuri_filename.split('/')[-1]}",
-                footer=EmbedFooter(f"Lunamon {VERSION}"),
+                footer=EmbedFooter(f"mldmon {VERSION}"),
             )
 
             await ctx.respond(
@@ -292,7 +292,7 @@ class UserCommands(discord.Cog):
                 title="Yaoi :3",
                 description=f"[source]({yaoi_source})",
                 image=f"attachment://{yaoi_filename.split('/')[-1]}",
-                footer=EmbedFooter(f"Lunamon {VERSION}"),
+                footer=EmbedFooter(f"mldmon {VERSION}"),
             )
 
             await ctx.respond(
