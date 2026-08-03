@@ -55,7 +55,7 @@ async def post_yuri(bot: Bot):
         cw = ""
 
     embed = Embed(
-        title="Daily yuri",
+        title="Yuri :3",
         image=f"attachment://{yuri_filename.split('/')[-1]}",
         footer=EmbedFooter(text=f"mldmon {VERSION}"),
         description=f"[source]({yuri_source})",
@@ -86,7 +86,7 @@ async def post_yaoi(bot: Bot):
         cw = ""
 
     embed = Embed(
-        title="Daily yaoi",
+        title="Yaoi :3",
         image=f"attachment://{yaoi_filename.split('/')[-1]}",
         description=f"[source]({yaoi_source})",
         color=Color.nitro_pink(),
