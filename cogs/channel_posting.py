@@ -1,3 +1,4 @@
+import os.path
 from asyncio import gather
 from datetime import datetime
 from random import choice, randint
@@ -23,9 +24,13 @@ from constants import (
 )
 from database import engine
 from util.yuri_util import get_some_yaoi, get_some_yuri, respond_with_next_yuri
+from util.yuribot import YuriBot
 
-DEBUG = False
+DEBUG = True
 
+yuribot = None
+if os.path.exists("data/yuribot_usercred.secret"):
+    yuribot = YuriBot()
 
 async def post_yuri(bot: Bot):
     guild = bot.get_guild(int(GUILD))
@@ -51,6 +56,9 @@ async def post_yuri(bot: Bot):
     )
 
     await chan.send(embed=embed, file=File(yuri_filename))
+
+    if yuribot is not None:
+        yuribot.also_post_on_fedi(yuri_filename, yuri_source)
 
 
 async def post_yaoi(bot: Bot):

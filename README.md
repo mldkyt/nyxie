@@ -10,3 +10,19 @@ WORKS ON MY MACHINE: This project is mainly intended to be used by mldkyt for th
 - Yaoi posting
 - DMs without DMing
 - User commands for mldkyt
+
+## Authorizing yuribot
+
+For the bot to work and because I don't care, you need to authorize yuribot, to do so, run
+
+```bash
+docker compose run --rm -it --entrypoint sh mldmon
+```
+
+Then in the bash window run
+
+```bash
+uv run auth.py
+```
+
+and fill out the parameters. This will authorize yuribot for posting!

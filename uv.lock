@@ -515,6 +515,15 @@ wheels = [
 ]
 
 [[package]]
+name = "decorator"
+version = "5.3.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/60/8b/32f9823da46cde7df2087faa08cd98d01b908f8dcab982cdba9c84e85355/decorator-5.3.1.tar.gz", hash = "sha256:4cbcdd55a6efadb9dbea26b858f4fb3264567b52d69ca0d25b721b553f60ea82", size = 58084, upload-time = "2026-05-18T06:03:28.057Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/05/7f/798705f5296a58ca505d600456748d1be48078eac8a7050d8a98bc9edb89/decorator-5.3.1-py3-none-any.whl", hash = "sha256:f47fe6fdbd2edd623ecfe36875d37aba411624e2670dd395dddae1358689bb3c", size = 10365, upload-time = "2026-05-18T06:03:26.517Z" },
+]
+
+[[package]]
 name = "flask"
 version = "3.1.3"
 source = { registry = "https://pypi.org/simple" }
@@ -742,39 +751,6 @@ wheels = [
 ]
 
 [[package]]
-name = "lunamon"
-version = "0.1.0"
-source = { virtual = "." }
-dependencies = [
-    { name = "alembic" },
-    { name = "flask" },
-    { name = "gunicorn" },
-    { name = "markdown-it-py" },
-    { name = "psycopg2" },
-    { name = "py-cord", extra = ["speed"] },
-    { name = "python-dotenv" },
-    { name = "pytz" },
-    { name = "requests" },
-    { name = "sentry-sdk" },
-    { name = "sqlalchemy" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "alembic", specifier = "==1.18.5" },
-    { name = "flask", specifier = ">=3.1.3" },
-    { name = "gunicorn", specifier = ">=26.0.0" },
-    { name = "markdown-it-py", specifier = ">=4.2.0" },
-    { name = "psycopg2", specifier = ">=2.9.12" },
-    { name = "py-cord", extras = ["speed"], specifier = "==2.8.0" },
-    { name = "python-dotenv", specifier = "==1.2.2" },
-    { name = "pytz", specifier = ">=2025.2" },
-    { name = "requests", specifier = ">=2.34.2" },
-    { name = "sentry-sdk", specifier = ">=2.66.1" },
-    { name = "sqlalchemy", specifier = "==2.0.51" },
-]
-
-[[package]]
 name = "mako"
 version = "1.3.12"
 source = { registry = "https://pypi.org/simple" }
@@ -873,12 +849,61 @@ wheels = [
 ]
 
 [[package]]
+name = "mastodon-py"
+version = "2.2.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "decorator" },
+    { name = "python-dateutil" },
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ba/87/0c676d38a315bf659beb9e22952085825e59e87fece35ad44e0ccd26d799/mastodon_py-2.2.1.tar.gz", hash = "sha256:b52c85850272b4ff7a666b87c62432c5059f25c29fb485ffa1f608938744d8a4", size = 11737599, upload-time = "2026-04-12T12:41:06.838Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e6/03/09b2f7a490ff60ee4f8e1a9ea4d34578bc7a288365ce5b3f4f606a9f4e47/mastodon_py-2.2.1-py3-none-any.whl", hash = "sha256:eb2a815ccc0c4b62417c531e07c02414e000c419abd319326843eb6370b772b3", size = 129905, upload-time = "2026-04-12T12:41:05.057Z" },
+]
+
+[[package]]
 name = "mdurl"
 version = "0.1.2"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/d6/54/cfe61301667036ec958cb99bd3efefba235e65cdeb9c84d24a8293ba1d90/mdurl-0.1.2.tar.gz", hash = "sha256:bb413d29f5eea38f31dd4754dd7377d4465116fb207585f97bf925588687c1ba", size = 8729, upload-time = "2022-08-14T12:40:10.846Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b3/38/89ba8ad64ae25be8de66a6d463314cf1eb366222074cfda9ee839c56a4b4/mdurl-0.1.2-py3-none-any.whl", hash = "sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8", size = 9979, upload-time = "2022-08-14T12:40:09.779Z" },
+]
+
+[[package]]
+name = "mldmon"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "alembic" },
+    { name = "flask" },
+    { name = "gunicorn" },
+    { name = "markdown-it-py" },
+    { name = "mastodon-py" },
+    { name = "psycopg2" },
+    { name = "py-cord", extra = ["speed"] },
+    { name = "python-dotenv" },
+    { name = "pytz" },
+    { name = "requests" },
+    { name = "sentry-sdk" },
+    { name = "sqlalchemy" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "alembic", specifier = ">=1.18.5" },
+    { name = "flask", specifier = ">=3.1.3" },
+    { name = "gunicorn", specifier = ">=26.0.0" },
+    { name = "markdown-it-py", specifier = ">=4.2.0" },
+    { name = "mastodon-py", specifier = ">=2.2.1" },
+    { name = "psycopg2", specifier = ">=2.9.12" },
+    { name = "py-cord", extras = ["speed"], specifier = ">=2.8.1" },
+    { name = "python-dotenv", specifier = ">=1.2.2" },
+    { name = "pytz", specifier = ">=2026.3" },
+    { name = "requests", specifier = ">=2.34.2" },
+    { name = "sentry-sdk", specifier = ">=2.66.1" },
+    { name = "sqlalchemy", specifier = ">=2.0.51" },
 ]
 
 [[package]]
@@ -1180,15 +1205,15 @@ wheels = [
 
 [[package]]
 name = "py-cord"
-version = "2.8.0"
+version = "2.8.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/24/73/02ad1b5ced7685e2868c25d574edc6b4eb154a214cf4caf36270480fc65c/py_cord-2.8.0.tar.gz", hash = "sha256:57a7efefa80e7f6ef890fbfc054d686782c347c9e4d86fa7c91f7ae5285b353f", size = 1173848, upload-time = "2026-05-18T13:02:09.092Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/48/99/371cafe39067d46db88477a4badbbf4128938d5a11971f9f0b8f4581efa1/py_cord-2.8.1.tar.gz", hash = "sha256:b1ebd22416941bbeccb6d26df5cbd65ff6b1d47fcbbc9652efae039e46e8a562", size = 1173996, upload-time = "2026-07-25T16:40:10.435Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b1/52/cd690a9103b3deadc5c047d3823b750a9afd61c35e57373bbd9e5dbd765f/py_cord-2.8.0-py3-none-any.whl", hash = "sha256:24f9180b4df432ddef732e388a905aa7d9cdf8f2f26318f18a193bccb2d7f642", size = 1264552, upload-time = "2026-05-18T13:02:06.959Z" },
+    { url = "https://files.pythonhosted.org/packages/e3/a6/7aeceb7dfa04c0d390b89ea0b4b980963b93cd972ab6306ad9684811dc6c/py_cord-2.8.1-py3-none-any.whl", hash = "sha256:8b97a61cceb4ca9000fc3ac1190fa4c45ef6a521d88707953f7eeadc1bd57071", size = 1264633, upload-time = "2026-07-25T16:40:08.96Z" },
 ]
 
 [package.optional-dependencies]
@@ -1278,6 +1303,18 @@ wheels = [
 ]
 
 [[package]]
+name = "python-dateutil"
+version = "2.9.0.post0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "six" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/66/c0/0c8b6ad9f17a802ee498c46e004a0eb49bc148f2fd230864601a86dcf6db/python-dateutil-2.9.0.post0.tar.gz", hash = "sha256:37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3", size = 342432, upload-time = "2024-03-01T18:36:20.211Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ec/57/56b9bcc3c9c6a792fcbaf139543cee77261f3651ca9da0c93f5c1221264b/python_dateutil-2.9.0.post0-py2.py3-none-any.whl", hash = "sha256:a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427", size = 229892, upload-time = "2024-03-01T18:36:18.57Z" },
+]
+
+[[package]]
 name = "python-dotenv"
 version = "1.2.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1288,11 +1325,11 @@ wheels = [
 
 [[package]]
 name = "pytz"
-version = "2026.2"
+version = "2026.3.post1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/ff/46/dd499ec9038423421951e4fad73051febaa13d2df82b4064f87af8b8c0c3/pytz-2026.2.tar.gz", hash = "sha256:0e60b47b29f21574376f218fe21abc009894a2321ea16c6754f3cad6eb7cdd6a", size = 320861, upload-time = "2026-05-04T01:35:29.667Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fb/48/fb042503b6ca6cd271261dc559fd6432f7d8c713153e9ec5c591af4dfc1c/pytz-2026.3.post1.tar.gz", hash = "sha256:2211d3fcf9a797d3405cac96ac7f61d80e6a644f72a3309607282fe8a2010c5d", size = 319745, upload-time = "2026-07-25T15:12:07.385Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ec/dd/96da98f892250475bdf2328112d7468abdd4acc7b902b6af23f4ed958ea0/pytz-2026.2-py2.py3-none-any.whl", hash = "sha256:04156e608bee23d3792fd45c94ae47fae1036688e75032eea2e3bf0323d1f126", size = 510141, upload-time = "2026-05-04T01:35:27.408Z" },
+    { url = "https://files.pythonhosted.org/packages/0f/7b/39c34ca613b0b198cb866466651b26b045e2009864c5183c979a3b83f383/pytz-2026.3.post1-py2.py3-none-any.whl", hash = "sha256:dd95840dd199baea12d9cc096a1d452caa6596a1c1e4b5f3dbd1541855d5e815", size = 508283, upload-time = "2026-07-25T15:12:05.782Z" },
 ]
 
 [[package]]
@@ -1321,6 +1358,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/7f/6f/d59cad0889d15fde85254cf58e701484de3f3f0406003b3197746910b19b/sentry_sdk-2.66.1.tar.gz", hash = "sha256:f882fb08710c5f8bfc603aafa3e901b384009a19cc3f76a572b863392ee81cdc", size = 940543, upload-time = "2026-07-22T12:26:54.553Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/89/d3/726bd88f0eece09ddf431bea4c9191c18e7a8d070b854eb0014d447712ee/sentry_sdk-2.66.1-py3-none-any.whl", hash = "sha256:86002793161d9a95ef04bdd8d442e9bfece5d989b755f05d6360215094a7aff6", size = 505555, upload-time = "2026-07-22T12:26:52.71Z" },
+]
+
+[[package]]
+name = "six"
+version = "1.17.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/94/e7/b2c673351809dca68a0e064b6af791aa332cf192da575fd474ed7d6f16a2/six-1.17.0.tar.gz", hash = "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81", size = 34031, upload-time = "2024-12-04T17:35:28.174Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274", size = 11050, upload-time = "2024-12-04T17:35:26.475Z" },
 ]
 
 [[package]]
