@@ -11,11 +11,10 @@ bot = discord.Bot(intents=discord.Intents.all())
 
 if SENTRY_SDK:
     sentry_sdk.init(
-        SENTRY_SDK,
+        dsn=SENTRY_SDK,
         send_default_pii=True,
         max_request_body_size="always",
-        traces_sample_rate=0,
-        send_client_reports=False,
+        traces_sample_rate=1,
         auto_session_tracking=False,
     )
 
