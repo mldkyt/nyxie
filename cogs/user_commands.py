@@ -100,11 +100,14 @@ class MoreYuriView(View):
     )
     async def more_yuri(self, button: Button, interaction: Interaction):
         with engine.begin() as c:
-            yuri_filename, yuri_source = get_some_yuri(c)
+            yuri_filename, yuri_source, cw = get_some_yuri(c)
 
         if not yuri_filename:
             await interaction.respond("No more yuri :(", ephemeral=True)
             return
+
+        if not cw:
+            cw = ""
 
         embed = Embed(
             title="Yuri :3",
@@ -114,7 +117,7 @@ class MoreYuriView(View):
         )
 
         await interaction.respond(
-            embed=embed, file=File(yuri_filename), view=MoreYuriView(), ephemeral=True
+            embed=embed, file=File(yuri_filename, spoiler=len(cw.strip()) > 0), view=MoreYuriView(), ephemeral=True
         )
 
 class UserCommands(discord.Cog):
@@ -251,11 +254,14 @@ class UserCommands(discord.Cog):
     async def yuri(self, ctx: discord.ApplicationContext):
         try:
             with engine.begin() as c:
-                yuri_filename, yuri_source = get_some_yuri(c)
+                yuri_filename, yuri_source, cw = get_some_yuri(c)
 
             if not yuri_filename:
                 await ctx.respond("No yuri found :(", ephemeral=True)
                 return
+
+            if not cw:
+                cw = ""
 
             embed = Embed(
                 title="Yuri :3",
@@ -265,7 +271,7 @@ class UserCommands(discord.Cog):
             )
 
             await ctx.respond(
-                embed=embed, file=File(yuri_filename), view=MoreYuriView()
+                embed=embed, file=File(yuri_filename, spoiler=len(cw.strip()) > 0), view=MoreYuriView()
             )
         except Exception as e:
             await ctx.respond(f"Error: {str(e)}", ephemeral=True)
@@ -282,11 +288,14 @@ class UserCommands(discord.Cog):
     async def yaol(self, ctx: discord.ApplicationContext):
         try:
             with engine.begin() as c:
-                yaoi_filename, yaoi_source = get_some_yaoi(c)
+                yaoi_filename, yaoi_source, cw = get_some_yaoi(c)
 
             if not yaoi_filename:
                 await ctx.respond("No yuri found :(", ephemeral=True)
                 return
+
+            if not cw:
+                cw = ""
 
             embed = Embed(
                 title="Yaoi :3",
@@ -296,7 +305,7 @@ class UserCommands(discord.Cog):
             )
 
             await ctx.respond(
-                embed=embed, file=File(yaoi_filename), view=MoreYuriView()
+                embed=embed, file=File(yaoi_filename, spoiler=len(cw.strip()) > 0), view=MoreYuriView()
             )
         except Exception as e:
             await ctx.respond(f"Error: {str(e)}", ephemeral=True)

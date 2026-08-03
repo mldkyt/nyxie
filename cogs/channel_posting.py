@@ -42,10 +42,12 @@ async def post_yuri(bot: Bot):
         return
 
     with engine.begin() as c:
-        yuri_filename, yuri_source = get_some_yuri(c)
+        yuri_filename, yuri_source, cw = get_some_yuri(c)
 
     if not yuri_filename:
         return
+    if not cw:
+        cw = ""
 
     embed = Embed(
         title="Daily yuri",
@@ -55,10 +57,10 @@ async def post_yuri(bot: Bot):
         color=Color.nitro_pink(),
     )
 
-    await chan.send(embed=embed, file=File(yuri_filename))
+    await chan.send(embed=embed, file=File(yuri_filename, spoiler=len(cw.strip()) > 0))
 
     if yuribot is not None:
-        yuribot.also_post_on_fedi(yuri_filename, yuri_source)
+        yuribot.also_post_on_fedi(yuri_filename, yuri_source, cw)
 
 
 async def post_yaoi(bot: Bot):
@@ -70,10 +72,13 @@ async def post_yaoi(bot: Bot):
         return
 
     with engine.begin() as c:
-        yaoi_filename, yaoi_source = get_some_yaoi(c)
+        yaoi_filename, yaoi_source, cw = get_some_yaoi(c)
 
     if not yaoi_filename:
         return
+
+    if not cw:
+        cw = ""
 
     embed = Embed(
         title="Daily yaoi",
@@ -82,7 +87,7 @@ async def post_yaoi(bot: Bot):
         color=Color.nitro_pink(),
     )
 
-    await chan.send(embed=embed, file=File(yaoi_filename))
+    await chan.send(embed=embed, file=File(yaoi_filename, spoiler=len(cw.strip()) > 0))
 
 
 def generate_meow():
