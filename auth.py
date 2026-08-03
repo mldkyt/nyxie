@@ -1,0 +1,56 @@
+
+import os
+
+from mastodon import Mastodon
+
+app_name = input("app name [mldmon]: ")
+if len(app_name.strip()) == 0:
+    app_name = "mldmon"
+
+instance_url = input("instance url: ")
+
+if not os.path.exists("data"):
+    os.mkdir("data")
+
+if not os.path.exists(f"data/{app_name}_clientcred.secret"):
+    Mastodon.create_app(
+        app_name,
+        api_base_url=instance_url,
+        to_file=f'data/{app_name}_clientcred.secret'
+    )
+
+if os.path.exists(f"data/{app_name}_usercred.secret"):
+    print(f"this user is already authorized, please delete data/{app_name}_usercred.secret to reauthorize")
+    exit(0)
+
+mode = input("mode [userpass, code] ")
+
+if mode == "userpass":
+    username = input("username: ")
+    password = input("password: ")
+
+    mastodon = Mastodon(client_id=f'data/{app_name}_clientcred.secret', api_base_url=instance_url)
+
+    mastodon.log_in(
+        username,
+        password,
+        to_file=f"data/{app_name}_usercred.secret"
+    )
+
+    print("authorized")
+    me = mastodon.me()
+    print(f"welcome, {me.acct}")
+elif mode == "code":
+    mastodon = Mastodon(client_id=f'data/{app_name}_clientcred.secret', api_base_url=instance_url)
+    print("Authorize using this url:")
+    print(mastodon.auth_request_url())
+    code = input("code: ")
+
+    mastodon.log_in(
+        code=code,
+        to_file=f"data/{app_name}_usercred.secret"
+    )
+
+    print("authorized")
+    me = mastodon.me()
+    print(f"welcome, {me.acct}")
