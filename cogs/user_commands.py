@@ -278,6 +278,7 @@ class UserCommands(discord.Cog):
                 view=MoreYuriView(more_yuri_spam_btn=more_yuri_spam_btn) if more_yuri_btn else None
             )
         except Exception as e:
+            capture_exception(e)
             await ctx.respond(f"Error: {str(e)}", ephemeral=True)
 
     @discord.slash_command(
