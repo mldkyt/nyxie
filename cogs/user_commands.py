@@ -124,6 +124,42 @@ class MoreYuriView(View):
             ephemeral=not self.more_yuri_spam_btn
         )
 
+
+class MoreYaoiView(View):
+    def __init__(self, more_yaoi_spam_btn: bool = False):
+        super().__init__(timeout=None)
+
+        self.more_yaoi_spam_btn = more_yaoi_spam_btn
+
+    @button(
+        label="more yaoi!",
+        style=discord.ButtonStyle.primary,
+        custom_id="more_yaoi_pwease_uwu",
+    )
+    async def more_yaoi(self, button: Button, interaction: Interaction):
+        with engine.begin() as c:
+            yaoi_filename, yaoi_source, cw = get_some_yaoi(c)
+
+        if not yaoi_filename:
+            await interaction.respond("No more yaoi :(", ephemeral=True)
+            return
+
+        if not cw:
+            cw = ""
+
+        embed = Embed(
+            title="Yaoi :3",
+            description=f"[source]({yaoi_source})",
+            image=f"attachment://{yaoi_filename.split('/')[-1]}",
+            footer=EmbedFooter(f"mldmon {VERSION}"),
+        )
+
+        await interaction.respond(
+            embed=embed, file=File(yaoi_filename, spoiler=len(cw.strip()) > 0),
+            view=MoreYaoiView(more_yaoi_spam_btn=self.more_yaoi_spam_btn),
+            ephemeral=not self.more_yaoi_spam_btn
+        )
+
 class UserCommands(discord.Cog):
     def __init__(self, bot: discord.Bot):
         self.bot = bot
@@ -289,7 +325,7 @@ class UserCommands(discord.Cog):
             discord.IntegrationType.guild_install,
         ],
     )
-    async def yaol(self, ctx: discord.ApplicationContext):
+    async def yaol(self, ctx: discord.ApplicationContext, more_yaol_btn: bool = False, more_yaol_spam_btn: bool = False):
         try:
             with engine.begin() as c:
                 yaoi_filename, yaoi_source, cw = get_some_yaoi(c)
@@ -309,9 +345,11 @@ class UserCommands(discord.Cog):
             )
 
             await ctx.respond(
-                embed=embed, file=File(yaoi_filename, spoiler=len(cw.strip()) > 0), view=MoreYuriView()
+                embed=embed, file=File(yaoi_filename, spoiler=len(cw.strip()) > 0),
+                view=MoreYaoiView(more_yaoi_spam_btn=more_yaol_spam_btn) if more_yaol_btn else None
             )
         except Exception as e:
+            capture_exception(e)
             await ctx.respond(f"Error: {str(e)}", ephemeral=True)
 
     @tasks.loop(seconds=5)
