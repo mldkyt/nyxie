@@ -90,8 +90,10 @@ class RefreshTimeView(discord.ui.View):
 
 
 class MoreYuriView(View):
-    def __init__(self):
+    def __init__(self, more_yuri_spam_btn: bool = False):
         super().__init__(timeout=None)
+
+        self.more_yuri_spam_btn = more_yuri_spam_btn
 
     @button(
         label="more yuri!",
@@ -117,7 +119,9 @@ class MoreYuriView(View):
         )
 
         await interaction.respond(
-            embed=embed, file=File(yuri_filename, spoiler=len(cw.strip()) > 0), view=MoreYuriView(), ephemeral=True
+            embed=embed, file=File(yuri_filename, spoiler=len(cw.strip()) > 0),
+            view=MoreYuriView(more_yuri_spam_btn=self.more_yuri_spam_btn),
+            ephemeral=not self.more_yuri_spam_btn
         )
 
 class UserCommands(discord.Cog):
@@ -250,7 +254,7 @@ class UserCommands(discord.Cog):
             discord.IntegrationType.guild_install,
         ],
     )
-    async def yuri(self, ctx: discord.ApplicationContext):
+    async def yuri(self, ctx: discord.ApplicationContext, more_yuri_btn: bool = False, more_yuri_spam_btn: bool = False):
         try:
             with engine.begin() as c:
                 yuri_filename, yuri_source, cw = get_some_yuri(c)
@@ -270,7 +274,8 @@ class UserCommands(discord.Cog):
             )
 
             await ctx.respond(
-                embed=embed, file=File(yuri_filename, spoiler=len(cw.strip()) > 0), view=MoreYuriView()
+                embed=embed, file=File(yuri_filename, spoiler=len(cw.strip()) > 0),
+                view=MoreYuriView(more_yuri_spam_btn=more_yuri_spam_btn) if more_yuri_btn else None
             )
         except Exception as e:
             await ctx.respond(f"Error: {str(e)}", ephemeral=True)
