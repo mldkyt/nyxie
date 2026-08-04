@@ -250,7 +250,6 @@ class UserCommands(discord.Cog):
             discord.IntegrationType.guild_install,
         ],
     )
-    @cooldown(1, 10, BucketType.default)
     async def yuri(self, ctx: discord.ApplicationContext):
         try:
             with engine.begin() as c:
@@ -284,7 +283,6 @@ class UserCommands(discord.Cog):
             discord.IntegrationType.guild_install,
         ],
     )
-    @cooldown(1, 10, BucketType.default)
     async def yaol(self, ctx: discord.ApplicationContext):
         try:
             with engine.begin() as c:
