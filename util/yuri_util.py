@@ -53,6 +53,40 @@ async def respond_with_next_yuri(ctx: Interaction, reapprove: bool = False) -> b
 
     return False
 
+async def respond_with_next_non_alted_content(ctx: Interaction) -> bool:
+    with engine.begin() as c:
+        yuri = c.execute(
+            select(yuri_db.c.id, yuri_db.c.filename)
+            .where(yuri_db.c.alt == "")
+        ).fetchone()
+
+        if yuri is not None:
+            await ctx.respond(view=YuriAskForAltText("yuri", yuri[0]),
+                              embed=Embed(
+                                  title="Add alt text to this yuri using the button below",
+                                  image=f"attachment://{yuri[1].split('/')[-1]}",
+                              ),
+                              file=File(yuri[1]),
+                              ephemeral=True)
+            return True
+
+        yaoi = c.execute(
+            select(yaoi_db.c.id, yaoi_db.c.filename)
+            .where(yaoi_db.c.approved == False)
+        ).fetchone()
+
+        if yaoi is not None:
+            await ctx.respond(view=YuriAskForAltText("yaoi", yaoi[0]),
+                              embed=Embed(
+                                  title="Add alt text to this yaoi using the button below",
+                                  image=f"attachment://{yaoi[1].split('/')[-1]}",
+                              ),
+                              file=File(yaoi[1]),
+                              ephemeral=True)
+            return True
+
+    return False
+
 
 class YuriCWModal(Modal):
     def __init__(self, type: str, id: int):
@@ -79,7 +113,48 @@ class YuriCWModal(Modal):
                     .values(cw=new_cw)
                 )
 
-        await interaction.respond("CW" + ("updated" if len(new_cw) > 0 else "removed"), ephemeral=True)
+        await interaction.respond("CW " + ("updated" if len(new_cw) > 0 else "removed"), ephemeral=True)
+
+
+class YuriAltTextModal(Modal):
+    def __init__(self, type: str, id: int):
+        super().__init__(title=f"Add alt text to this {type}")
+        self.type = type
+        self.content_id = id
+        self.alt = InputText(label="Alt text", placeholder="2 girls making out sloppy style no socks")
+        self.add_item(self.alt)
+
+    async def callback(self, interaction: Interaction):
+        new_alt = self.alt.value or ""
+
+        with engine.begin() as c:
+            if self.type == "yuri":
+                c.execute(
+                    update(yuri_db)
+                    .where(yuri_db.c.id == self.content_id)
+                    .values(alt=new_alt)
+                )
+            elif self.type == "yaoi":
+                c.execute(
+                    update(yaoi_db)
+                    .where(yaoi_db.c.id == self.content_id)
+                    .values(alt=new_alt)
+                )
+
+        if not await respond_with_next_non_alted_content(interaction):
+            await interaction.respond("All done!", ephemeral=True)
+
+
+class YuriAskForAltText(View):
+    def __init__(self, type: str, content_id: int):
+        super().__init__()
+
+        self.type = type
+        self.content_id = content_id
+
+    @button(label="Set alt", style=ButtonStyle.secondary)
+    async def set_alt(self, button: Button, interaction: Interaction):
+        await interaction.response.send_modal(YuriAltTextModal(self.type, self.content_id))
 
 
 class YuriApproval(View):
@@ -149,19 +224,23 @@ class YuriApproval(View):
     async def set_cw(self, button: Button, interaction: Interaction):
         await interaction.response.send_modal(YuriCWModal(self.type, self.content_id))
 
+    @button(label="Set alt", style=ButtonStyle.secondary)
+    async def set_alt(self, button: Button, interaction: Interaction):
+        await interaction.response.send_modal(YuriAltTextModal(self.type, self.content_id))
 
 
-def get_some_yuri(conn: Connection) -> tuple[str | None, str | None, str | None]:
+
+def get_some_yuri(conn: Connection) -> tuple[str | None, str | None, str | None, str | None]:
     """Returns relative path to yuri and source link and ticks it"""
 
     top_priority = conn.execute(select(max(yuri_db.c.priority)).where(yuri_db.c.approved == True)).fetchone()
     if not top_priority:
-        return None, None, None
+        return None, None, None, None
 
     top_priority = top_priority[0]
 
     yuri = conn.execute(
-        select(yuri_db.c.id, yuri_db.c.filename, yuri_db.c.source, yuri_db.c.cw).where(
+        select(yuri_db.c.id, yuri_db.c.filename, yuri_db.c.source, yuri_db.c.alt, yuri_db.c.alt).where(
             yuri_db.c.priority == top_priority
         ).where(yuri_db.c.approved == True)
     ).fetchall()
@@ -174,20 +253,20 @@ def get_some_yuri(conn: Connection) -> tuple[str | None, str | None, str | None]
         .values(priority=yuri_db.c.priority - 1)
     )
 
-    return yuri[1], yuri[2], yuri[3]
+    return yuri[1], yuri[2], yuri[3], yuri[4]
 
 
-def get_some_yaoi(conn: Connection) -> tuple[str | None, str | None, str | None]:
+def get_some_yaoi(conn: Connection) -> tuple[str | None, str | None, str | None, str | None]:
     """Returns relative path to yaoi and source link and ticks it"""
 
     top_priority = conn.execute(select(max(yaoi_db.c.priority)).where(yaoi_db.c.approved == True)).fetchone()
     if not top_priority:
-        return None, None, None
+        return None, None, None, None
 
     top_priority = top_priority[0]
 
     yaoi = conn.execute(
-        select(yaoi_db.c.id, yaoi_db.c.filename, yaoi_db.c.source, yaoi_db.c.cw).where(
+        select(yaoi_db.c.id, yaoi_db.c.filename, yaoi_db.c.source, yaoi_db.c.alt, yaoi_db.c.alt).where(
             yaoi_db.c.priority == top_priority
         ).where(yaoi_db.c.approved == True)
     ).fetchall()
@@ -200,4 +279,4 @@ def get_some_yaoi(conn: Connection) -> tuple[str | None, str | None, str | None]
         .values(priority=yaoi_db.c.priority - 1)
     )
 
-    return yaoi[1], yaoi[2], yaoi[3]
+    return yaoi[1], yaoi[2], yaoi[3], yaoi[4]

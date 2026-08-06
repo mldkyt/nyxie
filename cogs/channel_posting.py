@@ -24,7 +24,7 @@ from constants import (
 )
 from database import engine
 from util.yaoibot import YaoiBot
-from util.yuri_util import get_some_yaoi, get_some_yuri, respond_with_next_yuri
+from util.yuri_util import get_some_yaoi, get_some_yuri, respond_with_next_yuri, respond_with_next_non_alted_content
 from util.yuribot import YuriBot
 
 DEBUG = False
@@ -47,22 +47,30 @@ async def post_yuri(bot: Bot):
         return
 
     with engine.begin() as c:
-        yuri_filename, yuri_source, cw = get_some_yuri(c)
+        yuri_filename, yuri_source, cw, alt = get_some_yuri(c)
 
     if not yuri_filename:
         return
     if not cw:
         cw = ""
 
-    embed = Embed(
-        title="Yuri :3",
-        image=f"attachment://{yuri_filename.split('/')[-1]}",
-        footer=EmbedFooter(text=f"mldmon {VERSION}"),
-        description=f"[source]({yuri_source})",
-        color=Color.nitro_pink(),
-    )
+    if len(cw.strip()) == 0:
+        embed = Embed(
+            title="Yuri :3",
+            image=f"attachment://{yuri_filename.split('/')[-1]}",
+            footer=EmbedFooter(text=f"mldmon {VERSION}"),
+            description=f"[source]({yuri_source})",
+            color=Color.nitro_pink(),
+        )
+    else:
+        embed = Embed(
+            title="Yuri :3",
+            footer=EmbedFooter(text=f"mldmon {VERSION}"),
+            description=f"[source]({yuri_source})",
+            color=Color.nitro_pink(),
+        )
 
-    await chan.send(embed=embed, file=File(yuri_filename, spoiler=len(cw.strip()) > 0))
+    await chan.send(embed=embed, file=File(yuri_filename, spoiler=len(cw.strip()) > 0, description=alt))
 
     if yuribot is not None:
         yuribot.also_post_on_fedi(yuri_filename, yuri_source, cw)
@@ -77,7 +85,7 @@ async def post_yaoi(bot: Bot):
         return
 
     with engine.begin() as c:
-        yaoi_filename, yaoi_source, cw = get_some_yaoi(c)
+        yaoi_filename, yaoi_source, cw, alt = get_some_yaoi(c)
 
     if not yaoi_filename:
         return
@@ -85,14 +93,25 @@ async def post_yaoi(bot: Bot):
     if not cw:
         cw = ""
 
-    embed = Embed(
-        title="Yaoi :3",
-        image=f"attachment://{yaoi_filename.split('/')[-1]}",
-        description=f"[source]({yaoi_source})",
-        color=Color.nitro_pink(),
-    )
+    if len(cw.strip()) == 0:
+        embed = Embed(
+            title="Yaoi :3",
+            image=f"attachment://{yaoi_filename.split('/')[-1]}",
+            description=f"[source]({yaoi_source})",
+            color=Color.nitro_pink(),
+        )
+    else:
+        embed = Embed(
+            title="Yaoi :3",
+            description=f"[source]({yaoi_source})",
+            color=Color.nitro_pink(),
+        )
 
-    await chan.send(embed=embed, file=File(yaoi_filename, spoiler=len(cw.strip()) > 0))
+    await chan.send(embed=embed, file=File(
+        yaoi_filename,
+        spoiler=len(cw.strip()) > 0,
+        description=alt
+    ))
 
     if yaoibot is not None:
         yaoibot.also_post_on_fedi(yaoi_filename, yaoi_source, cw)
@@ -146,6 +165,12 @@ class ChannelPosting(Cog):
     @default_permissions(manage_guild=True)
     async def manage_content(self, ctx: ApplicationContext, reapprove: bool = False):
         if not await respond_with_next_yuri(ctx.interaction, reapprove=reapprove):
+            await ctx.respond("All done!", ephemeral=True)
+
+    @slash_command(name="add_alt_texts_to_content")
+    @default_permissions(manage_guild=True)
+    async def manage_content(self, ctx: ApplicationContext):
+        if not await respond_with_next_non_alted_content(ctx.interaction):
             await ctx.respond("All done!", ephemeral=True)
 
 

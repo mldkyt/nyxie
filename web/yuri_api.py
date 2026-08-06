@@ -56,7 +56,8 @@ def yuri_post_route():
                 insert(yuri_db).values(
                     filename=filename,
                     source=metadata.get("source"),
-                    priority=top_priority
+                    priority=top_priority,
+                    alt=metadata.get("alt") or ""
                 )
             )
         else:
@@ -109,7 +110,8 @@ def yaoi_post_route():
                 insert(yaoi_db).values(
                     filename=filename,
                     source=metadata.get("source"),
-                    priority=top_priority
+                    priority=top_priority,
+                    alt=metadata.get("alt") or ""
                 )
             )
         else:
