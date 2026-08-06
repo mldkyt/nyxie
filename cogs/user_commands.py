@@ -302,12 +302,19 @@ class UserCommands(discord.Cog):
             if not cw:
                 cw = ""
 
-            embed = Embed(
-                title="Yuri :3",
-                description=f"[source]({yuri_source})",
-                image=f"attachment://{yuri_filename.split('/')[-1]}",
-                footer=EmbedFooter(f"mldmon {VERSION}"),
-            )
+            if len(cw.strip()) == 0:
+                embed = Embed(
+                    title="Yuri :3",
+                    description=f"[source]({yuri_source})",
+                    image=f"attachment://{yuri_filename.split('/')[-1]}",
+                    footer=EmbedFooter(f"mldmon {VERSION}"),
+                )
+            else:
+                embed = Embed(
+                    title="Yuri :3",
+                    description=f"[source]({yuri_source})",
+                    footer=EmbedFooter(f"mldmon {VERSION}"),
+                )
 
             await ctx.respond(
                 embed=embed, file=File(yuri_filename, spoiler=len(cw.strip()) > 0),
@@ -337,12 +344,19 @@ class UserCommands(discord.Cog):
             if not cw:
                 cw = ""
 
-            embed = Embed(
-                title="Yaoi :3",
-                description=f"[source]({yaoi_source})",
-                image=f"attachment://{yaoi_filename.split('/')[-1]}",
-                footer=EmbedFooter(f"mldmon {VERSION}"),
-            )
+            if len(cw.strip()) == 0:
+                embed = Embed(
+                    title="Yaoi :3",
+                    description=f"[source]({yaoi_source})",
+                    image=f"attachment://{yaoi_filename.split('/')[-1]}",
+                    footer=EmbedFooter(f"mldmon {VERSION}"),
+                )
+            else:
+                embed = Embed(
+                    title="Yaoi :3",
+                    description=f"[source]({yaoi_source})",
+                    footer=EmbedFooter(f"mldmon {VERSION}"),
+                )
 
             await ctx.respond(
                 embed=embed, file=File(yaoi_filename, spoiler=len(cw.strip()) > 0),

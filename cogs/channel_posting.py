@@ -54,13 +54,21 @@ async def post_yuri(bot: Bot):
     if not cw:
         cw = ""
 
-    embed = Embed(
-        title="Yuri :3",
-        image=f"attachment://{yuri_filename.split('/')[-1]}",
-        footer=EmbedFooter(text=f"mldmon {VERSION}"),
-        description=f"[source]({yuri_source})",
-        color=Color.nitro_pink(),
-    )
+    if len(cw.strip()) == 0:
+        embed = Embed(
+            title="Yuri :3",
+            image=f"attachment://{yuri_filename.split('/')[-1]}",
+            footer=EmbedFooter(text=f"mldmon {VERSION}"),
+            description=f"[source]({yuri_source})",
+            color=Color.nitro_pink(),
+        )
+    else:
+        embed = Embed(
+            title="Yuri :3",
+            footer=EmbedFooter(text=f"mldmon {VERSION}"),
+            description=f"[source]({yuri_source})",
+            color=Color.nitro_pink(),
+        )
 
     await chan.send(embed=embed, file=File(yuri_filename, spoiler=len(cw.strip()) > 0))
 
@@ -85,12 +93,19 @@ async def post_yaoi(bot: Bot):
     if not cw:
         cw = ""
 
-    embed = Embed(
-        title="Yaoi :3",
-        image=f"attachment://{yaoi_filename.split('/')[-1]}",
-        description=f"[source]({yaoi_source})",
-        color=Color.nitro_pink(),
-    )
+    if len(cw.strip()) == 0:
+        embed = Embed(
+            title="Yaoi :3",
+            image=f"attachment://{yaoi_filename.split('/')[-1]}",
+            description=f"[source]({yaoi_source})",
+            color=Color.nitro_pink(),
+        )
+    else:
+        embed = Embed(
+            title="Yaoi :3",
+            description=f"[source]({yaoi_source})",
+            color=Color.nitro_pink(),
+        )
 
     await chan.send(embed=embed, file=File(yaoi_filename, spoiler=len(cw.strip()) > 0))
 
