@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, request, session
 
 from util.web_sync import get_channels, get_latest_messages, get_surrounding_messages, get_title_for_channel, \
-    process_preferences, get_pinned_messages, search_messages, get_reply_thread, pick_theme, themes, verify_captcha
+    process_preferences, get_pinned_messages, search_messages, get_reply_thread, pick_theme, themes
 
 messages_bp = Blueprint("messages", __name__, template_folder='templates', static_folder='../data/attachments',
                         static_url_path='/discord/explore/attachments')
@@ -9,10 +9,6 @@ messages_bp = Blueprint("messages", __name__, template_folder='templates', stati
 
 @messages_bp.route("/discord/explore", methods=["GET", "POST"])
 def explore_index():
-    captcha = verify_captcha()
-    if captcha is not None:
-        return captcha
-
     if request.method == "POST":
         process_preferences()
         return redirect("/discord/explore", 303)
@@ -32,10 +28,6 @@ def explore_index():
 
 @messages_bp.route("/discord/explore/<channel_id>")
 def explore_channel(channel_id: str):
-    captcha = verify_captcha()
-    if captcha is not None:
-        return captcha
-
     if not channel_id.isnumeric():
         return redirect("/discord/explore")
 
