@@ -151,17 +151,17 @@ class YuriApproval(View):
 
 
 
-def get_some_yuri(conn: Connection) -> tuple[str | None, str | None, str | None]:
+def get_some_yuri(conn: Connection) -> tuple[str | None, str | None, str | None, str | None]:
     """Returns relative path to yuri and source link and ticks it"""
 
     top_priority = conn.execute(select(max(yuri_db.c.priority)).where(yuri_db.c.approved == True)).fetchone()
     if not top_priority:
-        return None, None, None
+        return None, None, None, None
 
     top_priority = top_priority[0]
 
     yuri = conn.execute(
-        select(yuri_db.c.id, yuri_db.c.filename, yuri_db.c.source, yuri_db.c.cw).where(
+        select(yuri_db.c.id, yuri_db.c.filename, yuri_db.c.source, yuri_db.c.cw, yuri_db.c.alt).where(
             yuri_db.c.priority == top_priority
         ).where(yuri_db.c.approved == True)
     ).fetchall()
@@ -174,20 +174,20 @@ def get_some_yuri(conn: Connection) -> tuple[str | None, str | None, str | None]
         .values(priority=yuri_db.c.priority - 1)
     )
 
-    return yuri[1], yuri[2], yuri[3]
+    return yuri[1], yuri[2], yuri[3], yuri[4]
 
 
-def get_some_yaoi(conn: Connection) -> tuple[str | None, str | None, str | None]:
+def get_some_yaoi(conn: Connection) -> tuple[str | None, str | None, str | None, str | None]:
     """Returns relative path to yaoi and source link and ticks it"""
 
     top_priority = conn.execute(select(max(yaoi_db.c.priority)).where(yaoi_db.c.approved == True)).fetchone()
     if not top_priority:
-        return None, None, None
+        return None, None, None, None
 
     top_priority = top_priority[0]
 
     yaoi = conn.execute(
-        select(yaoi_db.c.id, yaoi_db.c.filename, yaoi_db.c.source, yaoi_db.c.cw).where(
+        select(yaoi_db.c.id, yaoi_db.c.filename, yaoi_db.c.source, yaoi_db.c.cw, yaoi_db.c.alt).where(
             yaoi_db.c.priority == top_priority
         ).where(yaoi_db.c.approved == True)
     ).fetchall()
@@ -200,4 +200,4 @@ def get_some_yaoi(conn: Connection) -> tuple[str | None, str | None, str | None]
         .values(priority=yaoi_db.c.priority - 1)
     )
 
-    return yaoi[1], yaoi[2], yaoi[3]
+    return yaoi[1], yaoi[2], yaoi[3], yaoi[4]
