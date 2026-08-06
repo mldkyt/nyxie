@@ -24,7 +24,7 @@ from constants import (
 )
 from database import engine
 from util.yaoibot import YaoiBot
-from util.yuri_util import get_some_yaoi, get_some_yuri, respond_with_next_yuri
+from util.yuri_util import get_some_yaoi, get_some_yuri, respond_with_next_yuri, respond_with_next_non_alted_content
 from util.yuribot import YuriBot
 
 DEBUG = False
@@ -165,6 +165,12 @@ class ChannelPosting(Cog):
     @default_permissions(manage_guild=True)
     async def manage_content(self, ctx: ApplicationContext, reapprove: bool = False):
         if not await respond_with_next_yuri(ctx.interaction, reapprove=reapprove):
+            await ctx.respond("All done!", ephemeral=True)
+
+    @slash_command(name="add_alt_texts_to_content")
+    @default_permissions(manage_guild=True)
+    async def manage_content(self, ctx: ApplicationContext):
+        if not await respond_with_next_non_alted_content(ctx.interaction):
             await ctx.respond("All done!", ephemeral=True)
 
 

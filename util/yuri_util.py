@@ -53,6 +53,40 @@ async def respond_with_next_yuri(ctx: Interaction, reapprove: bool = False) -> b
 
     return False
 
+async def respond_with_next_non_alted_content(ctx: Interaction) -> bool:
+    with engine.begin() as c:
+        yuri = c.execute(
+            select(yuri_db.c.id, yuri_db.c.filename)
+            .where(yuri_db.c.alt == "")
+        ).fetchone()
+
+        if yuri is not None:
+            await ctx.respond(view=YuriAskForAltText("yuri", yuri[0]),
+                              embed=Embed(
+                                  title="Add alt text to this yuri using the button below",
+                                  image=f"attachment://{yuri[1].split('/')[-1]}",
+                              ),
+                              file=File(yuri[1]),
+                              ephemeral=True)
+            return True
+
+        yaoi = c.execute(
+            select(yaoi_db.c.id, yaoi_db.c.filename)
+            .where(yaoi_db.c.approved == False)
+        ).fetchone()
+
+        if yaoi is not None:
+            await ctx.respond(view=YuriAskForAltText("yaoi", yaoi[0]),
+                              embed=Embed(
+                                  title="Add alt text to this yaoi using the button below",
+                                  image=f"attachment://{yaoi[1].split('/')[-1]}",
+                              ),
+                              file=File(yaoi[1]),
+                              ephemeral=True)
+            return True
+
+    return False
+
 
 class YuriCWModal(Modal):
     def __init__(self, type: str, id: int):
@@ -107,7 +141,20 @@ class YuriAltTextModal(Modal):
                     .values(alt=new_alt)
                 )
 
-        await interaction.respond("Alt text " + ("updated" if len(new_alt) > 0 else "removed"), ephemeral=True)
+        if not await respond_with_next_non_alted_content(interaction):
+            await interaction.respond("All done!", ephemeral=True)
+
+
+class YuriAskForAltText(View):
+    def __init__(self, type: str, content_id: int):
+        super().__init__()
+
+        self.type = type
+        self.content_id = content_id
+
+    @button(label="Set alt", style=ButtonStyle.secondary)
+    async def set_alt(self, button: Button, interaction: Interaction):
+        await interaction.response.send_modal(YuriAltTextModal(self.type, self.content_id))
 
 
 class YuriApproval(View):
