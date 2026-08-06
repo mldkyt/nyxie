@@ -115,11 +115,3 @@ yaoi_db = Table(
     Column("cw", VARCHAR, nullable=False, server_default=""),
     Column("alt", VARCHAR, nullable=False, server_default=""),
 )
-
-web_codes = Table(
-    "web_codes",
-    md_obj,
-    Column("id", Integer, primary_key=True, autoincrement=True),
-    Column("code", VARCHAR, nullable=False),
-    Column("expires_at", DateTime(timezone=True), nullable=False),
-)
