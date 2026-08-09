@@ -16,6 +16,7 @@ from flask import request, session
 from markdown_it import MarkdownIt
 from sqlalchemy import Connection, delete, insert, select, update
 
+from constants import MEMBER_ROLE
 from database import (
     engine,
     web_authors_list,
@@ -23,7 +24,6 @@ from database import (
     web_messages_attachments_list,
     web_messages_list,
 )
-from web.util import quick_response
 
 
 def _add_author(c: Connection, message: Message):

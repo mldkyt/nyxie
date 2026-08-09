@@ -1,22 +1,27 @@
-import os.path
 from asyncio import gather
 from datetime import datetime
 from random import choice, randint
 
+import html2text
 from discord import (
     ApplicationContext,
     Bot,
+    ButtonStyle,
     Cog,
     Color,
     Embed,
+    EmbedField,
     EmbedFooter,
     File,
     Guild,
+    Interaction,
     TextChannel,
     default_permissions,
     slash_command,
 )
 from discord.ext.tasks import loop
+from discord.ui import Button, View, button
+from sqlalchemy import delete, select, update
 
 from constants import (
     CHANNEL_MEOW,
@@ -25,25 +30,18 @@ from constants import (
     GUILD,
     VERSION,
 )
-from database import engine
-from util.yaoibot import YaoiBot
+from database import alt_text_suggestions, cw_suggestions, engine, yaoi_db, yuri_db
+from util.yaoibot import yaoibot
 from util.yuri_util import (
     get_some_yaoi,
     get_some_yuri,
     respond_with_next_non_alted_content,
     respond_with_next_yuri,
+    respond_with_thing_to_approve,
 )
-from util.yuribot import YuriBot
+from util.yuribot import yuribot
 
 DEBUG = False
-
-yuribot = None
-if os.path.exists("data/yuribot_usercred.secret"):
-    yuribot = YuriBot()
-
-yaoibot = None
-if os.path.exists("data/yaoibot_usercred.secret"):
-    yaoibot = YaoiBot()
 
 
 async def post_yuri(bot: Bot):
@@ -183,6 +181,12 @@ class ChannelPosting(Cog):
     async def add_alt_texts(self, ctx: ApplicationContext):
         if not await respond_with_next_non_alted_content(ctx.interaction):
             await ctx.respond("All done!", ephemeral=True)
+
+    @slash_command(name="approve_fedi_suggestions")
+    @default_permissions(manage_guild=True)
+    async def approve_fedi_suggestions(self, ctx: ApplicationContext):
+        if not await respond_with_thing_to_approve(ctx.interaction):
+            await ctx.respond("Nothing to approve from fedi", ephemeral=True)
 
 
 def setup(bot: Bot):

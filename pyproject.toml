@@ -16,4 +16,5 @@ dependencies = [
     "markdown-it-py>=4.2.0",
     "requests>=2.34.2",
     "mastodon-py>=2.2.1",
+    "html2text>=2025.4.15",
 ]

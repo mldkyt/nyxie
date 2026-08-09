@@ -14,7 +14,6 @@ from discord import (
     Interaction,
 )
 from discord.ext import tasks
-from discord.ext.commands import BucketType, cooldown
 from discord.ui import (
     Button,
     View,
@@ -27,9 +26,10 @@ from constants import (
     VERSION,
 )
 from database import engine
-from util.yuri_util import get_some_yuri, get_some_yaoi
+from util.yuri_util import get_some_yaoi, get_some_yuri
 
 dm_cache = []
+
 
 def generate_meow():
     meow = random.choice(["meow", "nya", "mraow", "mwrmmwra"])
@@ -119,9 +119,10 @@ class MoreYuriView(View):
         )
 
         await interaction.respond(
-            embed=embed, file=File(yuri_filename, spoiler=len(cw.strip()) > 0, description=alt),
+            embed=embed,
+            file=File(yuri_filename, spoiler=len(cw.strip()) > 0, description=alt),
             view=MoreYuriView(more_yuri_spam_btn=self.more_yuri_spam_btn),
-            ephemeral=not self.more_yuri_spam_btn
+            ephemeral=not self.more_yuri_spam_btn,
         )
 
 
@@ -155,10 +156,12 @@ class MoreYaoiView(View):
         )
 
         await interaction.respond(
-            embed=embed, file=File(yaoi_filename, spoiler=len(cw.strip()) > 0, description=alt),
+            embed=embed,
+            file=File(yaoi_filename, spoiler=len(cw.strip()) > 0, description=alt),
             view=MoreYaoiView(more_yaoi_spam_btn=self.more_yaoi_spam_btn),
-            ephemeral=not self.more_yaoi_spam_btn
+            ephemeral=not self.more_yaoi_spam_btn,
         )
+
 
 class UserCommands(discord.Cog):
     def __init__(self, bot: discord.Bot):
@@ -290,7 +293,12 @@ class UserCommands(discord.Cog):
             discord.IntegrationType.guild_install,
         ],
     )
-    async def yuri(self, ctx: discord.ApplicationContext, more_yuri_btn: bool = False, more_yuri_spam_btn: bool = False):
+    async def yuri(
+        self,
+        ctx: discord.ApplicationContext,
+        more_yuri_btn: bool = False,
+        more_yuri_spam_btn: bool = False,
+    ):
         try:
             with engine.begin() as c:
                 yuri_filename, yuri_source, cw, alt = get_some_yuri(c)
@@ -317,12 +325,15 @@ class UserCommands(discord.Cog):
                 )
 
             await ctx.respond(
-                embed=embed, file=File(yuri_filename, spoiler=len(cw.strip()) > 0, description=alt),
-                view=MoreYuriView(more_yuri_spam_btn=more_yuri_spam_btn) if more_yuri_btn else None
+                embed=embed,
+                file=File(yuri_filename, spoiler=len(cw.strip()) > 0, description=alt),
+                view=MoreYuriView(more_yuri_spam_btn=more_yuri_spam_btn)
+                if more_yuri_btn
+                else None,
             )
         except Exception as e:
             capture_exception(e)
-            await ctx.respond(f"Error: {str(e)}", ephemeral=True)
+            await ctx.respond(f"Error: {e!s}", ephemeral=True)
 
     @discord.slash_command(
         name="yaoi",
@@ -332,7 +343,12 @@ class UserCommands(discord.Cog):
             discord.IntegrationType.guild_install,
         ],
     )
-    async def yaol(self, ctx: discord.ApplicationContext, more_yaol_btn: bool = False, more_yaol_spam_btn: bool = False):
+    async def yaol(
+        self,
+        ctx: discord.ApplicationContext,
+        more_yaol_btn: bool = False,
+        more_yaol_spam_btn: bool = False,
+    ):
         try:
             with engine.begin() as c:
                 yaoi_filename, yaoi_source, cw, alt = get_some_yaoi(c)
@@ -359,12 +375,15 @@ class UserCommands(discord.Cog):
                 )
 
             await ctx.respond(
-                embed=embed, file=File(yaoi_filename, spoiler=len(cw.strip()) > 0, description=alt),
-                view=MoreYaoiView(more_yaoi_spam_btn=more_yaol_spam_btn) if more_yaol_btn else None
+                embed=embed,
+                file=File(yaoi_filename, spoiler=len(cw.strip()) > 0, description=alt),
+                view=MoreYaoiView(more_yaoi_spam_btn=more_yaol_spam_btn)
+                if more_yaol_btn
+                else None,
             )
         except Exception as e:
             capture_exception(e)
-            await ctx.respond(f"Error: {str(e)}", ephemeral=True)
+            await ctx.respond(f"Error: {e!s}", ephemeral=True)
 
     @tasks.loop(seconds=5)
     async def handle_queue(self):

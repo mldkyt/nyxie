@@ -14,6 +14,7 @@ from sqlalchemy import (
     StaticPool,
     Table,
     create_engine,
+    null,
 )
 
 if not os.path.exists("data"):
@@ -114,4 +115,29 @@ yaoi_db = Table(
     Column("approved", BOOLEAN, nullable=False, server_default="0"),
     Column("cw", VARCHAR, nullable=False, server_default=""),
     Column("alt", VARCHAR, nullable=False, server_default=""),
+)
+
+alt_text_suggestions = Table(
+    "alt_text_suggestions",
+    md_obj,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("fid", Integer, nullable=False),
+    Column("status_id", VARCHAR, nullable=False),
+    Column("type", VARCHAR, nullable=False),
+    Column("alt", VARCHAR, nullable=False),
+    Column("acct", VARCHAR, nullable=False),
+)
+
+cw_suggestions = Table(
+    "cw_suggestions",
+    md_obj,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("fid", Integer, nullable=False),
+    Column("status_id", VARCHAR, nullable=False),
+    Column("type", VARCHAR, nullable=False),
+    Column("cw", VARCHAR, nullable=False),
+)
+
+acknowledged_notifications = Table(
+    "acknowledged_notifications", md_obj, Column("id", VARCHAR, primary_key=True)
 )
