@@ -7,6 +7,7 @@ class YaoiBot:
     def __init__(self):
         print("Yaoibot initialized")
         self.mastodon_yaoibot = Mastodon(access_token="data/yaoibot_usercred.secret")
+        self.me = self.mastodon_yaoibot.me()
 
     def also_post_on_fedi(self, filename: str, source: str, cw: str):
         print("Posting yaoi")

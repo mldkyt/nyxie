@@ -6,7 +6,14 @@ from sentry_sdk import capture_exception
 from sqlalchemy import Connection, insert, select
 
 from cogs.channel_posting import yuribot
-from database import acknowledged_notifications, alt_text_suggestions, engine, yuri_db
+from database import (
+    acknowledged_notifications,
+    alt_text_suggestions,
+    engine,
+    yaoi_db,
+    yuri_db,
+)
+from util.yaoibot import yaoibot
 
 
 def get_raw_alt_text(content: str):
@@ -34,6 +41,25 @@ def get_yuri_source(c: Connection, post_id: str):
         return None
 
     return yuri[0]
+
+
+def get_yaoi_source(c: Connection, post_id: str):
+    if yaoibot is None:
+        raise ValueError("This is not supposed to happen")
+
+    yaoi_post = yaoibot.mastodon_yaoibot.status(post_id)
+    link = (  # Cursed way to find source link
+        html2text.html2text(yaoi_post.content)
+        .splitlines()[1]
+        .split("(")[1]
+        .strip()[:-1]
+    )
+
+    yaoi = c.execute(select(yaoi_db.c.id).where(yaoi_db.c.source == link)).fetchone()
+    if yaoi is None:
+        return None
+
+    return yaoi[0]
 
 
 class MastodonNotifications(Cog):
@@ -80,6 +106,9 @@ class MastodonNotifications(Cog):
                         alt_text = get_raw_alt_text(notification.status.content)
                         yuri = get_yuri_source(c, notification.status.in_reply_to_id)
 
+                        if yuri is None:
+                            continue
+
                         # Alt text suggestion
                         c.execute(
                             insert(alt_text_suggestions).values(
@@ -111,8 +140,70 @@ class MastodonNotifications(Cog):
 
     @loop(minutes=1)
     async def acknowledge_yaoi_notifications(self):
-        # TODO: Do this for yaoi content too
-        pass
+        print("Running notifications for yaoibot")
+        if yaoibot is None:
+            return
+
+        with engine.begin() as c:
+            for notification in yaoibot.mastodon_yaoibot.notifications(
+                types=["mention"]
+            ):
+                try:
+                    if not isinstance(notification, Notification):
+                        print("Notification is not notification")
+                        continue
+                    if notification.status is None:
+                        continue
+                    if notification.status.in_reply_to_id is None:
+                        continue
+                    if notification.status.in_reply_to_account_id != yaoibot.me.id:
+                        continue
+                    # Read notification check
+                    if (
+                        c.execute(
+                            select(acknowledged_notifications).where(
+                                acknowledged_notifications.c.id == str(notification.id)
+                            )
+                        ).fetchone()
+                        is not None
+                    ):
+                        continue
+
+                    if notification.status.spoiler_text == "ALT":
+                        alt_text = get_raw_alt_text(notification.status.content)
+                        yaoi = get_yaoi_source(c, notification.status.in_reply_to_id)
+
+                        if yaoi is None:
+                            continue
+
+                        # Alt text suggestion
+                        c.execute(
+                            insert(alt_text_suggestions).values(
+                                fid=yaoi,
+                                status_id=notification.status.in_reply_to_id,
+                                type="yaoi",
+                                alt=alt_text,
+                                acct=notification.account.acct,
+                            )
+                        )
+
+                        # Notify user the suggestion was accepted
+                        yaoibot.mastodon_yaoibot.status_post(
+                            f"@{notification.account.acct} Your alt text suggestion was accepted and is now waiting approval from mldkyt.",
+                            in_reply_to_id=notification.status.id,
+                            visibility="direct",
+                        )
+
+                        c.execute(
+                            insert(acknowledged_notifications).values(
+                                id=str(notification.id)
+                            )
+                        )
+                    if notification.status.spoiler_text == "CW":
+                        # TODO: CW
+                        pass
+                except Exception as e:
+                    capture_exception(e)
 
 
 def setup(bot: Bot):
