@@ -3,7 +3,7 @@ import random
 
 from discord import ButtonStyle, Embed, EmbedField, File, Interaction
 from discord.ui import Button, InputText, Modal, View, button
-from sqlalchemy import Connection, delete, select, update
+from sqlalchemy import Connection, delete, desc, select, update
 from sqlalchemy.sql.functions import max
 
 from database import alt_text_suggestions, cw_suggestions, engine, yaoi_db, yuri_db
@@ -418,6 +418,7 @@ class ApproveAltText(View):
             yuribot.mastodon_yuribot.status_update(
                 status,
                 status.content,
+                spoiler_text=status.spoiler_text,
                 media_attributes=[
                     yuribot.mastodon_yuribot.generate_media_edit_attributes(
                         status.media_attachments[0].id,
@@ -498,7 +499,8 @@ class ApproveCW(View):
                 spoiler_text=cw[3],
                 media_attributes=[
                     yuribot.mastodon_yuribot.generate_media_edit_attributes(
-                        id=status.media_attachments[0].id
+                        id=status.media_attachments[0].id,
+                        description=status.media_attachments[0].description,
                     )
                 ],
             )
