@@ -6,10 +6,38 @@ from discord.ext.tasks import loop
 from markdown_it import MarkdownIt
 from mastodon.Mastodon import Notification
 from sentry_sdk import capture_exception
-from sqlalchemy import insert, select
+from six import i
+from sqlalchemy import Connection, insert, select
 
 from cogs.channel_posting import yuribot
 from database import acknowledged_notifications, alt_text_suggestions, engine, yuri_db
+
+
+def get_raw_alt_text(content: str):
+    alt_text = html2text.html2text(content).strip()
+    while alt_text.startswith("[@"):  # Cursed way to remove mentions
+        alt_text = " ".join(alt_text.split(" ")[1:])
+
+    return alt_text
+
+
+def get_yuri_source(c: Connection, post_id: str):
+    if yuribot is None:
+        raise ValueError("This is not supposed to happen")
+
+    yuri_post = yuribot.mastodon_yuribot.status(post_id)
+    link = (  # Cursed way to find source link
+        html2text.html2text(yuri_post.content)
+        .splitlines()[1]
+        .split("(")[1]
+        .strip()[:-1]
+    )
+
+    yuri = c.execute(select(yuri_db.c.id).where(yuri_db.c.source == link)).fetchone()
+    if yuri is None:
+        return None
+
+    return yuri[0]
 
 
 class MastodonNotifications(Cog):
@@ -53,31 +81,8 @@ class MastodonNotifications(Cog):
                         continue
 
                     if notification.status.spoiler_text == "ALT":
-                        # Find the alt text
-                        alt_text = html2text.html2text(
-                            notification.status.content
-                        ).strip()
-                        while alt_text.startswith(
-                            "[@"
-                        ):  # Cursed way to remove mentions
-                            alt_text = " ".join(alt_text.split(" ")[1:])
-
-                        # Find the yuri post source URL and the database entry
-                        yuri_post = yuribot.mastodon_yuribot.status(
-                            notification.status.in_reply_to_id
-                        )
-                        link = (  # Cursed way to find source link
-                            html2text.html2text(yuri_post.content)
-                            .splitlines()[1]
-                            .split("(")[1]
-                            .strip()[:-1]
-                        )
-
-                        yuri = c.execute(
-                            select(yuri_db.c.id).where(yuri_db.c.source == link)
-                        ).fetchone()
-                        if yuri is None:
-                            continue
+                        alt_text = get_raw_alt_text(notification.status.content)
+                        yuri = get_yuri_source(c, notification.status.in_reply_to_id)
 
                         # Alt text suggestion
                         c.execute(
@@ -102,7 +107,6 @@ class MastodonNotifications(Cog):
                                 id=str(notification.id)
                             )
                         )
-
                     if notification.status.spoiler_text == "CW":
                         # TODO: CW
                         pass
