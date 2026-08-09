@@ -37,6 +37,7 @@ from util.yuri_util import (
     get_some_yuri,
     respond_with_next_non_alted_content,
     respond_with_next_yuri,
+    respond_with_thing_to_approve,
 )
 from util.yuribot import yuribot
 
@@ -151,149 +152,6 @@ async def post_meow(bot: Bot):
     await chan.send(generate_meow() + " :3")
 
 
-class ApproveAltText(View):
-    def __init__(self, id: int):
-        super().__init__()
-        self.alt_text_id = id
-
-    @button(label="Approve", style=ButtonStyle.green)
-    async def approve(self, button: Button, interaction: Interaction):
-        with engine.begin() as c:
-            alt_text = c.execute(
-                select(
-                    alt_text_suggestions.c.fid,
-                    alt_text_suggestions.c.status_id,
-                    alt_text_suggestions.c.type,
-                    alt_text_suggestions.c.alt,
-                    alt_text_suggestions.c.acct,
-                ).where(alt_text_suggestions.c.id == self.alt_text_id)
-            ).fetchone()
-
-        if alt_text is None:
-            await interaction.respond("what", ephemeral=True)
-            return
-
-        # Update status
-        if yuribot is not None:
-            status = yuribot.mastodon_yuribot.status(alt_text[1])
-            yuribot.mastodon_yuribot.status_update(
-                status,
-                status.content,
-                media_attributes=[
-                    yuribot.mastodon_yuribot.generate_media_edit_attributes(
-                        status.media_attachments[0].id,
-                        description=f"{alt_text[3]}\n\nAlt text suggested by {alt_text[4]} and approved by mldkyt.",
-                    )
-                ],
-            )
-
-        # Update the record
-        with engine.begin() as c:
-            if alt_text[2] == "yuri":
-                c.execute(
-                    update(yuri_db)
-                    .values(
-                        alt=f"{alt_text[3]}\n\nAlt text suggested by {alt_text[4]} and approved by mldkyt."
-                    )
-                    .where(yuri_db.c.id == alt_text[0])
-                )
-            elif alt_text[2] == "yaoi":
-                c.execute(
-                    update(yaoi_db)
-                    .values(
-                        alt=f"{alt_text[3]}\n\nAlt text suggested by {alt_text[4]} and approved by mldkyt."
-                    )
-                    .where(yaoi_db.c.id == alt_text[0])
-                )
-
-            # Delete other suggestions
-            c.execute(
-                delete(alt_text_suggestions).where(
-                    (alt_text_suggestions.c.fid == alt_text[0])
-                    & (alt_text_suggestions.c.type == alt_text[2])
-                )
-            )
-
-        self.disable_all_items()
-        await interaction.edit(view=self)
-
-    @button(label="Decline", style=ButtonStyle.red)
-    async def decline(self, button: Button, interaction: Interaction):
-        with engine.begin() as c:
-            c.execute(
-                delete(
-                    alt_text_suggestions,
-                ).where(alt_text_suggestions.c.id == self.alt_text_id)
-            )
-
-        self.disable_all_items()
-
-
-class ApproveCW(View):
-    def __init__(self, id: int):
-        super().__init__()
-        self.cw_id = id
-
-    @button(label="Approve", style=ButtonStyle.green)
-    async def approve(self, button: Button, interaction: Interaction):
-        with engine.begin() as c:
-            cw = c.execute(
-                select(
-                    cw_suggestions.c.fid,
-                    cw_suggestions.c.status_id,
-                    cw_suggestions.c.type,
-                    cw_suggestions.c.cw,
-                ).where(cw_suggestions.c.id == self.cw_id)
-            ).fetchone()
-
-        if cw is None:
-            await interaction.respond("what", ephemeral=True)
-            return
-
-        # Update status
-        if yuribot is not None:
-            status = yuribot.mastodon_yuribot.status(cw[1])
-            yuribot.mastodon_yuribot.status_update(
-                status,
-                status.content,
-                spoiler_text=cw[3],
-                media_attributes=[
-                    yuribot.mastodon_yuribot.generate_media_edit_attributes(
-                        id=status.media_attachments[0].id
-                    )
-                ],
-            )
-
-        # Update the record
-        with engine.begin() as c:
-            if cw[2] == "yuri":
-                c.execute(update(yuri_db).values(cw=cw[3]).where(yuri_db.c.id == cw[0]))
-            elif cw[2] == "yaoi":
-                c.execute(update(yaoi_db).values(cw=cw[3]).where(yaoi_db.c.id == cw[0]))
-
-            # Delete other suggestions
-            c.execute(
-                delete(cw_suggestions).where(
-                    (cw_suggestions.c.fid == cw[0]) & (cw_suggestions.c.type == cw[2])
-                )
-            )
-
-        self.disable_all_items()
-        await interaction.edit(view=self)
-
-    @button(label="Decline", style=ButtonStyle.red)
-    async def decline(self, button: Button, interaction: Interaction):
-        with engine.begin() as c:
-            c.execute(
-                delete(
-                    cw_suggestions,
-                ).where(cw_suggestions.c.id == self.cw_id)
-            )
-
-        self.disable_all_items()
-        await interaction.edit(view=self)
-
-
 class ChannelPosting(Cog):
     def __init__(self, bot: Bot):
         super().__init__()
@@ -324,103 +182,11 @@ class ChannelPosting(Cog):
         if not await respond_with_next_non_alted_content(ctx.interaction):
             await ctx.respond("All done!", ephemeral=True)
 
-    @slash_command(name="approve_alt_text")
+    @slash_command(name="approve_fedi_suggestions")
     @default_permissions(manage_guild=True)
-    async def approve_alt_text(self, ctx: ApplicationContext):
-        with engine.begin() as c:
-            post = c.execute(
-                select(
-                    alt_text_suggestions.c.id,
-                    alt_text_suggestions.c.type,
-                    alt_text_suggestions.c.alt,
-                    alt_text_suggestions.c.acct,
-                    alt_text_suggestions.c.fid,
-                )
-            ).fetchone()
-            if post is None:
-                await ctx.respond("No alt text posts to approve", ephemeral=True)
-                return
-
-            source = None
-            if post[1] == "yaoi":
-                source = c.execute(
-                    select(yaoi_db).where(yaoi_db.c.id == post[4])
-                ).fetchone()
-            elif post[1] == "yuri":
-                source = c.execute(
-                    select(yuri_db).where(yuri_db.c.id == post[4])
-                ).fetchone()
-
-            if source is None:
-                c.execute(
-                    delete(alt_text_suggestions).where(
-                        alt_text_suggestions.c.id == post[0]
-                    )
-                )
-                await ctx.respond("Please re-run this command...", ephemeral=True)
-                return
-
-            source = source[0]
-
-        embed = Embed(
-            fields=[
-                EmbedField("source", source),
-                EmbedField("alt text", post[2]),
-                EmbedField("suggested by", post[3]),
-            ]
-        )
-
-        await ctx.respond(
-            "Please approve the following alt text:",
-            embed=embed,
-            view=ApproveAltText(post[0]),
-        )
-
-    @slash_command(name="approve_cw")
-    @default_permissions(manage_guild=True)
-    async def approve_cw(self, ctx: ApplicationContext):
-        with engine.begin() as c:
-            cw = c.execute(
-                select(
-                    cw_suggestions.c.id,
-                    cw_suggestions.c.type,
-                    cw_suggestions.c.cw,
-                    cw_suggestions.c.fid,
-                )
-            ).fetchone()
-            if cw is None:
-                await ctx.respond("No CWs to approve", ephemeral=True)
-                return
-
-            source = None
-            if cw[1] == "yaoi":
-                source = c.execute(
-                    select(yaoi_db.c.source).where(yaoi_db.c.id == cw[3])
-                ).fetchone()
-            elif cw[1] == "yuri":
-                source = c.execute(
-                    select(yuri_db.c.source).where(yuri_db.c.id == cw[3])
-                ).fetchone()
-
-            if source is None:
-                c.execute(delete(cw_suggestions).where(cw_suggestions.c.id == cw[0]))
-                await ctx.respond("Please re-run this command...", ephemeral=True)
-                return
-
-            source = source[0]
-
-        embed = Embed(
-            fields=[
-                EmbedField("source", source),
-                EmbedField("CW", cw[2]),
-            ]
-        )
-
-        await ctx.respond(
-            "Please approve the following CW:",
-            embed=embed,
-            view=ApproveCW(cw[0]),
-        )
+    async def approve_fedi_suggestions(self, ctx: ApplicationContext):
+        if not await respond_with_thing_to_approve(ctx.interaction):
+            await ctx.respond("Nothing to approve from fedi", ephemeral=True)
 
 
 def setup(bot: Bot):
