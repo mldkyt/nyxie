@@ -9,6 +9,7 @@ from cogs.channel_posting import yuribot
 from database import (
     acknowledged_notifications,
     alt_text_suggestions,
+    cw_suggestions,
     engine,
     yaoi_db,
     yuri_db,
@@ -16,7 +17,7 @@ from database import (
 from util.yaoibot import yaoibot
 
 
-def get_raw_alt_text(content: str):
+def get_raw_text(content: str):
     alt_text = html2text.html2text(content).strip()
     while alt_text.startswith("[@"):  # Cursed way to remove mentions
         alt_text = " ".join(alt_text.split(" ")[1:])
@@ -73,9 +74,9 @@ class MastodonNotifications(Cog):
 
     @loop(minutes=1)
     async def acknowledge_yuri_notifications(self):
-        print("Running notifications for yuribot")
         if yuribot is None:
             return
+        print("Running notifications for yuribot")
 
         with engine.begin() as c:
             for notification in yuribot.mastodon_yuribot.notifications(
@@ -83,7 +84,7 @@ class MastodonNotifications(Cog):
             ):
                 try:
                     if not isinstance(notification, Notification):
-                        print("Notification is not notification")
+                        print("Notification is not notification", notification)
                         continue
                     if notification.status is None:
                         continue
@@ -103,7 +104,7 @@ class MastodonNotifications(Cog):
                         continue
 
                     if notification.status.spoiler_text == "ALT":
-                        alt_text = get_raw_alt_text(notification.status.content)
+                        alt_text = get_raw_text(notification.status.content)
                         yuri = get_yuri_source(c, notification.status.in_reply_to_id)
 
                         if yuri is None:
@@ -122,7 +123,7 @@ class MastodonNotifications(Cog):
 
                         # Notify user the suggestion was accepted
                         yuribot.mastodon_yuribot.status_post(
-                            f"@{notification.account.acct} Your alt text suggestion was accepted and is now waiting approval from mldkyt.",
+                            f"@{notification.account.acct} Your alt text suggestion is now waiting approval from mldkyt.",
                             in_reply_to_id=notification.status.id,
                             visibility="direct",
                         )
@@ -133,16 +134,42 @@ class MastodonNotifications(Cog):
                             )
                         )
                     if notification.status.spoiler_text == "CW":
-                        # TODO: CW
-                        pass
+                        cw = get_raw_text(notification.status.content)
+                        yuri = get_yuri_source(c, notification.status.in_reply_to_id)
+
+                        if yuri is None:
+                            continue
+
+                        # Alt text suggestion
+                        c.execute(
+                            insert(cw_suggestions).values(
+                                fid=yuri,
+                                status_id=notification.status.in_reply_to_id,
+                                type="yuri",
+                                cw=cw,
+                            )
+                        )
+
+                        # Notify user the suggestion was accepted
+                        yuribot.mastodon_yuribot.status_post(
+                            f"@{notification.account.acct} Your CW suggestion is now waiting approval from mldkyt.",
+                            in_reply_to_id=notification.status.id,
+                            visibility="direct",
+                        )
+
+                        c.execute(
+                            insert(acknowledged_notifications).values(
+                                id=str(notification.id)
+                            )
+                        )
                 except Exception as e:
                     capture_exception(e)
 
     @loop(minutes=1)
     async def acknowledge_yaoi_notifications(self):
-        print("Running notifications for yaoibot")
         if yaoibot is None:
             return
+        print("Running notifications for yaoibot")
 
         with engine.begin() as c:
             for notification in yaoibot.mastodon_yaoibot.notifications(
@@ -170,7 +197,7 @@ class MastodonNotifications(Cog):
                         continue
 
                     if notification.status.spoiler_text == "ALT":
-                        alt_text = get_raw_alt_text(notification.status.content)
+                        alt_text = get_raw_text(notification.status.content)
                         yaoi = get_yaoi_source(c, notification.status.in_reply_to_id)
 
                         if yaoi is None:
@@ -189,7 +216,7 @@ class MastodonNotifications(Cog):
 
                         # Notify user the suggestion was accepted
                         yaoibot.mastodon_yaoibot.status_post(
-                            f"@{notification.account.acct} Your alt text suggestion was accepted and is now waiting approval from mldkyt.",
+                            f"@{notification.account.acct} Your alt text suggestion is now waiting approval from mldkyt.",
                             in_reply_to_id=notification.status.id,
                             visibility="direct",
                         )
@@ -200,8 +227,35 @@ class MastodonNotifications(Cog):
                             )
                         )
                     if notification.status.spoiler_text == "CW":
-                        # TODO: CW
-                        pass
+                        cw = get_raw_text(notification.status.content)
+                        yaoi = get_yaoi_source(c, notification.status.in_reply_to_id)
+
+                        if yaoi is None:
+                            continue
+
+                        # Alt text suggestion
+                        c.execute(
+                            insert(cw_suggestions).values(
+                                fid=yaoi,
+                                status_id=notification.status.in_reply_to_id,
+                                type="yaoi",
+                                cw=cw,
+                                acct=notification.account.acct,
+                            )
+                        )
+
+                        # Notify user the suggestion was accepted
+                        yaoibot.mastodon_yaoibot.status_post(
+                            f"@{notification.account.acct} Your CW suggestion is now waiting approval from mldkyt.",
+                            in_reply_to_id=notification.status.id,
+                            visibility="direct",
+                        )
+
+                        c.execute(
+                            insert(acknowledged_notifications).values(
+                                id=str(notification.id)
+                            )
+                        )
                 except Exception as e:
                     capture_exception(e)
 
