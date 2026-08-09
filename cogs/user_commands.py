@@ -14,7 +14,6 @@ from discord import (
     Interaction,
 )
 from discord.ext import tasks
-from discord.ext.commands import BucketType, cooldown
 from discord.ui import (
     Button,
     View,
@@ -334,7 +333,7 @@ class UserCommands(discord.Cog):
             )
         except Exception as e:
             capture_exception(e)
-            await ctx.respond(f"Error: {str(e)}", ephemeral=True)
+            await ctx.respond(f"Error: {e!s}", ephemeral=True)
 
     @discord.slash_command(
         name="yaoi",
@@ -384,7 +383,7 @@ class UserCommands(discord.Cog):
             )
         except Exception as e:
             capture_exception(e)
-            await ctx.respond(f"Error: {str(e)}", ephemeral=True)
+            await ctx.respond(f"Error: {e!s}", ephemeral=True)
 
     @tasks.loop(seconds=5)
     async def handle_queue(self):

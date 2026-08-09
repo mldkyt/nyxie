@@ -1,3 +1,5 @@
+import os
+
 from mastodon import Mastodon
 
 
@@ -16,3 +18,8 @@ class YaoiBot:
             spoiler_text=cw.strip(),
             visibility="unlisted",
         )
+
+
+yaoibot = None
+if os.path.exists("data/yaoibot_usercred.secret"):
+    yaoibot = YaoiBot()

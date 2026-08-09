@@ -1,3 +1,5 @@
+import os
+
 from mastodon import Mastodon
 
 
@@ -17,3 +19,8 @@ class YuriBot:
             spoiler_text=cw.strip(),
             visibility="unlisted",
         )
+
+
+yuribot = None
+if os.path.exists("data/yuribot_usercred.secret"):
+    yuribot = YuriBot()

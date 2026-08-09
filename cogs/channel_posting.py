@@ -32,24 +32,16 @@ from constants import (
     VERSION,
 )
 from database import alt_text_suggestions, engine, yaoi_db, yuri_db
-from util.yaoibot import YaoiBot
+from util.yaoibot import yaoibot
 from util.yuri_util import (
     get_some_yaoi,
     get_some_yuri,
     respond_with_next_non_alted_content,
     respond_with_next_yuri,
 )
-from util.yuribot import YuriBot
+from util.yuribot import yuribot
 
 DEBUG = False
-
-yuribot = None
-if os.path.exists("data/yuribot_usercred.secret"):
-    yuribot = YuriBot()
-
-yaoibot = None
-if os.path.exists("data/yaoibot_usercred.secret"):
-    yaoibot = YaoiBot()
 
 
 async def post_yuri(bot: Bot):
