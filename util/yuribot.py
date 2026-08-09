@@ -5,6 +5,7 @@ class YuriBot:
     def __init__(self):
         print("Yuribot initialized")
         self.mastodon_yuribot = Mastodon(access_token="data/yuribot_usercred.secret")
+        self.me = self.mastodon_yuribot.me()
 
     def also_post_on_fedi(self, filename: str, source: str, cw: str):
         print("Posting yuri")
