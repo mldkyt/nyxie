@@ -87,8 +87,8 @@ class MastodonNotifications(Cog):
                         # Alt text suggestion
                         c.execute(
                             insert(alt_text_suggestions).values(
-                                fid=yuri[0],
-                                status_id=yuri_post.id,
+                                fid=yuri,
+                                status_id=notification.status.in_reply_to_id,
                                 type="yuri",
                                 alt=alt_text,
                                 acct=notification.account.acct,
