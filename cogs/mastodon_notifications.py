@@ -1,12 +1,8 @@
-from html.parser import HTMLParser
-
 import html2text
 from discord import Bot, Cog
 from discord.ext.tasks import loop
-from markdown_it import MarkdownIt
 from mastodon.Mastodon import Notification
 from sentry_sdk import capture_exception
-from six import i
 from sqlalchemy import Connection, insert, select
 
 from cogs.channel_posting import yuribot
