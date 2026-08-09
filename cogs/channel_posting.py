@@ -187,7 +187,7 @@ class ApproveAltText(View):
             status = yuribot.mastodon_yuribot.status(alt_text[1])
             yuribot.mastodon_yuribot.status_update(
                 status,
-                html2text.html2text(status.content),
+                html2text.html2text(status.content).replace("\n\n", "\n"),
                 media_attributes=[
                     yuribot.mastodon_yuribot.generate_media_edit_attributes(
                         status.media_attachments[0].id,
