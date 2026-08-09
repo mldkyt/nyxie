@@ -1,5 +1,6 @@
 import os
 import random
+from curses.ascii import alt
 
 from discord import ButtonStyle, Embed, EmbedField, File, Interaction
 from discord.ui import Button, InputText, Modal, View, button
@@ -7,6 +8,7 @@ from sqlalchemy import Connection, delete, desc, select, update
 from sqlalchemy.sql.functions import max
 
 from database import alt_text_suggestions, cw_suggestions, engine, yaoi_db, yuri_db
+from util.yaoibot import yaoibot
 from util.yuribot import yuribot
 
 
@@ -178,12 +180,16 @@ async def respond_with_thing_to_approve(ctx: Interaction) -> bool:
 
 
 class YuriCWModal(Modal):
-    def __init__(self, type: str, id: int):
+    def __init__(
+        self, type: str, id: int, prefill: str = "", status_id: str | None = None
+    ):
         super().__init__(title=f"CW this {type}")
         self.type = type
         self.content_id = id
         self.cw = InputText(label="CW", placeholder="suggestive")
+        self.cw.value = prefill
         self.add_item(self.cw)
+        self.status_id = status_id
 
     async def callback(self, interaction: Interaction):
         new_cw = self.cw.value or ""
@@ -202,20 +208,60 @@ class YuriCWModal(Modal):
                     .values(cw=new_cw)
                 )
 
+        if self.status_id is not None:
+            self.update_status()
+            await interaction.respond("Custom CW set", ephemeral=True)
+            return
+
         await interaction.respond(
             "CW " + ("updated" if len(new_cw) > 0 else "removed"), ephemeral=True
         )
 
+    def update_status(self):
+        if self.status_id is None:
+            return
+
+        if self.type == "yuri" and yuribot is not None:
+            status = yuribot.mastodon_yuribot.status(self.status_id)
+            yuribot.mastodon_yuribot.status_update(
+                status,
+                status.content,
+                spoiler_text=self.cw.value,
+                media_attributes=[
+                    yuribot.mastodon_yuribot.generate_media_edit_attributes(
+                        status.media_attachments[0].id,
+                        description=status.media_attachments[0].description,
+                    )
+                ],
+            )
+        elif self.type == "yaoi" and yaoibot is not None:
+            status = yaoibot.mastodon_yaoibot.status(self.status_id)
+            yaoibot.mastodon_yaoibot.status_update(
+                status,
+                status.content,
+                spoiler_text=self.cw.value,
+                media_attributes=[
+                    yaoibot.mastodon_yaoibot.generate_media_edit_attributes(
+                        status.media_attachments[0].id,
+                        description=status.media_attachments[0].description,
+                    )
+                ],
+            )
+
 
 class YuriAltTextModal(Modal):
-    def __init__(self, type: str, id: int):
+    def __init__(
+        self, type: str, id: int, prefill: str = "", status_id: str | None = None
+    ):
         super().__init__(title=f"Add alt text to this {type}")
         self.type = type
         self.content_id = id
         self.alt = InputText(
             label="Alt text", placeholder="2 girls making out sloppy style no socks"
         )
+        self.alt.value = prefill
         self.add_item(self.alt)
+        self.status_id = status_id
 
     async def callback(self, interaction: Interaction):
         new_alt = self.alt.value or ""
@@ -234,8 +280,44 @@ class YuriAltTextModal(Modal):
                     .values(alt=new_alt)
                 )
 
+        if self.status_id is not None:
+            self.update_status()
+            await interaction.respond("Custom alt text added.", ephemeral=True)
+            return
+
         if not await respond_with_next_non_alted_content(interaction):
             await interaction.respond("All done!", ephemeral=True)
+
+    def update_status(self):
+        if self.status_id is None:
+            return
+
+        if self.type == "yuri" and yuribot is not None:
+            status = yuribot.mastodon_yuribot.status(self.status_id)
+            yuribot.mastodon_yuribot.status_update(
+                status,
+                status.content,
+                spoiler_text=status.spoiler_text,
+                media_attributes=[
+                    yuribot.mastodon_yuribot.generate_media_edit_attributes(
+                        status.media_attachments[0].id,
+                        description=self.alt.value,
+                    )
+                ],
+            )
+        elif self.type == "yaoi" and yaoibot is not None:
+            status = yaoibot.mastodon_yaoibot.status(self.status_id)
+            yaoibot.mastodon_yaoibot.status_update(
+                status,
+                status.content,
+                spoiler_text=status.spoiler_text,
+                media_attributes=[
+                    yaoibot.mastodon_yaoibot.generate_media_edit_attributes(
+                        status.media_attachments[0].id,
+                        description=self.alt.value,
+                    )
+                ],
+            )
 
 
 class YuriAskForAltText(View):
@@ -467,6 +549,39 @@ class ApproveAltText(View):
             )
 
         self.disable_all_items()
+        await interaction.edit(view=self)
+
+    @button(label="Decline and set custom alt", style=ButtonStyle.secondary)
+    async def set_alt(self, button: Button, interaction: Interaction):
+        with engine.begin() as c:
+            alt_text = c.execute(
+                select(
+                    alt_text_suggestions.c.fid,
+                    alt_text_suggestions.c.type,
+                    alt_text_suggestions.c.alt,
+                    alt_text_suggestions.c.acct,
+                    alt_text_suggestions.c.status_id,
+                ).where(alt_text_suggestions.c.id == self.alt_text_id)
+            ).fetchone()
+
+            if alt_text is None:
+                await interaction.respond("what", ephemeral=True)
+                return
+
+            c.execute(
+                delete(
+                    alt_text_suggestions,
+                ).where(alt_text_suggestions.c.id == self.alt_text_id)
+            )
+
+        await interaction.response.send_modal(
+            YuriAltTextModal(
+                alt_text[1],
+                alt_text[0],
+                prefill=f"{alt_text[3]}\n\nAlt text suggested by {alt_text[4]} and approved by mldkyt.",
+                status_id=alt_text[4],
+            )
+        )
 
 
 class ApproveCW(View):
@@ -533,3 +648,29 @@ class ApproveCW(View):
 
         self.disable_all_items()
         await interaction.edit(view=self)
+
+    @button(label="Decline and set custom CW", style=ButtonStyle.secondary)
+    async def set_cw(self, button: Button, interaction: Interaction):
+        with engine.begin() as c:
+            cw = c.execute(
+                select(
+                    cw_suggestions.c.fid,
+                    cw_suggestions.c.type,
+                    cw_suggestions.c.cw,
+                    cw_suggestions.c.status_id,
+                ).where(cw_suggestions.c.id == self.cw_id)
+            ).fetchone()
+
+            if cw is None:
+                await interaction.respond("what", ephemeral=True)
+                return
+
+            c.execute(
+                delete(
+                    alt_text_suggestions,
+                ).where(alt_text_suggestions.c.id == self.cw_id)
+            )
+
+        await interaction.response.send_modal(
+            YuriCWModal(cw[1], cw[0], prefill=cw[2], status_id=cw[3])
+        )
