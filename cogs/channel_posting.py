@@ -4,6 +4,7 @@ from datetime import datetime
 from random import choice, randint
 
 from discord import (
+    ApplicationContext,
     Bot,
     Cog,
     Color,
@@ -11,7 +12,9 @@ from discord import (
     EmbedFooter,
     File,
     Guild,
-    TextChannel, slash_command, default_permissions, ApplicationContext,
+    TextChannel,
+    default_permissions,
+    slash_command,
 )
 from discord.ext.tasks import loop
 
@@ -24,7 +27,12 @@ from constants import (
 )
 from database import engine
 from util.yaoibot import YaoiBot
-from util.yuri_util import get_some_yaoi, get_some_yuri, respond_with_next_yuri, respond_with_next_non_alted_content
+from util.yuri_util import (
+    get_some_yaoi,
+    get_some_yuri,
+    respond_with_next_non_alted_content,
+    respond_with_next_yuri,
+)
 from util.yuribot import YuriBot
 
 DEBUG = False
@@ -36,6 +44,7 @@ if os.path.exists("data/yuribot_usercred.secret"):
 yaoibot = None
 if os.path.exists("data/yaoibot_usercred.secret"):
     yaoibot = YaoiBot()
+
 
 async def post_yuri(bot: Bot):
     guild = bot.get_guild(int(GUILD))
@@ -70,7 +79,10 @@ async def post_yuri(bot: Bot):
             color=Color.nitro_pink(),
         )
 
-    await chan.send(embed=embed, file=File(yuri_filename, spoiler=len(cw.strip()) > 0, description=alt))
+    await chan.send(
+        embed=embed,
+        file=File(yuri_filename, spoiler=len(cw.strip()) > 0, description=alt),
+    )
 
     if yuribot is not None:
         yuribot.also_post_on_fedi(yuri_filename, yuri_source, cw)
@@ -107,11 +119,10 @@ async def post_yaoi(bot: Bot):
             color=Color.nitro_pink(),
         )
 
-    await chan.send(embed=embed, file=File(
-        yaoi_filename,
-        spoiler=len(cw.strip()) > 0,
-        description=alt
-    ))
+    await chan.send(
+        embed=embed,
+        file=File(yaoi_filename, spoiler=len(cw.strip()) > 0, description=alt),
+    )
 
     if yaoibot is not None:
         yaoibot.also_post_on_fedi(yaoi_filename, yaoi_source, cw)
@@ -158,7 +169,7 @@ class ChannelPosting(Cog):
 
         if (now.hour == 0 and now.minute == 0) or DEBUG:
             await post_meow(self.bot)
-        if (now.minute % 30 == 0) or DEBUG:
+        if now.minute == 0 or DEBUG:
             await gather(post_yuri(self.bot), post_yaoi(self.bot))
 
     @slash_command(name="approve_content")
@@ -169,7 +180,7 @@ class ChannelPosting(Cog):
 
     @slash_command(name="add_alt_texts_to_content")
     @default_permissions(manage_guild=True)
-    async def manage_content(self, ctx: ApplicationContext):
+    async def add_alt_texts(self, ctx: ApplicationContext):
         if not await respond_with_next_non_alted_content(ctx.interaction):
             await ctx.respond("All done!", ephemeral=True)
 
