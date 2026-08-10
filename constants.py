@@ -19,6 +19,7 @@ CHANNEL_MEOW = os.getenv("CHANNEL_MEOW")
 
 CHANNEL_MODERATION = os.getenv("CHANNEL_MODERATION")
 CHANNEL_SUGGESTIONS = os.getenv("CHANNEL_SUGGESTIONS")
+CHANNEL_GIT = os.getenv("CHANNEL_GIT")
 
 WEB_TOKEN = os.getenv("WEB_TOKEN")
 
@@ -26,6 +27,7 @@ WEB_TOKEN = os.getenv("WEB_TOKEN")
 MEMBER_ROLE = os.getenv("MEMBER_ROLE")
 
 SENTRY_SDK = os.getenv("SENTRY_SDK")
+
 
 def validate_values(l: dict[str, str | None]):
     for k, v in l.items():
@@ -44,6 +46,7 @@ validate_values(
         "CHANNEL_MEOW": CHANNEL_MEOW,
         "CHANNEL_MODERATION": CHANNEL_MODERATION,
         "CHANNEL_SUGGESTIONS": CHANNEL_SUGGESTIONS,
+        "CHANNEL_GIT": CHANNEL_GIT,
         "WEB_TOKEN": WEB_TOKEN,
         "MEMBER_ROLE": MEMBER_ROLE,
         "SENTRY_SDK": SENTRY_SDK,
