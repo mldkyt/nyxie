@@ -6,3 +6,4 @@ data/
 logs/ai.log
 
 logs/
+.idea/

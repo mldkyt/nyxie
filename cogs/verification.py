@@ -1,11 +1,21 @@
-from discord import Cog, Bot, slash_command, ApplicationContext, default_permissions, Member, Embed, Color, \
-    HTTPException, Forbidden
+from discord import (
+    ApplicationContext,
+    Bot,
+    Cog,
+    Color,
+    Embed,
+    Forbidden,
+    HTTPException,
+    Member,
+    default_permissions,
+    slash_command,
+)
 from discord.ext.pages import Paginator
 from discord.ext.tasks import loop
 from sentry_sdk import capture_exception
 
 from constants import OWNER
-from util.verification import unverified_members, RejoinView
+from util.verification import RejoinView, unverified_members
 
 
 class Verification(Cog):
@@ -49,7 +59,12 @@ class Verification(Cog):
 
     @slash_command()
     @default_permissions(administrator=True)
-    async def kick_unverified(self, ctx: ApplicationContext, confirm: bool = False, i_really_want_to_kick_members: bool = False):
+    async def kick_unverified(
+        self,
+        ctx: ApplicationContext,
+        confirm: bool = False,
+        i_really_want_to_kick_members: bool = False,
+    ):
         """Kick unverified users"""
         if ctx.user.id != int(OWNER):
             await ctx.respond("This command is not available for you", ephemeral=True)
@@ -72,21 +87,22 @@ class Verification(Cog):
             return
 
         try:
-            kick_this_member = self.kick_members[0]
+            kick_this_member = self.kick_members.pop()
             try:
-                await kick_this_member.send(embed=Embed(
-                    title="Kicked",
-                    description="You have been kicked from mldkyt's Discord server for not verifying in the specified time window.\n"
-                                "\n"
-                                "Don't worry! You can rejoin using the button below and verify again.",
-                    color=Color.red(),
-                ), view=RejoinView())
-            except HTTPException | Forbidden:
+                await kick_this_member.send(
+                    embed=Embed(
+                        title="Kicked",
+                        description="You have been kicked from mldkyt's Discord server for not verifying in the specified time window.\n"
+                        "\n"
+                        "Don't worry! You can rejoin using the button below and verify again.",
+                        color=Color.red(),
+                    ),
+                    view=RejoinView(),
+                )
+            except HTTPException:
                 pass
 
             await kick_this_member.kick(reason="Not verified in time period")
-
-            self.kick_members.remove(kick_this_member)
         except Exception as e:
             capture_exception(e)
 
