@@ -4,7 +4,6 @@ from discord import (
     Cog,
     Color,
     Embed,
-    Forbidden,
     HTTPException,
     Member,
     default_permissions,
@@ -15,7 +14,12 @@ from discord.ext.tasks import loop
 from sentry_sdk import capture_exception
 
 from constants import OWNER
-from util.verification import RejoinView, VerificationView, unverified_members
+from util.verification import (
+    RejoinView,
+    VerificationModeratorView,
+    VerificationView,
+    unverified_members,
+)
 
 
 class Verification(Cog):
@@ -27,6 +31,9 @@ class Verification(Cog):
     @Cog.listener()
     async def on_ready(self):
         self.kick_member.start()
+
+        self.bot.add_view(VerificationView())
+        self.bot.add_view(VerificationModeratorView())
 
     @slash_command()
     @default_permissions(administrator=True)
