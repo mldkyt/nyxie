@@ -4,7 +4,6 @@ from discord import (
     Cog,
     Color,
     Embed,
-    Forbidden,
     HTTPException,
     Member,
     default_permissions,
@@ -15,7 +14,12 @@ from discord.ext.tasks import loop
 from sentry_sdk import capture_exception
 
 from constants import OWNER
-from util.verification import RejoinView, unverified_members
+from util.verification import (
+    RejoinView,
+    VerificationModeratorView,
+    VerificationView,
+    unverified_members,
+)
 
 
 class Verification(Cog):
@@ -27,6 +31,9 @@ class Verification(Cog):
     @Cog.listener()
     async def on_ready(self):
         self.kick_member.start()
+
+        self.bot.add_view(VerificationView())
+        self.bot.add_view(VerificationModeratorView())
 
     @slash_command()
     @default_permissions(administrator=True)
@@ -80,6 +87,19 @@ class Verification(Cog):
 
         self.kick_members.extend(members)
         await ctx.respond(f"Kicking {len(members)} members queued", ephemeral=True)
+
+    @slash_command()
+    @default_permissions(administrator=True)
+    async def send_verification_message(self, ctx: ApplicationContext):
+        if ctx.user.id != int(OWNER):
+            await ctx.respond("This command is not available for you", ephemeral=True)
+            return
+
+        await ctx.channel.send(
+            "# Verification\n\nPlease click verify below and fill out the modal that pops up.\n\nVerification might take upwards of 2 days, depending on my availability.",
+            view=VerificationView(),
+        )
+        await ctx.respond("Sent", ephemeral=True)
 
     @loop(seconds=5)
     async def kick_member(self):

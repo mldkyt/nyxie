@@ -7,14 +7,12 @@ from sqlalchemy import (
     BigInteger,
     Column,
     DateTime,
-    ForeignKey,
     ForeignKeyConstraint,
     Integer,
     MetaData,
     StaticPool,
     Table,
     create_engine,
-    null,
 )
 
 if not os.path.exists("data"):
@@ -140,4 +138,12 @@ cw_suggestions = Table(
 
 acknowledged_notifications = Table(
     "acknowledged_notifications", md_obj, Column("id", VARCHAR, primary_key=True)
+)
+
+verifications = Table(
+    "verifications",
+    md_obj,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("moderator_message_id", VARCHAR, nullable=False),
+    Column("member_id", VARCHAR, nullable=False),
 )
