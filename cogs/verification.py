@@ -1,3 +1,5 @@
+from faulthandler import disable
+
 from discord import (
     ApplicationContext,
     Bot,
@@ -6,14 +8,17 @@ from discord import (
     Embed,
     HTTPException,
     Member,
+    TextChannel,
     default_permissions,
     slash_command,
 )
 from discord.ext.pages import Paginator
 from discord.ext.tasks import loop
 from sentry_sdk import capture_exception
+from sqlalchemy import delete, select
 
-from constants import OWNER
+from constants import CHANNEL_MODERATION, OWNER
+from database import engine, verifications
 from util.verification import (
     RejoinView,
     VerificationModeratorView,
@@ -100,6 +105,39 @@ class Verification(Cog):
             view=VerificationView(),
         )
         await ctx.respond("Sent", ephemeral=True)
+
+    @Cog.listener()
+    async def on_member_remove(self, member: Member):
+        try:
+            assert CHANNEL_MODERATION is not None
+
+            with engine.begin() as c:
+                message = c.execute(
+                    select(
+                        verifications.c.moderator_message_id, verifications.c.id
+                    ).where(verifications.c.member_id == str(member.id))
+                ).fetchone()
+
+            if message is None:
+                return
+
+            # Disable buttons on the moderation message
+            moderation_channel_id = int(CHANNEL_MODERATION)
+            moderation_channel = member.guild.get_channel(moderation_channel_id)
+            assert moderation_channel is not None
+            assert isinstance(moderation_channel, TextChannel)
+
+            moderator_message_id = int(message[0])
+            moderator_message = await moderation_channel.fetch_message(
+                moderator_message_id
+            )
+
+            await moderator_message.edit(view=VerificationModeratorView(disabled=True))
+
+            with engine.begin() as c:
+                c.execute(delete(verifications).where(verifications.c.id == message[1]))
+        except Exception as e:
+            capture_exception(e)
 
     @loop(seconds=5)
     async def kick_member(self):
