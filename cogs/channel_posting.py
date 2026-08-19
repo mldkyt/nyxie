@@ -2,26 +2,21 @@ from asyncio import gather
 from datetime import datetime
 from random import choice, randint
 
-import html2text
 from discord import (
     ApplicationContext,
     Bot,
-    ButtonStyle,
     Cog,
     Color,
     Embed,
-    EmbedField,
     EmbedFooter,
     File,
     Guild,
-    Interaction,
     TextChannel,
     default_permissions,
     slash_command,
 )
 from discord.ext.tasks import loop
-from discord.ui import Button, View, button
-from sqlalchemy import delete, select, update
+from sentry_sdk import capture_exception
 
 from constants import (
     CHANNEL_MEOW,
@@ -30,7 +25,7 @@ from constants import (
     GUILD,
     VERSION,
 )
-from database import alt_text_suggestions, cw_suggestions, engine, yaoi_db, yuri_db
+from database import engine
 from util.yaoibot import yaoibot
 from util.yuri_util import (
     get_some_yaoi,
@@ -45,85 +40,91 @@ DEBUG = False
 
 
 async def post_yuri(bot: Bot):
-    guild = bot.get_guild(int(GUILD))
-    if not isinstance(guild, Guild):
-        return
+    try:
+        guild = bot.get_guild(int(GUILD))
+        if not isinstance(guild, Guild):
+            return
 
-    chan = guild.get_channel(int(CHANNEL_YURI))
-    if not isinstance(chan, TextChannel):
-        return
+        chan = guild.get_channel(int(CHANNEL_YURI))
+        if not isinstance(chan, TextChannel):
+            return
 
-    with engine.begin() as c:
-        yuri_filename, yuri_source, cw, alt = get_some_yuri(c)
+        with engine.begin() as c:
+            yuri_filename, yuri_source, cw, alt = get_some_yuri(c)
 
-    if not yuri_filename:
-        return
-    if not cw:
-        cw = ""
+        if not yuri_filename:
+            return
+        if not cw:
+            cw = ""
 
-    if len(cw.strip()) == 0:
-        embed = Embed(
-            title="Yuri :3",
-            image=f"attachment://{yuri_filename.split('/')[-1]}",
-            footer=EmbedFooter(text=f"mldmon {VERSION}"),
-            description=f"[source]({yuri_source})",
-            color=Color.nitro_pink(),
+        if len(cw.strip()) == 0:
+            embed = Embed(
+                title="Yuri :3",
+                image=f"attachment://{yuri_filename.split('/')[-1]}",
+                footer=EmbedFooter(text=f"mldmon {VERSION}"),
+                description=f"[source]({yuri_source})",
+                color=Color.nitro_pink(),
+            )
+        else:
+            embed = Embed(
+                title="Yuri :3",
+                footer=EmbedFooter(text=f"mldmon {VERSION}"),
+                description=f"[source]({yuri_source})",
+                color=Color.nitro_pink(),
+            )
+
+        await chan.send(
+            embed=embed,
+            file=File(yuri_filename, spoiler=len(cw.strip()) > 0, description=alt),
         )
-    else:
-        embed = Embed(
-            title="Yuri :3",
-            footer=EmbedFooter(text=f"mldmon {VERSION}"),
-            description=f"[source]({yuri_source})",
-            color=Color.nitro_pink(),
-        )
 
-    await chan.send(
-        embed=embed,
-        file=File(yuri_filename, spoiler=len(cw.strip()) > 0, description=alt),
-    )
-
-    if yuribot is not None:
-        yuribot.also_post_on_fedi(yuri_filename, yuri_source, cw)
+        if yuribot is not None:
+            yuribot.also_post_on_fedi(yuri_filename, yuri_source, cw)
+    except Exception as e:
+        capture_exception(e)
 
 
 async def post_yaoi(bot: Bot):
-    guild = bot.get_guild(int(GUILD))
-    if not isinstance(guild, Guild):
-        return
-    chan = guild.get_channel(int(CHANNEL_YAOI))
-    if not isinstance(chan, TextChannel):
-        return
+    try:
+        guild = bot.get_guild(int(GUILD))
+        if not isinstance(guild, Guild):
+            return
+        chan = guild.get_channel(int(CHANNEL_YAOI))
+        if not isinstance(chan, TextChannel):
+            return
 
-    with engine.begin() as c:
-        yaoi_filename, yaoi_source, cw, alt = get_some_yaoi(c)
+        with engine.begin() as c:
+            yaoi_filename, yaoi_source, cw, alt = get_some_yaoi(c)
 
-    if not yaoi_filename:
-        return
+        if not yaoi_filename:
+            return
 
-    if not cw:
-        cw = ""
+        if not cw:
+            cw = ""
 
-    if len(cw.strip()) == 0:
-        embed = Embed(
-            title="Yaoi :3",
-            image=f"attachment://{yaoi_filename.split('/')[-1]}",
-            description=f"[source]({yaoi_source})",
-            color=Color.nitro_pink(),
+        if len(cw.strip()) == 0:
+            embed = Embed(
+                title="Yaoi :3",
+                image=f"attachment://{yaoi_filename.split('/')[-1]}",
+                description=f"[source]({yaoi_source})",
+                color=Color.nitro_pink(),
+            )
+        else:
+            embed = Embed(
+                title="Yaoi :3",
+                description=f"[source]({yaoi_source})",
+                color=Color.nitro_pink(),
+            )
+
+        await chan.send(
+            embed=embed,
+            file=File(yaoi_filename, spoiler=len(cw.strip()) > 0, description=alt),
         )
-    else:
-        embed = Embed(
-            title="Yaoi :3",
-            description=f"[source]({yaoi_source})",
-            color=Color.nitro_pink(),
-        )
 
-    await chan.send(
-        embed=embed,
-        file=File(yaoi_filename, spoiler=len(cw.strip()) > 0, description=alt),
-    )
-
-    if yaoibot is not None:
-        yaoibot.also_post_on_fedi(yaoi_filename, yaoi_source, cw)
+        if yaoibot is not None:
+            yaoibot.also_post_on_fedi(yaoi_filename, yaoi_source, cw)
+    except Exception as e:
+        capture_exception(e)
 
 
 def generate_meow():
