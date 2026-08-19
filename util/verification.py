@@ -302,9 +302,34 @@ class VerificationModal(Modal):
             style=InputTextStyle.long,
             label="About You",
             placeholder="e.g. I am a programmer and content creator. Min 30 words.",
+            required=True,
+        )
+
+        self.join_location = InputText(
+            style=InputTextStyle.short,
+            label="Where did you join from?",
+            required=True,
+            placeholder='e.g. YouTube (do NOT input "website")',
+        )
+
+        self.project_name = InputText(
+            style=InputTextStyle.short,
+            label="Project Name",
+            placeholder="Name of one of mldkyt's projects",
+            required=True,
+        )
+
+        self.youtube_title = InputText(
+            style=InputTextStyle.short,
+            label="A YouTube video title",
+            placeholder="Title of one of mldkyt's videos",
+            required=True,
         )
 
         self.add_item(self.about_text)
+        self.add_item(self.join_location)
+        self.add_item(self.project_name)
+        self.add_item(self.youtube_title)
 
     async def callback(self, interaction: Interaction):
         try:
@@ -323,8 +348,20 @@ class VerificationModal(Modal):
                 fields=[
                     EmbedField(
                         name="User",
-                        value=f"{interaction.user.mention} ({interaction.user.name}, {interaction.user.id})",
-                    )
+                        value=f"{interaction.user.mention} ({interaction.user.display_name}, {interaction.user.name}, {interaction.user.id})",
+                    ),
+                    EmbedField(
+                        name="Joined from",
+                        value=self.join_location.value or "*Unknown*",
+                    ),
+                    EmbedField(
+                        name="Project Name",
+                        value=self.project_name.value or "*Unknown*",
+                    ),
+                    EmbedField(
+                        name="YouTube title",
+                        value=self.youtube_title.value or "*Unknown*",
+                    ),
                 ],
             )
 
