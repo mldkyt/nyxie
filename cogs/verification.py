@@ -17,7 +17,7 @@ from discord.ext.tasks import loop
 from sentry_sdk import capture_exception
 from sqlalchemy import delete, select
 
-from constants import CHANNEL_MODERATION, OWNER
+from constants import CHANNEL_MODERATION, CHANNEL_VERIFICATION, OWNER
 from database import engine, verifications
 from util.verification import (
     RejoinView,
@@ -105,6 +105,20 @@ class Verification(Cog):
             view=VerificationView(),
         )
         await ctx.respond("Sent", ephemeral=True)
+
+    @Cog.listener()
+    async def on_member_join(self, member: Member):
+        try:
+            assert CHANNEL_VERIFICATION is not None
+            channel_verification_id = int(CHANNEL_VERIFICATION)
+            channel_verification = member.guild.get_channel(channel_verification_id)
+            assert isinstance(channel_verification, TextChannel)
+            message = await channel_verification.send(
+                f"{member.mention} Please start verification here."
+            )
+            await message.delete(delay=5)
+        except Exception as e:
+            capture_exception(e)
 
     @Cog.listener()
     async def on_member_remove(self, member: Member):
