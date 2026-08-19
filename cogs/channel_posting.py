@@ -106,6 +106,7 @@ async def post_yaoi(bot: Bot):
             embed = Embed(
                 title="Yaoi :3",
                 image=f"attachment://{yaoi_filename.split('/')[-1]}",
+                footer=EmbedFooter(text=f"mldmon {VERSION}"),
                 description=f"[source]({yaoi_source})",
                 color=Color.nitro_pink(),
             )
@@ -113,6 +114,7 @@ async def post_yaoi(bot: Bot):
             embed = Embed(
                 title="Yaoi :3",
                 description=f"[source]({yaoi_source})",
+                footer=EmbedFooter(text=f"mldmon {VERSION}"),
                 color=Color.nitro_pink(),
             )
 
