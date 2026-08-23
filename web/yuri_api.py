@@ -3,6 +3,7 @@ import os
 
 from flask import Blueprint, request
 from sqlalchemy import insert, select
+from sqlalchemy.sql.functions import max
 from werkzeug.utils import secure_filename
 
 from constants import WEB_TOKEN
