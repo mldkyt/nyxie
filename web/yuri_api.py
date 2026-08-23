@@ -45,7 +45,11 @@ def yuri_post_route():
         file.save(filename)
 
     with engine.begin() as c:
-        top_priority = c.execute(select(max(yuri_db.c.priority)).where(yuri_db.c.approved == True)).fetchone() or [10000]
+        top_priority = c.execute(
+            select(max(yuri_db.c.priority)).where(yuri_db.c.approved == True)
+        ).fetchone()
+        if top_priority is None:
+            top_priority = [10000]
         top_priority = top_priority[0]
 
         existing = c.execute(
@@ -57,7 +61,7 @@ def yuri_post_route():
                     filename=filename,
                     source=metadata.get("source"),
                     priority=top_priority,
-                    alt=metadata.get("alt") or ""
+                    alt=metadata.get("alt") or "",
                 )
             )
         else:
@@ -99,7 +103,11 @@ def yaoi_post_route():
         file.save(filename)
 
     with engine.begin() as c:
-        top_priority = c.execute(select(max(yaoi_db.c.priority)).where(yaoi_db.c.approved == True)).fetchone() or [10000]
+        top_priority = c.execute(
+            select(max(yaoi_db.c.priority)).where(yaoi_db.c.approved == True)
+        ).fetchone()
+        if top_priority is None:
+            top_priority = [10000]
         top_priority = top_priority[0]
 
         existing = c.execute(
@@ -111,7 +119,7 @@ def yaoi_post_route():
                     filename=filename,
                     source=metadata.get("source"),
                     priority=top_priority,
-                    alt=metadata.get("alt") or ""
+                    alt=metadata.get("alt") or "",
                 )
             )
         else:
