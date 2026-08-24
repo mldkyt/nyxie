@@ -78,7 +78,7 @@ class VerificationModeratorDeclineModal(Modal):
                         ),
                         fields=[
                             EmbedField(
-                                name="Rejoin", value="https://discord.gg/uTWjgy2E4v"
+                                name="Rejoin", value="https://discord.gg/aE2MXH5Qp6"
                             )
                         ]
                         if self.type_of_action == "kick"
@@ -415,7 +415,7 @@ class RejoinView(View):
 
         self.add_item(
             Button(
-                url="https://discord.gg/uTWjgy2E4v",
+                url="https://discord.gg/aE2MXH5Qp6",
                 label="Rejoin the server",
                 style=ButtonStyle.url,
             )
