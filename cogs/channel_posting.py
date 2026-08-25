@@ -79,7 +79,7 @@ async def post_yuri(bot: Bot):
         )
 
         if yuribot is not None:
-            yuribot.also_post_on_fedi(yuri_filename, yuri_source, cw)
+            await yuribot.also_post_on_fedi(yuri_filename, yuri_source, cw)
     except Exception as e:
         capture_exception(e)
 
@@ -124,7 +124,7 @@ async def post_yaoi(bot: Bot):
         )
 
         if yaoibot is not None:
-            yaoibot.also_post_on_fedi(yaoi_filename, yaoi_source, cw)
+            await yaoibot.also_post_on_fedi(yaoi_filename, yaoi_source, cw)
     except Exception as e:
         capture_exception(e)
 

@@ -1,6 +1,8 @@
 import os
+from asyncio import sleep
 
 from mastodon import Mastodon
+from sentry_sdk import capture_exception
 
 
 class YuriBot:
@@ -9,9 +11,23 @@ class YuriBot:
         self.mastodon_yuribot = Mastodon(access_token="data/yuribot_usercred.secret")
         self.me = self.mastodon_yuribot.me()
 
-    def also_post_on_fedi(self, filename: str, source: str, cw: str):
+    async def also_post_on_fedi(self, filename: str, source: str, cw: str):
         print("Posting yuri")
-        yuri_media_id = self.mastodon_yuribot.media_post(filename)
+        yuri_media_id = None
+
+        for i in range(3):
+            try:
+                yuri_media_id = self.mastodon_yuribot.media_post(filename)
+                break
+            except Exception as e:
+                await sleep((i + 1) * 5000)
+
+                if i == 2:
+                    capture_exception(e)
+                    return
+
+        assert yuri_media_id is not None
+
         self.mastodon_yuribot.status_post(
             f"Yuri!\n[source]({source})\n#yuri",
             media_ids=[yuri_media_id],
