@@ -418,7 +418,7 @@ def get_some_yuri(
             yuri_db.c.id,
             yuri_db.c.filename,
             yuri_db.c.source,
-            yuri_db.c.alt,
+            yuri_db.c.cw,
             yuri_db.c.alt,
         )
         .where(yuri_db.c.priority == top_priority)
@@ -454,7 +454,7 @@ def get_some_yaoi(
             yaoi_db.c.id,
             yaoi_db.c.filename,
             yaoi_db.c.source,
-            yaoi_db.c.alt,
+            yaoi_db.c.cw,
             yaoi_db.c.alt,
         )
         .where(yaoi_db.c.priority == top_priority)
