@@ -17,7 +17,7 @@ from discord.ui import InputText, Modal, View, button
 from sentry_sdk import capture_exception
 from sqlalchemy import delete, insert, select
 
-from constants import CHANNEL_GENERAL, CHANNEL_MODERATION, MEMBER_ROLE
+from constants import CHANNEL_GENERAL, CHANNEL_MODERATION, MEMBER_ROLE, OWNER
 from database import engine, verifications
 
 
@@ -366,7 +366,7 @@ class VerificationModal(Modal):
             )
 
             message = await moderation_channel.send(
-                "Please verify the following user",
+                f"<@{OWNER}>, please verify the following user",
                 embed=embed,
                 view=VerificationModeratorView(),
             )
