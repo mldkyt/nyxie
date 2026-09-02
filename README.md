@@ -1,4 +1,4 @@
-# mldmon
+# nyxie
 
 A Discord bot for managing mldkyt's Discord server
 
@@ -16,7 +16,7 @@ WORKS ON MY MACHINE: This project is mainly intended to be used by mldkyt for th
 For the bot to work and because I don't care, you need to authorize yuribot, to do so, run
 
 ```bash
-docker compose run --rm -it --entrypoint sh mldmon
+docker compose run --rm -it --entrypoint sh nyxie
 ```
 
 Then in the bash window run

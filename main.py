@@ -60,7 +60,7 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error):
 
     if isinstance(error, commands.BotMissingPermissions):
         await ctx.respond(
-            f"Sowwie Lunya gave too little permissions to me :( ask her to give me {', '.join(error.missing_permissions)} 🥺",
+            f"Sowwie mldkyt gave too little permissions to me :( ask her to give me {', '.join(error.missing_permissions)} 🥺",
             ephemeral=True,
         )
         return
@@ -75,7 +75,7 @@ async def on_application_command_error(ctx: discord.ApplicationContext, error):
     try:
         # respond
         await ctx.respond(
-            "An error occurred with this command, please ask Lunya to fix it :(",
+            "An error occurred with this command, please ask mldkyt to fix it :(",
             ephemeral=True,
         )
     except Exception as e:

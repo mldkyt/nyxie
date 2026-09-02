@@ -61,14 +61,14 @@ async def post_yuri(bot: Bot):
             embed = Embed(
                 title="Yuri :3",
                 image=f"attachment://{yuri_filename.split('/')[-1]}",
-                footer=EmbedFooter(text=f"mldmon {VERSION}"),
+                footer=EmbedFooter(text=f"nyxie {VERSION}"),
                 description=f"[source]({yuri_source})",
                 color=Color.nitro_pink(),
             )
         else:
             embed = Embed(
                 title="Yuri :3",
-                footer=EmbedFooter(text=f"mldmon {VERSION}"),
+                footer=EmbedFooter(text=f"nyxie {VERSION}"),
                 description=f"[source]({yuri_source})",
                 color=Color.nitro_pink(),
             )
@@ -106,7 +106,7 @@ async def post_yaoi(bot: Bot):
             embed = Embed(
                 title="Yaoi :3",
                 image=f"attachment://{yaoi_filename.split('/')[-1]}",
-                footer=EmbedFooter(text=f"mldmon {VERSION}"),
+                footer=EmbedFooter(text=f"nyxie {VERSION}"),
                 description=f"[source]({yaoi_source})",
                 color=Color.nitro_pink(),
             )
@@ -114,7 +114,7 @@ async def post_yaoi(bot: Bot):
             embed = Embed(
                 title="Yaoi :3",
                 description=f"[source]({yaoi_source})",
-                footer=EmbedFooter(text=f"mldmon {VERSION}"),
+                footer=EmbedFooter(text=f"nyxie {VERSION}"),
                 color=Color.nitro_pink(),
             )
 

@@ -73,14 +73,14 @@ class RefreshTimeView(discord.ui.View):
     ):
         try:
             utc = pytz.timezone("UTC")
-            lunya_tz = pytz.timezone("Europe/Prague")
+            mldkyt_tz = pytz.timezone("Europe/Prague")
 
             utc_time = datetime.datetime.now(utc)
-            lunya_time = datetime.datetime.now(lunya_tz)
+            mldkyt_time = datetime.datetime.now(mldkyt_tz)
 
             await interaction.edit(
                 content=f"# Time\n"
-                f"Current time for Lunya: {lunya_time.strftime('%a %d %b %Y, %H:%M:%S %Z (%z)')}\n"
+                f"Current time for mldkyt: {mldkyt_time.strftime('%a %d %b %Y, %H:%M:%S %Z (%z)')}\n"
                 f"Server clock: {utc_time.strftime('%a %d %b %Y, %H:%M:%S %Z (%z)')}\n"
                 f"Your time: <t:{int(utc_time.timestamp())}:F>"
             )
@@ -115,7 +115,7 @@ class MoreYuriView(View):
             title="Yuri :3",
             description=f"[source]({yuri_source})",
             image=f"attachment://{yuri_filename.split('/')[-1]}",
-            footer=EmbedFooter(f"mldmon {VERSION}"),
+            footer=EmbedFooter(f"nyxie {VERSION}"),
         )
 
         await interaction.respond(
@@ -152,7 +152,7 @@ class MoreYaoiView(View):
             title="Yaoi :3",
             description=f"[source]({yaoi_source})",
             image=f"attachment://{yaoi_filename.split('/')[-1]}",
-            footer=EmbedFooter(f"mldmon {VERSION}"),
+            footer=EmbedFooter(f"nyxie {VERSION}"),
         )
 
         await interaction.respond(
@@ -229,7 +229,7 @@ class UserCommands(discord.Cog):
             )
 
             await ctx.respond(
-                f"# mldmon version {VERSION}\n"
+                f"# nyxie version {VERSION}\n"
                 f"```\n"
                 f"{uname.stdout.strip()}\n"
                 f"{uptime.stdout.strip()}\n"
@@ -243,7 +243,7 @@ class UserCommands(discord.Cog):
                 "An error occurred while executing the command.", ephemeral=True
             )
 
-    @user_commands.command(name="time", description="Get time for Lunya :3")
+    @user_commands.command(name="time", description="Get time for mldkyt")
     async def time(self, ctx: discord.ApplicationContext):
         try:
             if ctx.user.id != int(OWNER):
@@ -253,14 +253,14 @@ class UserCommands(discord.Cog):
                 return
 
             utc = pytz.timezone("UTC")
-            lunya_tz = pytz.timezone("Europe/Prague")
+            mldkyt_tz = pytz.timezone("Europe/Prague")
 
             utc_time = datetime.datetime.now(utc)
-            lunya_time = datetime.datetime.now(lunya_tz)
+            mldkyt_time = datetime.datetime.now(mldkyt_tz)
 
             await ctx.respond(
                 f"# Time\n"
-                f"Current time for Lunya: {lunya_time.strftime('%a %d %b %Y, %H:%M:%S %Z (%z)')}\n"
+                f"Current time for mldkyt: {mldkyt_time.strftime('%a %d %b %Y, %H:%M:%S %Z (%z)')}\n"
                 f"Server clock: {utc_time.strftime('%a %d %b %Y, %H:%M:%S %Z (%z)')}\n"
                 f"Your time: <t:{int(utc_time.timestamp())}:F>",
                 view=RefreshTimeView(),
@@ -275,10 +275,10 @@ class UserCommands(discord.Cog):
     async def version(self, ctx: discord.ApplicationContext):
         try:
             await ctx.respond(
-                f"# mldmon version {VERSION}\n\n"
+                f"# nyxie version {VERSION}\n\n"
                 f"Python {sys.version} on {sys.platform}\n"
                 f"py-cord {discord.__version__}\n"
-                f"Licensed under GNU AGPL v3.0. Software's source code is [here](<https://git.mldkyt.com/mldkyt/mldmon>)",
+                f"Licensed under GNU AGPL v3.0. Software's source code is [here](<https://git.mldkyt.com/mldkyt/nyxie>)",
                 ephemeral=True,
             )
         except Exception as e:
@@ -315,13 +315,13 @@ class UserCommands(discord.Cog):
                     title="Yuri :3",
                     description=f"[source]({yuri_source})",
                     image=f"attachment://{yuri_filename.split('/')[-1]}",
-                    footer=EmbedFooter(f"mldmon {VERSION}"),
+                    footer=EmbedFooter(f"nyxie {VERSION}"),
                 )
             else:
                 embed = Embed(
                     title="Yuri :3",
                     description=f"[source]({yuri_source})",
-                    footer=EmbedFooter(f"mldmon {VERSION}"),
+                    footer=EmbedFooter(f"nyxie {VERSION}"),
                 )
 
             await ctx.respond(
@@ -365,13 +365,13 @@ class UserCommands(discord.Cog):
                     title="Yaoi :3",
                     description=f"[source]({yaoi_source})",
                     image=f"attachment://{yaoi_filename.split('/')[-1]}",
-                    footer=EmbedFooter(f"mldmon {VERSION}"),
+                    footer=EmbedFooter(f"nyxie {VERSION}"),
                 )
             else:
                 embed = Embed(
                     title="Yaoi :3",
                     description=f"[source]({yaoi_source})",
-                    footer=EmbedFooter(f"mldmon {VERSION}"),
+                    footer=EmbedFooter(f"nyxie {VERSION}"),
                 )
 
             await ctx.respond(
