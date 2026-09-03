@@ -47,7 +47,7 @@ class Verification(Cog):
     async def list_unverified(self, ctx: ApplicationContext):
         """List unverified users"""
         if ctx.user.id != int(OWNER):
-            await ctx.respond("This command is not available for you", ephemeral=True)
+            await ctx.respond("this cmd is for mldkyt only", ephemeral=True)
             return
 
         await ctx.defer(ephemeral=True)
@@ -57,7 +57,7 @@ class Verification(Cog):
             members.append(member)
 
         pages = []
-        current_page = "# Members that are about to be kicked: \n\n"
+        current_page = "# members 2 kick: \n\n"
         for member in members:
             current_page += f"- {member.display_name} ({member.name}, {member.id})\n"
 
@@ -76,7 +76,7 @@ class Verification(Cog):
     async def dm_unverified(self, ctx: ApplicationContext):
         """Kick unverified users"""
         if ctx.user.id != int(OWNER):
-            await ctx.respond("This command is not available for you", ephemeral=True)
+            await ctx.respond("this cmd is for mldkyt only", ephemeral=True)
             return
 
         members: list[Member] = []
@@ -98,11 +98,13 @@ class Verification(Cog):
     ):
         """Kick unverified users"""
         if ctx.user.id != int(OWNER):
-            await ctx.respond("This command is not available for you", ephemeral=True)
+            await ctx.respond("this cmd is for mldkyt", ephemeral=True)
             return
 
         if not confirm or not i_really_want_to_kick_members:
-            await ctx.respond("The action was not confirmed", ephemeral=True)
+            await ctx.respond(
+                "hey pls set all the params to true to run this", ephemeral=True
+            )
             return
 
         members: list[Member] = []
@@ -110,13 +112,13 @@ class Verification(Cog):
             members.append(member)
 
         self.kick_members.extend(members)
-        await ctx.respond(f"Kicking {len(members)} members queued", ephemeral=True)
+        await ctx.respond(f"kicking {len(members)} members queued", ephemeral=True)
 
     @slash_command()
     @default_permissions(administrator=True)
     async def send_verification_message(self, ctx: ApplicationContext):
         if ctx.user.id != int(OWNER):
-            await ctx.respond("This command is not available for you", ephemeral=True)
+            await ctx.respond("this cmd is for mldkyt", ephemeral=True)
             return
 
         await ctx.channel.send(
@@ -133,7 +135,7 @@ class Verification(Cog):
             channel_verification = member.guild.get_channel(channel_verification_id)
             assert isinstance(channel_verification, TextChannel)
             message = await channel_verification.send(
-                f"{member.mention} Please start verification here."
+                f"{member.mention} please verify in this channel 🖤"
             )
             await message.delete(delay=5)
         except Exception as e:
@@ -182,10 +184,8 @@ class Verification(Cog):
             try:
                 await kick_this_member.send(
                     embed=Embed(
-                        title="Kicked",
-                        description="You have been kicked from mldkyt's Discord server for not verifying in the specified time window.\n"
-                        "\n"
-                        "Don't worry! You can rejoin using the button below and verify again.",
+                        title="kicked",
+                        description="you missed your verification window. if you wanna stay in the server you gotta verify. please rejoin and verify 🖤",
                         color=Color.red(),
                     ),
                     view=RejoinView(),
@@ -214,11 +214,11 @@ class Verification(Cog):
 
             try:
                 await dm_this_member.send(
-                    f"this is your reminder to verify today in {channel_verification.guild.name}. you can start in {channel_verification.mention}"
+                    f"this is your reminder to verify today in {channel_verification.guild.name}. you can start in {channel_verification.mention} 🖤"
                 )
             except HTTPException:
                 message = await channel_verification.send(
-                    f"{dm_this_member.mention} reminder: please verify. members that fail to verify in time will get kicked."
+                    f"{dm_this_member.mention} reminder: please verify. members that fail to verify in time will get kicked 🖤"
                 )
                 await message.delete(delay=5)
 

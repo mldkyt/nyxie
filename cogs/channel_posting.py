@@ -59,7 +59,7 @@ async def post_yuri(bot: Bot):
 
         if len(cw.strip()) == 0:
             embed = Embed(
-                title="Yuri :3",
+                title="yuri 🖤",
                 image=f"attachment://{yuri_filename.split('/')[-1]}",
                 footer=EmbedFooter(text=f"nyxie {VERSION}"),
                 description=f"[source]({yuri_source})",
@@ -67,7 +67,7 @@ async def post_yuri(bot: Bot):
             )
         else:
             embed = Embed(
-                title="Yuri :3",
+                title="yuri 🖤",
                 footer=EmbedFooter(text=f"nyxie {VERSION}"),
                 description=f"[source]({yuri_source})",
                 color=Color.nitro_pink(),
@@ -104,7 +104,7 @@ async def post_yaoi(bot: Bot):
 
         if len(cw.strip()) == 0:
             embed = Embed(
-                title="Yaoi :3",
+                title="yaoi 🖤",
                 image=f"attachment://{yaoi_filename.split('/')[-1]}",
                 footer=EmbedFooter(text=f"nyxie {VERSION}"),
                 description=f"[source]({yaoi_source})",
@@ -112,7 +112,7 @@ async def post_yaoi(bot: Bot):
             )
         else:
             embed = Embed(
-                title="Yaoi :3",
+                title="yaoi 🖤",
                 description=f"[source]({yaoi_source})",
                 footer=EmbedFooter(text=f"nyxie {VERSION}"),
                 color=Color.nitro_pink(),
@@ -177,19 +177,19 @@ class ChannelPosting(Cog):
     @default_permissions(manage_guild=True)
     async def manage_content(self, ctx: ApplicationContext, reapprove: bool = False):
         if not await respond_with_next_yuri(ctx.interaction, reapprove=reapprove):
-            await ctx.respond("All done!", ephemeral=True)
+            await ctx.respond("all done!", ephemeral=True)
 
     @slash_command(name="add_alt_texts_to_content")
     @default_permissions(manage_guild=True)
     async def add_alt_texts(self, ctx: ApplicationContext):
         if not await respond_with_next_non_alted_content(ctx.interaction):
-            await ctx.respond("All done!", ephemeral=True)
+            await ctx.respond("all done!", ephemeral=True)
 
     @slash_command(name="approve_fedi_suggestions")
     @default_permissions(manage_guild=True)
     async def approve_fedi_suggestions(self, ctx: ApplicationContext):
         if not await respond_with_thing_to_approve(ctx.interaction):
-            await ctx.respond("Nothing to approve from fedi", ephemeral=True)
+            await ctx.respond("nothing to approve", ephemeral=True)
 
 
 def setup(bot: Bot):

@@ -28,14 +28,14 @@ class VerificationModeratorDeclineModal(Modal):
         moderator_message: Message,
         type_of_action: str = "kick",
     ):
-        super().__init__(title="Decline Reason")
+        super().__init__(title="decline")
 
         self.target_member_id = target_member_id
         self.moderator_message = moderator_message
         self.type_of_action = type_of_action
 
         self.decline_reason = InputText(
-            label="Decline Reason",
+            label="reason",
             placeholder="e.g. Not enough information",
         )
         self.add_item(self.decline_reason)
@@ -69,10 +69,10 @@ class VerificationModeratorDeclineModal(Modal):
             try:
                 await member.send(
                     embed=Embed(
-                        title="Declined",
-                        description=f"Your verification was declined by a moderator. Reason: {self.decline_reason.value}."
+                        title="declined",
+                        description=f"your verification was declined by a moderator: {self.decline_reason.value}."
                         + (
-                            " You can rejoin and reapply."
+                            " please rejoin and reapply 🖤"
                             if self.type_of_action == "kick"
                             else ""
                         ),
@@ -107,7 +107,7 @@ class VerificationModeratorDeclineModal(Modal):
                 view=VerificationModeratorView(disabled=True)
             )
 
-            await interaction.respond("Member declined", ephemeral=True)
+            await interaction.respond("member declined", ephemeral=True)
         except Exception as e:
             capture_exception(e)
 
@@ -169,7 +169,7 @@ class VerificationModeratorView(View):
             general_channel = interaction.guild.get_channel(general_channel_id)
             assert isinstance(general_channel, TextChannel)
 
-            await general_channel.send(f"Welcome <@{message[0]}> to the server!")
+            await general_channel.send(f"welcome <@{message[0]}> to the server 🖤")
 
             # Remove the reference and disable view
             with engine.begin() as c:
@@ -273,7 +273,7 @@ class VerificationView(View):
 
             member_role_id = int(MEMBER_ROLE)
             if any(i.id == member_role_id for i in interaction.user.roles):
-                await interaction.respond("You are already verified", ephemeral=True)
+                await interaction.respond("already verified", ephemeral=True)
                 return
 
             with engine.begin() as c:
@@ -285,7 +285,7 @@ class VerificationView(View):
 
             if verification is not None:
                 await interaction.respond(
-                    "Verification is already pending", ephemeral=True
+                    "verification is already pending", ephemeral=True
                 )
                 return
 
@@ -366,7 +366,7 @@ class VerificationModal(Modal):
             )
 
             message = await moderation_channel.send(
-                f"<@{OWNER}>, please verify the following user",
+                f"<@{OWNER}>, please verify the following user 🖤",
                 embed=embed,
                 view=VerificationModeratorView(),
             )
@@ -380,7 +380,7 @@ class VerificationModal(Modal):
                 )
 
             await interaction.respond(
-                "Your verification is now pending.", ephemeral=True
+                "your verification is now pending.", ephemeral=True
             )
         except Exception as e:
             capture_exception(e)
@@ -416,7 +416,7 @@ class RejoinView(View):
         self.add_item(
             Button(
                 url="https://discord.gg/aE2MXH5Qp6",
-                label="Rejoin the server",
+                label="rejoin today 🖤",
                 style=ButtonStyle.url,
             )
         )

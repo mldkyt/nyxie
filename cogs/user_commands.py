@@ -79,10 +79,10 @@ class RefreshTimeView(discord.ui.View):
             mldkyt_time = datetime.datetime.now(mldkyt_tz)
 
             await interaction.edit(
-                content=f"# Time\n"
-                f"Current time for mldkyt: {mldkyt_time.strftime('%a %d %b %Y, %H:%M:%S %Z (%z)')}\n"
-                f"Server clock: {utc_time.strftime('%a %d %b %Y, %H:%M:%S %Z (%z)')}\n"
-                f"Your time: <t:{int(utc_time.timestamp())}:F>"
+                content=f"# time\n"
+                f"mldkyt: {mldkyt_time.strftime('%a %d %b %Y, %H:%M:%S %Z (%z)')}\n"
+                f"server: {utc_time.strftime('%a %d %b %Y, %H:%M:%S %Z (%z)')}\n"
+                f"you: <t:{int(utc_time.timestamp())}:F>"
             )
         except Exception as e:
             capture_exception(e)
@@ -112,7 +112,7 @@ class MoreYuriView(View):
             cw = ""
 
         embed = Embed(
-            title="Yuri :3",
+            title="yuri 🖤",
             description=f"[source]({yuri_source})",
             image=f"attachment://{yuri_filename.split('/')[-1]}",
             footer=EmbedFooter(f"nyxie {VERSION}"),
@@ -149,7 +149,7 @@ class MoreYaoiView(View):
             cw = ""
 
         embed = Embed(
-            title="Yaoi :3",
+            title="yaoi 🖤",
             description=f"[source]({yaoi_source})",
             image=f"attachment://{yaoi_filename.split('/')[-1]}",
             footer=EmbedFooter(f"nyxie {VERSION}"),
@@ -175,13 +175,13 @@ class UserCommands(discord.Cog):
 
     user_commands = discord.SlashCommandGroup(
         name="user",
-        description="User commands",
+        description="user cmds",
         integration_types=[discord.IntegrationType.user_install],
     )
 
     @user_commands.command(
         name="ping",
-        description="Tests connection to Discord",
+        description="get ping to discord",
         integration_types=[discord.IntegrationType.user_install],
     )
     async def ping(self, ctx: discord.ApplicationContext):
@@ -191,15 +191,13 @@ class UserCommands(discord.Cog):
 
     @user_commands.command(
         name="message",
-        description="Send message as bot",
+        description="send message as bot",
         integration_types=[discord.IntegrationType.user_install],
     )
     async def message(self, ctx: discord.ApplicationContext, msg: str):
         try:
             if ctx.user.id != int(OWNER):
-                await ctx.respond(
-                    "You are not authorized to use this command!", ephemeral=True
-                )
+                await ctx.respond("no perms", ephemeral=True)
                 return
 
             await ctx.respond(msg)
@@ -214,9 +212,7 @@ class UserCommands(discord.Cog):
     async def information(self, ctx: discord.ApplicationContext, public: bool = False):
         try:
             if ctx.user.id != int(OWNER):
-                await ctx.respond(
-                    "You are not authorized to use this command!", ephemeral=True
-                )
+                await ctx.respond("no perms", ephemeral=True)
                 return
 
             uname = subprocess.run(
@@ -224,12 +220,12 @@ class UserCommands(discord.Cog):
             )
             uptime = subprocess.run(["uptime"], capture_output=True, text=True)
             version = (
-                f"Python {sys.version} on {sys.platform}\n"
+                f"python {sys.version} on {sys.platform}\n"
                 f"py-cord {discord.__version__}\n"
             )
 
             await ctx.respond(
-                f"# nyxie version {VERSION}\n"
+                f"# nyxie {VERSION}\n"
                 f"```\n"
                 f"{uname.stdout.strip()}\n"
                 f"{uptime.stdout.strip()}\n"
@@ -239,17 +235,13 @@ class UserCommands(discord.Cog):
             )
         except Exception as e:
             capture_exception(e)
-            await ctx.respond(
-                "An error occurred while executing the command.", ephemeral=True
-            )
+            await ctx.respond("error", ephemeral=True)
 
     @user_commands.command(name="time", description="Get time for mldkyt")
     async def time(self, ctx: discord.ApplicationContext):
         try:
             if ctx.user.id != int(OWNER):
-                await ctx.respond(
-                    "You are not authorized to use this command!", ephemeral=True
-                )
+                await ctx.respond("no perms", ephemeral=True)
                 return
 
             utc = pytz.timezone("UTC")
@@ -259,10 +251,10 @@ class UserCommands(discord.Cog):
             mldkyt_time = datetime.datetime.now(mldkyt_tz)
 
             await ctx.respond(
-                f"# Time\n"
-                f"Current time for mldkyt: {mldkyt_time.strftime('%a %d %b %Y, %H:%M:%S %Z (%z)')}\n"
-                f"Server clock: {utc_time.strftime('%a %d %b %Y, %H:%M:%S %Z (%z)')}\n"
-                f"Your time: <t:{int(utc_time.timestamp())}:F>",
+                f"# time\n"
+                f"mldkyt: {mldkyt_time.strftime('%a %d %b %Y, %H:%M:%S %Z (%z)')}\n"
+                f"server: {utc_time.strftime('%a %d %b %Y, %H:%M:%S %Z (%z)')}\n"
+                f"you: <t:{int(utc_time.timestamp())}:F>",
                 view=RefreshTimeView(),
             )
         except Exception as e:
@@ -275,8 +267,8 @@ class UserCommands(discord.Cog):
     async def version(self, ctx: discord.ApplicationContext):
         try:
             await ctx.respond(
-                f"# nyxie version {VERSION}\n\n"
-                f"Python {sys.version} on {sys.platform}\n"
+                f"# nyxie {VERSION}\n\n"
+                f"python {sys.version} on {sys.platform}\n"
                 f"py-cord {discord.__version__}\n"
                 f"Licensed under GNU AGPL v3.0. Software's source code is [here](<https://git.mldkyt.com/mldkyt/nyxie>)",
                 ephemeral=True,
@@ -304,7 +296,7 @@ class UserCommands(discord.Cog):
                 yuri_filename, yuri_source, cw, alt = get_some_yuri(c)
 
             if not yuri_filename:
-                await ctx.respond("No yuri found :(", ephemeral=True)
+                await ctx.respond("no yuri found :(", ephemeral=True)
                 return
 
             if not cw:
@@ -312,14 +304,14 @@ class UserCommands(discord.Cog):
 
             if len(cw.strip()) == 0:
                 embed = Embed(
-                    title="Yuri :3",
+                    title="yuri 🖤",
                     description=f"[source]({yuri_source})",
                     image=f"attachment://{yuri_filename.split('/')[-1]}",
                     footer=EmbedFooter(f"nyxie {VERSION}"),
                 )
             else:
                 embed = Embed(
-                    title="Yuri :3",
+                    title="yuri 🖤",
                     description=f"[source]({yuri_source})",
                     footer=EmbedFooter(f"nyxie {VERSION}"),
                 )
@@ -333,7 +325,7 @@ class UserCommands(discord.Cog):
             )
         except Exception as e:
             capture_exception(e)
-            await ctx.respond(f"Error: {e!s}", ephemeral=True)
+            await ctx.respond(f"error: {e!s}", ephemeral=True)
 
     @discord.slash_command(
         name="yaoi",
@@ -354,7 +346,7 @@ class UserCommands(discord.Cog):
                 yaoi_filename, yaoi_source, cw, alt = get_some_yaoi(c)
 
             if not yaoi_filename:
-                await ctx.respond("No yuri found :(", ephemeral=True)
+                await ctx.respond("no yaoi found :(", ephemeral=True)
                 return
 
             if not cw:
@@ -362,14 +354,14 @@ class UserCommands(discord.Cog):
 
             if len(cw.strip()) == 0:
                 embed = Embed(
-                    title="Yaoi :3",
+                    title="yaoi 🖤",
                     description=f"[source]({yaoi_source})",
                     image=f"attachment://{yaoi_filename.split('/')[-1]}",
                     footer=EmbedFooter(f"nyxie {VERSION}"),
                 )
             else:
                 embed = Embed(
-                    title="Yaoi :3",
+                    title="yaoi 🖤",
                     description=f"[source]({yaoi_source})",
                     footer=EmbedFooter(f"nyxie {VERSION}"),
                 )

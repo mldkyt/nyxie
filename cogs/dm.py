@@ -1,11 +1,11 @@
-from discord import Cog, Bot, Embed, Guild, TextChannel, PermissionOverwrite
+from discord import Bot, Cog, Embed, Guild, PermissionOverwrite, TextChannel
 from discord.ext.tasks import loop
 from discord.ui import DesignerView
 from sentry_sdk import capture_exception
-from sqlalchemy import select, insert, delete
+from sqlalchemy import delete, insert, select
 
 from constants import GUILD
-from database import engine, dm_channels
+from database import dm_channels, engine
 from util.dm import dm_cache
 
 
@@ -29,8 +29,9 @@ class DM(Cog):
         # Check channel
         with engine.begin() as c:
             channel_id = c.execute(
-                select(dm_channels.c.channel_id)
-                .where(dm_channels.c.user_id == str(user_id))
+                select(dm_channels.c.channel_id).where(
+                    dm_channels.c.user_id == str(user_id)
+                )
             ).fetchone()
 
         if channel_id is not None:
@@ -42,12 +43,9 @@ class DM(Cog):
                 capture_exception(e)
                 with engine.begin() as c:
                     c.execute(
-                        delete(
-                            dm_channels
-                        ).where(dm_channels.c.user_id == str(user_id))
+                        delete(dm_channels).where(dm_channels.c.user_id == str(user_id))
                     )
                     return await self.ensure_channel(user_id, r=r + 1)
-
 
         try:
             user = await self.guild.fetch_member(user_id)
@@ -56,16 +54,22 @@ class DM(Cog):
             raise e
 
         # Create new channel
-        channel = await self.guild.create_text_channel(f"dm-{user.name}", overwrites={
-            user: PermissionOverwrite(view_channel=True, send_messages=True),
-            self.guild.default_role: PermissionOverwrite(view_channel=False)
-        })
-        await channel.send("Since your DM's are off, this is a channel that will be used as \"DM's\". Any message here will ping you")
+        channel = await self.guild.create_text_channel(
+            f"dm-{user.name}",
+            overwrites={
+                user: PermissionOverwrite(view_channel=True, send_messages=True),
+                self.guild.default_role: PermissionOverwrite(view_channel=False),
+            },
+        )
+        await channel.send(
+            "welcome to \"dm's\". your dm's are off so this is a replacement"
+        )
 
         with engine.begin() as c:
             c.execute(
-                insert(dm_channels)
-                .values(user_id=str(user.id), channel_id=str(channel.id))
+                insert(dm_channels).values(
+                    user_id=str(user.id), channel_id=str(channel.id)
+                )
             )
 
         return channel
