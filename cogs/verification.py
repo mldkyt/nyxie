@@ -32,10 +32,12 @@ class Verification(Cog):
         super().__init__()
         self.bot = bot
         self.kick_members: list[Member] = []
+        self.dm_members: list[Member] = []
 
     @Cog.listener()
     async def on_ready(self):
         self.kick_member.start()
+        self.dm_member.start()
 
         self.bot.add_view(VerificationView())
         self.bot.add_view(VerificationModeratorView())
@@ -68,6 +70,23 @@ class Verification(Cog):
 
         paginator = Paginator(pages)
         await paginator.respond(ctx.interaction, ephemeral=True)
+
+    @slash_command()
+    @default_permissions(administrator=True)
+    async def dm_unverified(self, ctx: ApplicationContext):
+        """Kick unverified users"""
+        if ctx.user.id != int(OWNER):
+            await ctx.respond("This command is not available for you", ephemeral=True)
+            return
+
+        members: list[Member] = []
+        async for member in unverified_members(ctx.guild):
+            members.append(member)
+
+        self.dm_members.extend(members)
+        await ctx.respond(
+            f"dming reminders to {len(members)} members queued", ephemeral=True
+        )
 
     @slash_command()
     @default_permissions(administrator=True)
@@ -175,6 +194,34 @@ class Verification(Cog):
                 pass
 
             await kick_this_member.kick(reason="Not verified in time period")
+        except Exception as e:
+            capture_exception(e)
+
+    @loop(seconds=5)
+    async def dm_member(self):
+        if len(self.kick_members) == 0:
+            return
+
+        try:
+            dm_this_member = self.dm_members.pop()
+
+            assert CHANNEL_VERIFICATION is not None
+            channel_verification_id = int(CHANNEL_VERIFICATION)
+            channel_verification = dm_this_member.guild.get_channel(
+                channel_verification_id
+            )
+            assert isinstance(channel_verification, TextChannel)
+
+            try:
+                await dm_this_member.send(
+                    f"this is your reminder to verify today in {channel_verification.guild.name}. you can start in {channel_verification.mention}"
+                )
+            except HTTPException:
+                message = await channel_verification.send(
+                    f"{dm_this_member.mention} reminder: please verify. members that fail to verify in time will get kicked."
+                )
+                await message.delete(delay=5)
+
         except Exception as e:
             capture_exception(e)
 
