@@ -199,7 +199,7 @@ class Verification(Cog):
 
     @loop(seconds=5)
     async def dm_member(self):
-        if len(self.kick_members) == 0:
+        if len(self.dm_members) == 0:
             return
 
         try:
