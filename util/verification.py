@@ -101,9 +101,19 @@ class VerificationModeratorDeclineModal(Modal):
             with engine.begin() as c:
                 c.execute(delete(verifications).where(verifications.c.id == message[0]))
 
+            # Edit the embed
+            embed = self.moderator_message.embeds[0]
+            embed.title = "DECLINED" + (
+                " AND BANNED" if self.type_of_action == "ban" else ""
+            )
+            if embed.description is None:
+                embed.description = ""
+
+            embed.description += f"\n\nDeclined for reason: {self.decline_reason.value}"
+
             # Edit the messge
             await self.moderator_message.edit(
-                view=VerificationModeratorView(disabled=True)
+                embeds=[embed], view=VerificationModeratorView(disabled=True)
             )
 
             await interaction.respond("member declined", ephemeral=True)
@@ -174,8 +184,12 @@ class VerificationModeratorView(View):
             with engine.begin() as c:
                 c.execute(delete(verifications).where(verifications.c.id == message[1]))
 
+            # Edit the embed
+            embed = interaction.message.embeds[0]
+            embed.title = "APPROVED"
+
             self.disable_all_items()
-            await interaction.edit(view=self)
+            await interaction.edit(embeds=[embed], view=self)
             self.stop()
         except Exception as e:
             capture_exception(e)
