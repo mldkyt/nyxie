@@ -1,7 +1,6 @@
 import datetime
 
 from discord import (
-    Button,
     ButtonStyle,
     Color,
     Embed,
@@ -13,7 +12,7 @@ from discord import (
     Message,
     TextChannel,
 )
-from discord.ui import InputText, Modal, View, button
+from discord.ui import Button, InputText, Modal, View, button
 from sentry_sdk import capture_exception
 from sqlalchemy import delete, insert, select
 
