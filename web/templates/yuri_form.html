@@ -4,9 +4,15 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Submit {{yuri}}</title>
+        <style>
+            :root {
+                color-scheme: dark;
+            }
+        </style>
     </head>
     <body>
-        <h1>Submit some {{yuri}} to Luna</h1>
+        <a href="/">&lt; back to Website</a>
+        <h1>Send some {{yuri}} to mldkyt</h1>
 
         <form
             action="/nyxie/{{yuri}}"
@@ -15,7 +21,13 @@
         >
             <label for="file">File ({{yuri}})</label>
             <br />
-            <input type="file" name="file" id="file" required />
+            <input
+                type="file"
+                name="file"
+                id="file"
+                required
+                accept=".jpg,.png,.webp"
+            />
             <br />
             <label for="source">Source</label>
             <br />
@@ -38,5 +50,7 @@
             <br />
             <button>Send me {{yuri}}</button>
         </form>
+
+        <p>nyxie/{{version}} python/{{python_ver}} flask/{{flask_ver}}</p>
     </body>
 </html>

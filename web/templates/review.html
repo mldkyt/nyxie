@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Review post</title>
+        <style>
+            :root {
+                color-scheme: dark;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Review posts</h1>
+
+        <img
+            src="data:{{mime}};base64, {{img}}"
+            alt="{{alt}}"
+            style="max-width: 100vw; max-height: 100vh"
+        />
+
+        <form action="" method="post">
+            <label for="cw">Update the CW</label>
+            <input type="text" name="cw" id="cw" value="{{cw}}" />
+            <button>Save</button>
+        </form>
+
+        <form action="" method="post">
+            <label for="alt">Alt text</label>
+            <input type="text" name="alt" id="alt" value="{{alt}}" />
+            <button>Save</button>
+        </form>
+
+        <form action="" method="post">
+            <label for="source">Source</label>
+            <input type="url" name="source" id="source" value="{{source}}" />
+            <button>Save</button>
+        </form>
+
+        <form action="" method="post">
+            <input type="hidden" name="approve" value="1" />
+            <button>Approve</button>
+        </form>
+
+        <form action="" method="post">
+            <input type="hidden" name="delete" value="1" />
+            <button>Delete</button>
+        </form>
+
+        <p>nyxie/{{version}} python/{{python_ver}} flask/{{flask_ver}}</p>
+    </body>
+</html>
