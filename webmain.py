@@ -4,7 +4,7 @@ import sentry_sdk
 from dotenv import load_dotenv
 from flask import Flask
 
-from constants import WEB_TOKEN, SENTRY_SDK
+from constants import SENTRY_SDK
 from web.messages import messages_bp
 from web.yuri_api import yuri_bp
 
@@ -23,8 +23,7 @@ app = Flask(__name__, static_folder="web/static", static_url_path="/static")
 app.secret_key = os.getenv("WEB_SECRET", "1234")
 
 app.register_blueprint(messages_bp)
-if WEB_TOKEN and len(WEB_TOKEN.strip()) > 0:
-    app.register_blueprint(yuri_bp)
+app.register_blueprint(yuri_bp)
 
 
 def main():

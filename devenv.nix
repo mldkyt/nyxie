@@ -34,6 +34,17 @@
 
   processes.web = {
     exec = "uv run webmain.py";
+    watch = {
+      paths = [
+        ./webmain.py
+        ./web
+      ];
+
+      extensions = [
+        "py"
+        "html"
+      ];
+    };
   };
 
   processes.bot = {
@@ -45,6 +56,9 @@
     before = [
       "devenv:processes:bot"
       "devenv:processes:web"
+    ];
+    after = [
+      "devenv:processes:postgres"
     ];
   };
 

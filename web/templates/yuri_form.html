@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Submit {{yuri}}</title>
+    </head>
+    <body>
+        <h1>Submit some {{yuri}} to Luna</h1>
+
+        <form
+            action="/nyxie/{{yuri}}"
+            method="post"
+            enctype="multipart/form-data"
+        >
+            <label for="file">File ({{yuri}})</label>
+            <br />
+            <input type="file" name="file" id="file" required />
+            <br />
+            <label for="source">Source</label>
+            <br />
+            <input
+                type="url"
+                name="source"
+                id="source"
+                required
+                min="1"
+                max="1000"
+            />
+            <br />
+            <label for="cw">Content Warning</label>
+            <br />
+            <input type="text" name="cw" id="cw" max="100" />
+            <br />
+            <label for="alt">Alt Text</label>
+            <br />
+            <input type="text" name="alt" id="alt" max="2000" />
+            <br />
+            <button>Send me {{yuri}}</button>
+        </form>
+    </body>
+</html>
