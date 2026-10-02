@@ -30,8 +30,6 @@ from util.yaoibot import yaoibot
 from util.yuri_util import (
     get_some_yaoi,
     get_some_yuri,
-    respond_with_next_non_alted_content,
-    respond_with_next_yuri,
     respond_with_thing_to_approve,
 )
 from util.yuribot import yuribot
@@ -172,18 +170,6 @@ class ChannelPosting(Cog):
             await post_meow(self.bot)
         if now.minute == 0 or DEBUG:
             await gather(post_yuri(self.bot), post_yaoi(self.bot))
-
-    @slash_command(name="approve_content")
-    @default_permissions(manage_guild=True)
-    async def manage_content(self, ctx: ApplicationContext, reapprove: bool = False):
-        if not await respond_with_next_yuri(ctx.interaction, reapprove=reapprove):
-            await ctx.respond("all done!", ephemeral=True)
-
-    @slash_command(name="add_alt_texts_to_content")
-    @default_permissions(manage_guild=True)
-    async def add_alt_texts(self, ctx: ApplicationContext):
-        if not await respond_with_next_non_alted_content(ctx.interaction):
-            await ctx.respond("all done!", ephemeral=True)
 
     @slash_command(name="approve_fedi_suggestions")
     @default_permissions(manage_guild=True)

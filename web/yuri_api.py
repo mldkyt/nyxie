@@ -4,13 +4,13 @@ import os
 import sys
 
 import flask
-from flask import Blueprint, Response, render_template, request
+from flask import Blueprint, Response, flash, redirect, render_template, request
 from sqlalchemy import delete, insert, select, update
 from sqlalchemy.sql.functions import max
 from werkzeug.utils import secure_filename
 
 from constants import VERSION, WEB_TOKEN
-from database import engine, yaoi_db, yuri_db
+from database import alt_text_suggestions, cw_suggestions, engine, yaoi_db, yuri_db
 from web.util import quick_response
 
 yuri_bp = Blueprint("yuri", __name__)
@@ -281,3 +281,222 @@ def review_posts():
             )
 
     return "No posts to review"
+
+
+@yuri_bp.route("/nyxie/info", methods=["GET", "POST"])
+def info():
+    if "t" not in request.args or request.args["t"] not in ["yuri", "yaoi"]:
+        return quick_response("Not found", 404)
+
+    if "id" not in request.args or not request.args["id"].isnumeric():
+        return quick_response("Not found", 404)
+
+    type = request.args["t"]
+    db = yuri_db if type == "yuri" else yaoi_db
+
+    with engine.begin() as c:
+        yuri = c.execute(
+            select(db.c.filename, db.c.source, db.c.cw, db.c.alt).where(
+                (db.c.id == int(request.args["id"])) & (db.c.approved == True)
+            )
+        ).fetchone()
+
+    if yuri is None:
+        return quick_response("Not found", 404)
+
+    # Suggest CW and alt text
+    if request.method == "POST":
+        if "alt" in request.form:
+            if len(yuri[3]) == 0:
+                with engine.begin() as c:
+                    suggestion = c.execute(
+                        select(alt_text_suggestions).where(
+                            alt_text_suggestions.c.fid == int(request.args["id"])
+                        )
+                    ).fetchone()
+
+                    if suggestion is not None:
+                        c.execute(
+                            insert(alt_text_suggestions).values(
+                                fid=int(request.args["id"]),
+                                type=type,
+                                alt=request.form["alt"],
+                            )
+                        )
+
+                        flash("Alt text suggestion was sent successfully")
+                    else:
+                        flash("Suggestion already pending")
+
+            else:
+                flash("Alt text already exists")
+        elif "cw" in request.form:
+            with engine.begin() as c:
+                c.execute(
+                    insert(cw_suggestions).values(
+                        fid=int(request.args["id"]), type=type, cw=request.form["cw"]
+                    )
+                )
+
+            flash("CW suggestion was sent successfully")
+
+    with open(yuri[0], "rb") as f:
+        data = f.read()
+
+    b64 = base64.b64encode(data).decode("ascii")
+
+    return render_template(
+        "info.html",
+        yuri=type,
+        cw=yuri[2],
+        source=yuri[1],
+        id=int(request.args["id"]),
+        alt=yuri[3],
+        img=b64,
+        mime=mimetypes.guess_type(yuri[0])[0],
+    )
+
+
+@yuri_bp.route("/nyxie/review_suggestions", methods=["GET", "POST"])
+def review_suggestions():
+    if not WEB_TOKEN or len(WEB_TOKEN) == 0:
+        return "No WEB_TOKEN set set one for dev purposes"
+
+    auth = request.authorization  # Flask parses Basic Authorization header for you
+    if not auth or auth.username != "mldkyt" or auth.password != WEB_TOKEN:
+        return Response(
+            "Unauthorized", 401, {"WWW-Authenticate": 'Basic realm="Log in"'}
+        )
+
+    with engine.begin() as c:
+        # Alt texts
+        alt_text_suggestion = c.execute(
+            select(
+                alt_text_suggestions.c.id,
+                alt_text_suggestions.c.fid,
+                alt_text_suggestions.c.type,
+                alt_text_suggestions.c.alt,
+            )
+        ).fetchone()
+
+        if alt_text_suggestion is not None:
+            db = yuri_db if alt_text_suggestion[2] == "yuri" else yaoi_db
+
+            if request.method == "POST":
+                if "approve" in request.form:
+                    c.execute(
+                        update(db)
+                        .values(alt=alt_text_suggestion[3])
+                        .where(db.c.id == alt_text_suggestion[1])
+                    )
+
+                    c.execute(
+                        delete(alt_text_suggestions).where(
+                            alt_text_suggestions.c.id == alt_text_suggestion[0]
+                        )
+                    )
+
+                    return redirect("/nyxie/review_suggestions", 303)
+                elif "decline" in request.form:
+                    c.execute(
+                        delete(alt_text_suggestions).where(
+                            alt_text_suggestions.c.id == alt_text_suggestion[0]
+                        )
+                    )
+
+                    return redirect("/nyxie/review_suggestions", 303)
+
+            yuri = c.execute(
+                select(db.c.filename).where(db.c.id == alt_text_suggestion[1])
+            ).fetchone()
+
+            if yuri is None:
+                c.execute(
+                    delete(alt_text_suggestions).where(
+                        alt_text_suggestions.c.id == alt_text_suggestion[0]
+                    )
+                )
+
+                return review_suggestions()
+
+            with open(yuri[0], "rb") as f:
+                data = f.read()
+
+            b64 = base64.b64encode(data).decode("ascii")
+
+            return render_template(
+                "review_suggestions.html",
+                type=alt_text_suggestion[2],
+                mime=mimetypes.guess_type(yuri[0])[0],
+                img=b64,
+                alt=alt_text_suggestion[3],
+                suggestion="Alt text: " + alt_text_suggestion[3],
+                id=alt_text_suggestion[0],
+            )
+
+        # CWs
+        cw_suggestion = c.execute(
+            select(
+                cw_suggestions.c.id,
+                cw_suggestions.c.fid,
+                cw_suggestions.c.type,
+                cw_suggestions.c.cw,
+            )
+        ).fetchone()
+
+        if cw_suggestion is not None:
+            db = yuri_db if cw_suggestion[2] == "yuri" else yaoi_db
+
+            if request.method == "POST":
+                if "approve" in request.form:
+                    c.execute(
+                        update(db)
+                        .values(cw=cw_suggestion[3])
+                        .where(db.c.id == cw_suggestion[1])
+                    )
+
+                    c.execute(
+                        delete(cw_suggestions).where(
+                            cw_suggestions.c.id == cw_suggestion[0]
+                        )
+                    )
+
+                    return redirect("/nyxie/review_suggestions", 303)
+                elif "decline" in request.form:
+                    c.execute(
+                        delete(cw_suggestions).where(
+                            cw_suggestions.c.id == cw_suggestion[0]
+                        )
+                    )
+
+                    return redirect("/nyxie/review_suggestions", 303)
+
+            yuri = c.execute(
+                select(db.c.filename).where(db.c.id == cw_suggestion[1])
+            ).fetchone()
+
+            if yuri is None:
+                c.execute(
+                    delete(cw_suggestions).where(
+                        cw_suggestions.c.id == cw_suggestion[0]
+                    )
+                )
+
+                return review_suggestions()
+
+            with open(yuri[0], "rb") as f:
+                data = f.read()
+
+            b64 = base64.b64encode(data).decode("ascii")
+
+            return render_template(
+                "review_suggestions.html",
+                type=cw_suggestion[2],
+                mime=mimetypes.guess_type(yuri[0])[0],
+                img=b64,
+                alt=cw_suggestion[3],
+                suggestion="CW: " + cw_suggestion[3],
+                id=cw_suggestion[0],
+            )
+
+    return "Nothing to approve"

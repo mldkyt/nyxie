@@ -120,10 +120,8 @@ alt_text_suggestions = Table(
     md_obj,
     Column("id", Integer, primary_key=True, autoincrement=True),
     Column("fid", Integer, nullable=False),
-    Column("status_id", VARCHAR, nullable=False),
     Column("type", VARCHAR, nullable=False),
     Column("alt", VARCHAR, nullable=False),
-    Column("acct", VARCHAR, nullable=False),
 )
 
 cw_suggestions = Table(
@@ -131,7 +129,6 @@ cw_suggestions = Table(
     md_obj,
     Column("id", Integer, primary_key=True, autoincrement=True),
     Column("fid", Integer, nullable=False),
-    Column("status_id", VARCHAR, nullable=False),
     Column("type", VARCHAR, nullable=False),
     Column("cw", VARCHAR, nullable=False),
 )

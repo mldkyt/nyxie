@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Review Suggestions</title>
+        <style>
+            :root {
+                color-scheme: dark;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Review {{type}} suggestion</h1>
+
+        <img src="data:{{mime}};base64, {{img}}" alt="{{alt}}" />
+
+        <p>Suggestion: {{suggestion}}</p>
+
+        <form action="" method="post">
+            <input type="hidden" name="approve" value="1" />
+            <button>Approve</button>
+        </form>
+
+        <form action="" method="post">
+            <input type="hidden" name="decline" value="1" />
+            <button>Decline</button>
+        </form>
+    </body>
+</html>

@@ -1,93 +1,13 @@
-import os
 import random
-from curses.ascii import alt
 
-from discord import ButtonStyle, Embed, EmbedField, File, Interaction
+from discord import ButtonStyle, Embed, EmbedField, Interaction
 from discord.ui import Button, InputText, Modal, View, button
-from sqlalchemy import Connection, delete, desc, select, update
+from sqlalchemy import Connection, delete, select, update
 from sqlalchemy.sql.functions import max
 
 from database import alt_text_suggestions, cw_suggestions, engine, yaoi_db, yuri_db
 from util.yaoibot import yaoibot
 from util.yuribot import yuribot
-
-
-async def respond_with_next_yuri(ctx: Interaction, reapprove: bool = False) -> bool:
-    with engine.begin() as c:
-        if reapprove:
-            c.execute(update(yuri_db).values(approved=False))
-            c.execute(update(yaoi_db).values(approved=False))
-
-        yuri = c.execute(
-            select(yuri_db.c.id, yuri_db.c.filename).where(yuri_db.c.approved == False)
-        ).fetchone()
-
-        if yuri is not None:
-            await ctx.respond(
-                view=YuriApproval("yuri", yuri[0]),
-                embed=Embed(
-                    title="Approve this yuri",
-                    image=f"attachment://{yuri[1].split('/')[-1]}",
-                ),
-                file=File(yuri[1]),
-                ephemeral=True,
-            )
-            return True
-
-        yaoi = c.execute(
-            select(yaoi_db.c.id, yaoi_db.c.filename).where(yaoi_db.c.approved == False)
-        ).fetchone()
-
-        if yaoi is not None:
-            await ctx.respond(
-                view=YuriApproval("yaoi", yaoi[0]),
-                embed=Embed(
-                    title="Approve this yaoi",
-                    image=f"attachment://{yaoi[1].split('/')[-1]}",
-                ),
-                file=File(yaoi[1]),
-                ephemeral=True,
-            )
-            return True
-
-    return False
-
-
-async def respond_with_next_non_alted_content(ctx: Interaction) -> bool:
-    with engine.begin() as c:
-        yuri = c.execute(
-            select(yuri_db.c.id, yuri_db.c.filename).where(yuri_db.c.alt == "")
-        ).fetchone()
-
-        if yuri is not None:
-            await ctx.respond(
-                view=YuriAskForAltText("yuri", yuri[0]),
-                embed=Embed(
-                    title="Add alt text to this yuri using the button below",
-                    image=f"attachment://{yuri[1].split('/')[-1]}",
-                ),
-                file=File(yuri[1]),
-                ephemeral=True,
-            )
-            return True
-
-        yaoi = c.execute(
-            select(yaoi_db.c.id, yaoi_db.c.filename).where(yaoi_db.c.approved == False)
-        ).fetchone()
-
-        if yaoi is not None:
-            await ctx.respond(
-                view=YuriAskForAltText("yaoi", yaoi[0]),
-                embed=Embed(
-                    title="Add alt text to this yaoi using the button below",
-                    image=f"attachment://{yaoi[1].split('/')[-1]}",
-                ),
-                file=File(yaoi[1]),
-                ephemeral=True,
-            )
-            return True
-
-    return False
 
 
 async def respond_with_thing_to_approve(ctx: Interaction) -> bool:
@@ -249,149 +169,12 @@ class YuriCWModal(Modal):
             )
 
 
-class YuriAltTextModal(Modal):
-    def __init__(
-        self, type: str, id: int, prefill: str = "", status_id: str | None = None
-    ):
-        super().__init__(title=f"Add alt text to this {type}")
-        self.type = type
-        self.content_id = id
-        self.alt = InputText(
-            label="Alt text", placeholder="2 girls making out sloppy style no socks"
-        )
-        self.alt.value = prefill
-        self.add_item(self.alt)
-        self.status_id = status_id
-
-    async def callback(self, interaction: Interaction):
-        new_alt = self.alt.value or ""
-
-        with engine.begin() as c:
-            if self.type == "yuri":
-                c.execute(
-                    update(yuri_db)
-                    .where(yuri_db.c.id == self.content_id)
-                    .values(alt=new_alt)
-                )
-            elif self.type == "yaoi":
-                c.execute(
-                    update(yaoi_db)
-                    .where(yaoi_db.c.id == self.content_id)
-                    .values(alt=new_alt)
-                )
-
-        if self.status_id is not None:
-            self.update_status()
-            await interaction.respond("Custom alt text added.", ephemeral=True)
-            return
-
-        if not await respond_with_next_non_alted_content(interaction):
-            await interaction.respond("All done!", ephemeral=True)
-
-    def update_status(self):
-        if self.status_id is None:
-            return
-
-        if self.type == "yuri" and yuribot is not None:
-            status = yuribot.mastodon_yuribot.status(self.status_id)
-            yuribot.mastodon_yuribot.status_update(
-                status,
-                status.content,
-                spoiler_text=status.spoiler_text,
-                media_attributes=[
-                    yuribot.mastodon_yuribot.generate_media_edit_attributes(
-                        status.media_attachments[0].id,
-                        description=self.alt.value,
-                    )
-                ],
-            )
-        elif self.type == "yaoi" and yaoibot is not None:
-            status = yaoibot.mastodon_yaoibot.status(self.status_id)
-            yaoibot.mastodon_yaoibot.status_update(
-                status,
-                status.content,
-                spoiler_text=status.spoiler_text,
-                media_attributes=[
-                    yaoibot.mastodon_yaoibot.generate_media_edit_attributes(
-                        status.media_attachments[0].id,
-                        description=self.alt.value,
-                    )
-                ],
-            )
-
-
 class YuriAskForAltText(View):
     def __init__(self, type: str, content_id: int):
         super().__init__()
 
         self.type = type
         self.content_id = content_id
-
-    @button(label="Set alt", style=ButtonStyle.secondary)
-    async def set_alt(self, button: Button, interaction: Interaction):
-        await interaction.response.send_modal(
-            YuriAltTextModal(self.type, self.content_id)
-        )
-
-
-class YuriApproval(View):
-    def __init__(self, type: str, content_id: int):
-        super().__init__()
-
-        self.type = type
-        self.content_id = content_id
-
-    @button(label="Approve", style=ButtonStyle.green)
-    async def approve_yuri(self, button: Button, ctx: Interaction):
-        with engine.begin() as c:
-            if self.type == "yuri":
-                c.execute(
-                    update(yuri_db)
-                    .where(yuri_db.c.id == self.content_id)
-                    .values(approved=True)
-                )
-            elif self.type == "yaoi":
-                c.execute(
-                    update(yaoi_db)
-                    .where(yaoi_db.c.id == self.content_id)
-                    .values(approved=True)
-                )
-
-        if not await respond_with_next_yuri(ctx):
-            await ctx.respond("All done!", ephemeral=True)
-
-    @button(label="Reject", style=ButtonStyle.red)
-    async def reject_yuri(self, button: Button, ctx: Interaction):
-        with engine.begin() as c:
-            if self.type == "yuri":
-                yuri = c.execute(
-                    select(yuri_db.c.filename).where(yuri_db.c.id == self.content_id)
-                ).fetchone()
-
-                if yuri is None:
-                    return
-
-                os.remove(yuri[0])
-
-                c.execute(delete(yuri_db).where(yuri_db.c.id == self.content_id))
-            elif self.type == "yaoi":
-                yaoi = c.execute(
-                    select(yaoi_db.c.filename).where(yaoi_db.c.id == self.content_id)
-                ).fetchone()
-
-                if yaoi is None:
-                    return
-
-                os.remove(yaoi[0])
-
-                c.execute(delete(yaoi_db).where(yaoi_db.c.id == self.content_id))
-
-        if not await respond_with_next_yuri(ctx):
-            await ctx.respond("All done!", ephemeral=True)
-
-    @button(label="Set CW", style=ButtonStyle.secondary)
-    async def set_cw(self, button: Button, interaction: Interaction):
-        await interaction.response.send_modal(YuriCWModal(self.type, self.content_id))
 
     @button(label="Set alt", style=ButtonStyle.secondary)
     async def set_alt(self, button: Button, interaction: Interaction):

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Info of {{yuri}}</title>
+        <style>
+            :root {
+                color-scheme: dark;
+            }
+        </style>
+    </head>
+    <body>
+        <h2>{{yuri}}</h2>
+
+        {% for flash in get_flashed_messages() %}
+        <p style="color: lightgreen">{{flash}}</p>
+        {% endfor %} {% if cw|length > 0 %}
+        <details>
+            <summary>{{cw}}</summary>
+            <img
+                src="data:{{mime}};base64, {{img}}"
+                alt="{{alt}}"
+                style="max-width: 100vw; max-height: 100vh"
+            />
+        </details>
+        {% else %}
+        <img
+            src="data:{{mime}};base64, {{img}}"
+            alt="{{alt}}"
+            style="max-width: 100vw; max-height: 100vh"
+        />
+        {% endif %}
+
+        <p>Source: <a href="{{source}}">{{source}}</a></p>
+
+        <h2>Suggest a better CW</h2>
+
+        <form method="post">
+            <label for="cw">CW</label>
+            <input type="text" name="cw" id="cw" value="{{cw}}" />
+            <button>Send suggestion</button>
+        </form>
+
+        {% if alt|length == 0 %}
+        <h2>Alt text</h2>
+        <p>This media is missing alt text, send it below to help out!</p>
+        <form method="post">
+            <label for="alt">Alt text</label>
+            <textarea name="alt" id="alt"></textarea>
+            <button>Send alt text suggestion</button>
+        </form>
+        {% endif %}
+    </body>
+</html>
