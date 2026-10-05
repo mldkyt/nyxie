@@ -1,4 +1,5 @@
 import base64
+import logging
 import mimetypes
 import os
 import sys
@@ -315,7 +316,7 @@ def info():
                         )
                     ).fetchone()
 
-                    if suggestion is not None:
+                    if suggestion is None:
                         c.execute(
                             insert(alt_text_suggestions).values(
                                 fid=int(request.args["id"]),
@@ -326,7 +327,7 @@ def info():
 
                         flash("Alt text suggestion was sent successfully")
                     else:
-                        flash("Suggestion already pending")
+                        flash("Alt text suggestion already pending")
 
             else:
                 flash("Alt text already exists")
