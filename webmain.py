@@ -6,6 +6,7 @@ from flask import Flask
 
 from constants import SENTRY_SDK
 from web.messages import messages_bp
+from web.web import web_bp
 from web.yuri_api import yuri_bp
 
 load_dotenv()
@@ -24,6 +25,7 @@ app.secret_key = os.getenv("WEB_SECRET", "1234")
 
 app.register_blueprint(messages_bp)
 app.register_blueprint(yuri_bp)
+app.register_blueprint(web_bp)
 
 
 def main():
