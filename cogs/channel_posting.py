@@ -16,7 +16,6 @@ from discord import (
     slash_command,
 )
 from discord.ext.tasks import loop
-from sentry_sdk import capture_exception
 
 from constants import (
     CHANNEL_MEOW,
@@ -26,6 +25,7 @@ from constants import (
     VERSION,
 )
 from database import engine
+from logger import nyxie_logger
 from util.yaoibot import yaoibot
 from util.yuri_util import (
     get_some_yaoi,
@@ -79,7 +79,7 @@ async def post_yuri(bot: Bot):
         if yuribot is not None:
             await yuribot.also_post_on_fedi(yuri_filename, yuri_source, cw)
     except Exception as e:
-        capture_exception(e)
+        nyxie_logger.exception("Failed to post yuri")
 
 
 async def post_yaoi(bot: Bot):
@@ -124,7 +124,7 @@ async def post_yaoi(bot: Bot):
         if yaoibot is not None:
             await yaoibot.also_post_on_fedi(yaoi_filename, yaoi_source, cw)
     except Exception as e:
-        capture_exception(e)
+        nyxie_logger.exception("Failed to post yaoi")
 
 
 def generate_meow():

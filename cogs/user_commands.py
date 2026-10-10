@@ -19,13 +19,13 @@ from discord.ui import (
     View,
     button,
 )
-from sentry_sdk import capture_exception
 
 from constants import (
     OWNER,
     VERSION,
 )
 from database import engine
+from logger import nyxie_logger
 from util.yuri_util import get_some_yaoi, get_some_yuri
 
 dm_cache = []
@@ -85,7 +85,7 @@ class RefreshTimeView(discord.ui.View):
                 f"you: <t:{int(utc_time.timestamp())}:F>"
             )
         except Exception as e:
-            capture_exception(e)
+            nyxie_logger.exception("The /time refresh button failed")
             await interaction.response.send_message("error :(", ephemeral=True)
 
 
@@ -202,7 +202,7 @@ class UserCommands(discord.Cog):
 
             await ctx.respond(msg)
         except Exception as e:
-            capture_exception(e)
+            nyxie_logger.exception("Failed to send a simple response")
 
     @user_commands.command(
         name="information",
@@ -234,7 +234,7 @@ class UserCommands(discord.Cog):
                 ephemeral=not public,
             )
         except Exception as e:
-            capture_exception(e)
+            nyxie_logger.exception("Failed to print info about bot")
             await ctx.respond("error", ephemeral=True)
 
     @user_commands.command(name="time", description="Get time for mldkyt")
@@ -258,7 +258,7 @@ class UserCommands(discord.Cog):
                 view=RefreshTimeView(),
             )
         except Exception as e:
-            capture_exception(e)
+            nyxie_logger.exception("Failed to send time")
             await ctx.respond(
                 "An error occurred while executing the command.", ephemeral=True
             )
@@ -274,7 +274,7 @@ class UserCommands(discord.Cog):
                 ephemeral=True,
             )
         except Exception as e:
-            capture_exception(e)
+            nyxie_logger.exception("Failed to print version information")
             await ctx.respond("Error!", ephemeral=True)
 
     @discord.slash_command(
@@ -324,7 +324,7 @@ class UserCommands(discord.Cog):
                 else None,
             )
         except Exception as e:
-            capture_exception(e)
+            nyxie_logger.exception("Failed to send yuri")
             await ctx.respond(f"error: {e!s}", ephemeral=True)
 
     @discord.slash_command(
@@ -374,7 +374,7 @@ class UserCommands(discord.Cog):
                 else None,
             )
         except Exception as e:
-            capture_exception(e)
+            nyxie_logger.exception("Failed to send yaoi")
             await ctx.respond(f"Error: {e!s}", ephemeral=True)
 
     @tasks.loop(seconds=5)
@@ -390,7 +390,7 @@ class UserCommands(discord.Cog):
 
             dm_cache.clear()
         except Exception as e:
-            capture_exception(e)
+            nyxie_logger.exception("Failed to handle system queue")
 
 
 def setup(bot: Bot):

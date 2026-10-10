@@ -2,7 +2,8 @@ import os
 from asyncio import sleep
 
 from mastodon import Mastodon
-from sentry_sdk import capture_exception
+
+from logger import nyxie_logger
 
 
 class YaoiBot:
@@ -25,7 +26,7 @@ class YaoiBot:
                 await sleep((i + 1) * 5000)
 
                 if i == 2:
-                    capture_exception(e)
+                    nyxie_logger.exception("3 attempts at posting yaoi on fedi failed")
                     return
 
         assert yaoi_media_id is not None

@@ -2,7 +2,6 @@ import html2text
 from discord import Bot, Cog
 from discord.ext.tasks import loop
 from mastodon.Mastodon import Notification
-from sentry_sdk import capture_exception
 from sqlalchemy import Connection, insert, select
 
 from cogs.channel_posting import yuribot
@@ -14,6 +13,7 @@ from database import (
     yaoi_db,
     yuri_db,
 )
+from logger import nyxie_logger
 from util.yaoibot import yaoibot
 
 
@@ -163,7 +163,7 @@ class MastodonNotifications(Cog):
                             )
                         )
                 except Exception as e:
-                    capture_exception(e)
+                    nyxie_logger.exception("Failed checking yuribot notifications")
 
     @loop(minutes=1)
     async def acknowledge_yaoi_notifications(self):
@@ -257,7 +257,7 @@ class MastodonNotifications(Cog):
                             )
                         )
                 except Exception as e:
-                    capture_exception(e)
+                    nyxie_logger.exception("Failed to check yaoibot notifications")
 
 
 def setup(bot: Bot):

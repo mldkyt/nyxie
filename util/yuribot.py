@@ -2,7 +2,8 @@ import os
 from asyncio import sleep
 
 from mastodon import Mastodon
-from sentry_sdk import capture_exception
+
+from logger import nyxie_logger
 
 
 class YuriBot:
@@ -23,7 +24,7 @@ class YuriBot:
                 await sleep((i + 1) * 5000)
 
                 if i == 2:
-                    capture_exception(e)
+                    nyxie_logger.exception("3 attempts at uploading yuri failed")
                     return
 
         assert yuri_media_id is not None

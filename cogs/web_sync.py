@@ -13,11 +13,11 @@ from discord import (
     Thread,
 )
 from discord.abc import GuildChannel
-from sentry_sdk import capture_exception
 from sqlalchemy import delete, update
 
 from constants import GUILD, OWNER, MEMBER_ROLE
 from database import engine, web_authors_list, web_channels_list
+from logger import nyxie_logger
 from util.web_sync import Consent, add_message, remove_message, unpin_all_messages
 
 
@@ -38,7 +38,7 @@ class WebSync(Cog):
                     try:
                         await add_message(message)
                     except Exception as e:
-                        capture_exception(e)
+                        nyxie_logger.exception("Failed to add message (on_ready)")
 
         self.bot.add_view(Consent())
 
@@ -64,7 +64,7 @@ class WebSync(Cog):
             await add_message(message)
 
         except Exception as e:
-            capture_exception(e)
+            nyxie_logger.exception("Failed to add message (on_message)")
 
     @Cog.listener()
     async def on_raw_message_edit(self, payload: RawMessageUpdateEvent):
@@ -89,7 +89,7 @@ class WebSync(Cog):
                 return
             await add_message(message)  # will update
         except Exception as e:
-            capture_exception(e)
+            nyxie_logger.exception("Failed to add message (on_message_edit_raw)")
 
     @Cog.listener()
     async def on_member_remove(self, member: Member):
@@ -105,7 +105,7 @@ class WebSync(Cog):
         try:
             remove_message(payload.message_id)
         except Exception as e:
-            capture_exception(e)
+            nyxie_logger.exception("Failed to remove message (on_raw_mesage_delete)")
 
     @Cog.listener()
     async def on_guild_channel_create(self, channel: GuildChannel):
@@ -114,9 +114,9 @@ class WebSync(Cog):
                 try:
                     await add_message(message)
                 except Exception as e:
-                    capture_exception(e)
+                    nyxie_logger.exception("Failed to add message (guild_channel_create)")
         except Exception as e:
-            capture_exception(e)
+            nyxie_logger.exception("Failed to update messages on guild_channel_create")
 
     @Cog.listener()
     async def on_guild_channel_delete(self, channel: GuildChannel):
@@ -128,7 +128,7 @@ class WebSync(Cog):
                     )
                 )
         except Exception as e:
-            capture_exception(e)
+            nyxie_logger.exception("Failed to remove channel (channel_delete)")
 
     @Cog.listener()
     async def on_guild_channel_update(self, before: GuildChannel, after: GuildChannel):
@@ -136,7 +136,7 @@ class WebSync(Cog):
             try:
                 await add_message(message)
             except Exception as e:
-                capture_exception(e)
+                nyxie_logger.exception("Failed to add message (on_guild_channel_update)")
 
     @Cog.listener()
     async def on_guild_channel_pins_update(

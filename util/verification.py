@@ -13,11 +13,11 @@ from discord import (
     TextChannel,
 )
 from discord.ui import Button, InputText, Modal, View, button
-from sentry_sdk import capture_exception
 from sqlalchemy import delete, insert, select
 
 from constants import CHANNEL_GENERAL, CHANNEL_MODERATION, MEMBER_ROLE, OWNER
 from database import engine, verifications
+from logger import nyxie_logger
 
 
 class VerificationModeratorDeclineModal(Modal):
@@ -118,7 +118,7 @@ class VerificationModeratorDeclineModal(Modal):
 
             await interaction.respond("member declined", ephemeral=True)
         except Exception as e:
-            capture_exception(e)
+            nyxie_logger.exception("Error occured while declining member verification")
 
 
 class VerificationModeratorView(View):
@@ -192,7 +192,7 @@ class VerificationModeratorView(View):
             await interaction.edit(embeds=[embed], view=self)
             self.stop()
         except Exception as e:
-            capture_exception(e)
+            nyxie_logger.exception("Error occured when approving member")
 
     @button(label="Decline", style=ButtonStyle.danger, custom_id="verification:decline")
     async def decline(self, button, interaction: Interaction):
@@ -228,7 +228,7 @@ class VerificationModeratorView(View):
                 VerificationModeratorDeclineModal(int(message[0]), interaction.message)
             )
         except Exception as e:
-            capture_exception(e)
+            nyxie_logger.exception("Error occured when declining member modal showing")
 
     @button(
         label="Decline and Ban",
@@ -270,7 +270,7 @@ class VerificationModeratorView(View):
                 )
             )
         except Exception as e:
-            capture_exception(e)
+            nyxie_logger.exception("Error occured when declining and banning member modal showing")
 
 
 class VerificationView(View):
@@ -304,7 +304,7 @@ class VerificationView(View):
 
             await interaction.response.send_modal(VerificationModal())
         except Exception as e:
-            capture_exception(e)
+            nyxie_logger.exception("Error when starting verify")
 
 
 class VerificationModal(Modal):
@@ -396,7 +396,7 @@ class VerificationModal(Modal):
                 "your verification is now pending.", ephemeral=True
             )
         except Exception as e:
-            capture_exception(e)
+            nyxie_logger.exception("Failed to handle verification submission")
 
 
 async def unverified_members(guild: Guild):

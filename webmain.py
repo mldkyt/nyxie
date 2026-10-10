@@ -1,8 +1,11 @@
+import logging
 import os
 
 import sentry_sdk
 from dotenv import load_dotenv
 from flask import Flask
+from sentry_sdk.integrations.flask import FlaskIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
 
 from constants import SENTRY_SDK
 from web.messages import messages_bp
@@ -14,6 +17,10 @@ load_dotenv()
 if SENTRY_SDK:
     sentry_sdk.init(
         dsn=SENTRY_SDK,
+        integrations=[
+            FlaskIntegration(),
+            LoggingIntegration(level=logging.INFO, event_level=logging.ERROR),
+        ],
         send_default_pii=True,
         max_request_body_size="always",
         traces_sample_rate=1,

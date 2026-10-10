@@ -1,8 +1,8 @@
 import discord
 from discord import ApplicationContext, Bot, Member
-from sentry_sdk import capture_exception
 
 from constants import GUILD, OWNER
+from logger import nyxie_logger
 from util.dm import dm_cache
 
 
@@ -33,7 +33,7 @@ class DevCommands(discord.Cog):
             dm_cache.add_dm_to_send(user.id, message)
             await ctx.respond("Dm will be sent", ephemeral=True)
         except Exception as e:
-            capture_exception(e)
+            nyxie_logger.exception("Failed to send test DM")
             await ctx.respond("an error occured", ephemeral=True)
 
 

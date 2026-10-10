@@ -14,11 +14,11 @@ from discord import (
 )
 from discord.ext.pages import Paginator
 from discord.ext.tasks import loop
-from sentry_sdk import capture_exception
 from sqlalchemy import delete, select
 
 from constants import CHANNEL_MODERATION, CHANNEL_VERIFICATION, OWNER
 from database import engine, verifications
+from logger import nyxie_logger
 from util.verification import (
     RejoinView,
     VerificationModeratorView,
@@ -138,8 +138,8 @@ class Verification(Cog):
                 f"{member.mention} please verify in this channel 🖤"
             )
             await message.delete(delay=5)
-        except Exception as e:
-            capture_exception(e)
+        except Exception:
+            nyxie_logger.exception("Failed to ghost ping new member to verify")
 
     @Cog.listener()
     async def on_member_remove(self, member: Member):
@@ -172,7 +172,7 @@ class Verification(Cog):
             with engine.begin() as c:
                 c.execute(delete(verifications).where(verifications.c.id == message[1]))
         except Exception as e:
-            capture_exception(e)
+            nyxie_logger.exception("Member leave verification tasks failed")
 
     @loop(seconds=5)
     async def kick_member(self):
@@ -195,7 +195,7 @@ class Verification(Cog):
 
             await kick_this_member.kick(reason="Not verified in time period")
         except Exception as e:
-            capture_exception(e)
+            nyxie_logger.exception("Failed to kick member for missing verification window")
 
     @loop(seconds=5)
     async def dm_member(self):
@@ -223,7 +223,7 @@ class Verification(Cog):
                 await message.delete(delay=5)
 
         except Exception as e:
-            capture_exception(e)
+            nyxie_logger.exception("Failed to DM members about their verification window")
 
 
 def setup(bot: Bot):

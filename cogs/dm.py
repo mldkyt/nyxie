@@ -1,11 +1,11 @@
 from discord import Bot, Cog, Embed, Guild, PermissionOverwrite, TextChannel
 from discord.ext.tasks import loop
 from discord.ui import DesignerView
-from sentry_sdk import capture_exception
 from sqlalchemy import delete, insert, select
 
 from constants import GUILD
 from database import dm_channels, engine
+from logger import nyxie_logger
 from util.dm import dm_cache
 
 
@@ -23,7 +23,6 @@ class DM(Cog):
     async def ensure_channel(self, user_id: int, r=0) -> TextChannel:
         if r > 3:
             e = RecursionError("Too many attempts to create a channel were performed")
-            capture_exception(e)
             raise e
 
         # Check channel
@@ -40,7 +39,7 @@ class DM(Cog):
                 if channel is not None:
                     return channel
             except Exception as e:
-                capture_exception(e)
+                nyxie_logger.exception("Failed to fetch DM channel, will attempt with a new one")
                 with engine.begin() as c:
                     c.execute(
                         delete(dm_channels).where(dm_channels.c.user_id == str(user_id))
@@ -50,7 +49,6 @@ class DM(Cog):
         try:
             user = await self.guild.fetch_member(user_id)
         except Exception as e:
-            capture_exception(e)
             raise e
 
         # Create new channel
@@ -81,7 +79,7 @@ class DM(Cog):
             try:
                 user = await self.guild.fetch_member(message[0])
             except Exception as e:
-                capture_exception(e)
+                nyxie_logger.exception("Failed to fetch member")
 
             try:
                 if isinstance(message[1], DesignerView):
@@ -95,7 +93,7 @@ class DM(Cog):
                     channel = await self.ensure_channel(message[0])
                     await channel.send(f"{user.mention}, {message[1]}")
                 except Exception as e:
-                    capture_exception(e)
+                    nyxie_logger.exception("Failed to ensure DM channel")
 
             message = dm_cache.get_message_to_send()
 
