@@ -8,7 +8,7 @@ from discord import (
     Interaction,
     Message,
     TextChannel,
-    Thread,
+    Thread, Member, Bot,
 )
 from discord.abc import GuildChannel
 from discord.ui import Button, View, button
@@ -24,7 +24,17 @@ from database import (
     web_messages_attachments_list,
     web_messages_list,
 )
+from util.kv import KV
 
+kv_member_count = KV(
+    "Member Count",
+    default="0"
+)
+
+kv_online_count = KV(
+    "Online Count",
+    default="0"
+)
 
 def _add_author(c: Connection, message: Message):
     username = message.author.name
@@ -924,3 +934,9 @@ class Consent(View):
                     view=RemoveConsent(),
                     ephemeral=True,
                 )
+
+async def update_member_counts(bot: Bot, member: Member):
+    await bot.fetch_guild(member.guild.id, with_counts=True)
+    with engine.begin() as c:
+        kv_member_count.set(c, member.guild.id, str(member.guild.member_count))
+        kv_online_count.set(c, member.guild.id, str(member.guild.approximate_presence_count))

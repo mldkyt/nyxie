@@ -144,3 +144,11 @@ verifications = Table(
     Column("moderator_message_id", VARCHAR, nullable=False),
     Column("member_id", VARCHAR, nullable=False),
 )
+
+kv = Table(
+    "kv",
+    md_obj,
+    Column("uid", VARCHAR, primary_key=True),
+    Column("name", VARCHAR, primary_key=True),
+    Column("value", VARCHAR),
+)
