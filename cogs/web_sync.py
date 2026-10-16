@@ -18,7 +18,8 @@ from sqlalchemy import delete, update
 from constants import GUILD, OWNER, MEMBER_ROLE
 from database import engine, web_authors_list, web_channels_list
 from logger import nyxie_logger
-from util.web_sync import Consent, add_message, remove_message, unpin_all_messages
+from util.web_sync import Consent, add_message, remove_message, unpin_all_messages, kv_member_count, kv_online_count, \
+    update_member_counts
 
 
 class WebSync(Cog):
@@ -150,6 +151,13 @@ class WebSync(Cog):
         async for pinned in channel.pins():
             await add_message(pinned.message)
 
+    @Cog.listener()
+    async def on_member_join(self, member: Member):
+        await update_member_counts(self.bot, member)
+
+    @Cog.listener()
+    async def on_member_remove(self, member: Member):
+        await update_member_counts(self.bot, member)
 
 def setup(bot: Bot):
     bot.add_cog(WebSync(bot))

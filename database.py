@@ -144,3 +144,22 @@ verifications = Table(
     Column("moderator_message_id", VARCHAR, nullable=False),
     Column("member_id", VARCHAR, nullable=False),
 )
+
+kv = Table(
+    "kv",
+    md_obj,
+    Column("uid", VARCHAR, primary_key=True),
+    Column("name", VARCHAR, primary_key=True),
+    Column("value", VARCHAR),
+)
+
+qna_messages = Table(
+    "qna_messages",
+    md_obj,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("message_1_id", VARCHAR, nullable=False),
+    Column("message_2_id", VARCHAR, nullable=False),
+    Column("question", VARCHAR, nullable=False),
+    Column("answer", VARCHAR, nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default="now()"),
+)
