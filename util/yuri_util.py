@@ -17,7 +17,7 @@ def get_some_yuri(
         select(max(yuri_db.c.priority)).where(yuri_db.c.approved == True)
     ).fetchone()
     if not top_priority:
-        return None, None, None, None
+        return None, None, None, None, None
 
     top_priority = top_priority[0]
 
@@ -53,7 +53,7 @@ def get_some_yaoi(
         select(max(yaoi_db.c.priority)).where(yaoi_db.c.approved == True)
     ).fetchone()
     if not top_priority:
-        return None, None, None, None
+        return None, None, None, None, None
 
     top_priority = top_priority[0]
 
