@@ -6,8 +6,6 @@ from sqlalchemy import Connection, delete, select, update
 from sqlalchemy.sql.functions import max
 
 from database import alt_text_suggestions, cw_suggestions, engine, yaoi_db, yuri_db
-from util.yaoibot import yaoibot
-from util.yuribot import yuribot
 
 
 async def respond_with_thing_to_approve(ctx: Interaction) -> bool:
@@ -137,37 +135,6 @@ class YuriCWModal(Modal):
             "CW " + ("updated" if len(new_cw) > 0 else "removed"), ephemeral=True
         )
 
-    def update_status(self):
-        if self.status_id is None:
-            return
-
-        if self.type == "yuri" and yuribot is not None:
-            status = yuribot.mastodon_yuribot.status(self.status_id)
-            yuribot.mastodon_yuribot.status_update(
-                status,
-                status.content,
-                spoiler_text=self.cw.value,
-                media_attributes=[
-                    yuribot.mastodon_yuribot.generate_media_edit_attributes(
-                        status.media_attachments[0].id,
-                        description=status.media_attachments[0].description,
-                    )
-                ],
-            )
-        elif self.type == "yaoi" and yaoibot is not None:
-            status = yaoibot.mastodon_yaoibot.status(self.status_id)
-            yaoibot.mastodon_yaoibot.status_update(
-                status,
-                status.content,
-                spoiler_text=self.cw.value,
-                media_attributes=[
-                    yaoibot.mastodon_yaoibot.generate_media_edit_attributes(
-                        status.media_attachments[0].id,
-                        description=status.media_attachments[0].description,
-                    )
-                ],
-            )
-
 
 class YuriAskForAltText(View):
     def __init__(self, type: str, content_id: int):
@@ -277,21 +244,6 @@ class ApproveAltText(View):
             await interaction.respond("what", ephemeral=True)
             return
 
-        # Update status
-        if yuribot is not None:
-            status = yuribot.mastodon_yuribot.status(alt_text[1])
-            yuribot.mastodon_yuribot.status_update(
-                status,
-                status.content,
-                spoiler_text=status.spoiler_text,
-                media_attributes=[
-                    yuribot.mastodon_yuribot.generate_media_edit_attributes(
-                        status.media_attachments[0].id,
-                        description=f"{alt_text[3]}\n\nAlt text suggested by {alt_text[4]} and approved by mldkyt.",
-                    )
-                ],
-            )
-
         # Update the record
         with engine.begin() as c:
             if alt_text[2] == "yuri":
@@ -387,21 +339,6 @@ class ApproveCW(View):
         if cw is None:
             await interaction.respond("what", ephemeral=True)
             return
-
-        # Update status
-        if yuribot is not None:
-            status = yuribot.mastodon_yuribot.status(cw[1])
-            yuribot.mastodon_yuribot.status_update(
-                status,
-                status.content,
-                spoiler_text=cw[3],
-                media_attributes=[
-                    yuribot.mastodon_yuribot.generate_media_edit_attributes(
-                        id=status.media_attachments[0].id,
-                        description=status.media_attachments[0].description,
-                    )
-                ],
-            )
 
         # Update the record
         with engine.begin() as c:
