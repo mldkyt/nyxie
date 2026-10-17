@@ -14,6 +14,7 @@ COPY webmain.py .
 COPY main.py .
 COPY constants.py .
 COPY database.py .
+COPY logger.py .
 COPY cogs/ cogs/.
 COPY util/ util/.
 COPY alembic.ini .
