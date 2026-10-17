@@ -26,7 +26,7 @@ from constants import (
 )
 from database import engine
 from logger import nyxie_logger
-from util.yuri_util import get_some_yaoi, get_some_yuri
+from util.yuri_util import get_some_yaoi, get_some_yuri, authorize_yuri_command
 
 dm_cache = []
 
@@ -292,6 +292,10 @@ class UserCommands(discord.Cog):
         more_yuri_spam_btn: bool = False,
     ):
         try:
+            if not await authorize_yuri_command(ctx):
+                await ctx.respond("Unauthorized!", ephemeral=True)
+                return
+
             with engine.begin() as c:
                 yuri_filename, yuri_source, cw, alt, yuri_id = get_some_yuri(c)
 
@@ -342,6 +346,10 @@ class UserCommands(discord.Cog):
         more_yaol_spam_btn: bool = False,
     ):
         try:
+            if not await authorize_yuri_command(ctx):
+                await ctx.respond("Unauthorized!", ephemeral=True)
+                return
+
             with engine.begin() as c:
                 yaoi_filename, yaoi_source, cw, alt, yaoi_id = get_some_yaoi(c)
 

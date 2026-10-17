@@ -1,9 +1,11 @@
 import random
 
+from discord import ApplicationContext
 from sqlalchemy import Connection, select, update
 from sqlalchemy.sql.functions import max
 
-from database import yaoi_db, yuri_db
+from constants import OWNER
+from database import yaoi_db, yuri_db, engine, yuri_authorized_users
 
 
 def get_some_yuri(
@@ -76,3 +78,17 @@ def get_some_yaoi(
     )
 
     return yaoi[1], yaoi[2], yaoi[3], yaoi[4], yaoi[0]
+
+
+async def authorize_yuri_command(ctx: ApplicationContext) -> bool:
+    if ctx.author.id == int(OWNER):
+        return True
+
+    with engine.begin() as c:
+        if c.execute(
+                select(yuri_authorized_users.c.id)
+                        .where(yuri_authorized_users.c.uid == str(ctx.user.id))
+        ).fetchone() is not None:
+            return True
+
+    return False

@@ -1,8 +1,8 @@
-from discord import Cog, SlashCommandGroup, ApplicationContext, Bot
-from sqlalchemy import update
+from discord import Cog, SlashCommandGroup, ApplicationContext, Bot, User
+from sqlalchemy import update, insert, select, delete
 
 from constants import OWNER, GUILD
-from database import engine, yuri_db, yaoi_db
+from database import engine, yuri_db, yaoi_db, yuri_authorized_users
 
 
 class YuriMgmt(Cog):
@@ -67,6 +67,54 @@ class YuriMgmt(Cog):
                 )
 
         await ctx.respond("Updated yaoi entry", ephemeral=True)
+
+    @yuri_management.command(name="authorize")
+    async def authorize(self, ctx: ApplicationContext,
+                        user: User):
+        """Authorize user to yuri/yaoi commands"""
+
+        if ctx.user.id != int(OWNER):
+            await ctx.respond("This is limited to owner of bot only", ephemeral=True)
+            return
+
+        with engine.begin() as c:
+            if c.execute(
+                    select(yuri_authorized_users.c.id)
+                            .where(yuri_authorized_users.c.uid == str(user.id))
+            ).fetchone() is not None:
+                await ctx.respond("This user is already authorized", ephemeral=True)
+                return
+
+            c.execute(
+                insert(yuri_authorized_users)
+                .values(uid=str(user.id))
+            )
+
+        await ctx.respond("User was authorized", ephemeral=True)
+
+    @yuri_management.command(name="deauthorize")
+    async def deauthorize(self, ctx: ApplicationContext,
+                          user: User):
+        """Deauthorize user to yuri/yaoi commands"""
+
+        if ctx.user.id != int(OWNER):
+            await ctx.respond("This is limited to owner of bot only", ephemeral=True)
+            return
+
+        with engine.begin() as c:
+            if c.execute(
+                    select(yuri_authorized_users.c.id)
+                            .where(yuri_authorized_users.c.uid == str(user.id))
+            ).fetchone() is None:
+                await ctx.respond("This user is not authorized", ephemeral=True)
+                return
+
+            c.execute(
+                delete(yuri_authorized_users)
+                .where(yuri_authorized_users.c.uid == str(user.id))
+            )
+
+        await ctx.respond("User was deauthorized", ephemeral=True)
 
 
 def setup(bot: Bot):
