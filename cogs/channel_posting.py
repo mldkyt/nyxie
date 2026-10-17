@@ -3,22 +3,16 @@ from datetime import datetime
 from random import choice, randint
 
 from discord import (
-    ApplicationContext,
     Bot,
     Cog,
     Guild,
     TextChannel,
-    default_permissions,
-    slash_command,
 )
 from discord.ext.tasks import loop
 
 from constants import (
     CHANNEL_MEOW,
     GUILD,
-)
-from util.yuri_util import (
-    respond_with_thing_to_approve,
 )
 
 DEBUG = False
@@ -65,12 +59,6 @@ class ChannelPosting(Cog):
 
         if (now.hour == 0 and now.minute == 0) or DEBUG:
             await post_meow(self.bot)
-
-    @slash_command(name="approve_fedi_suggestions")
-    @default_permissions(manage_guild=True)
-    async def approve_fedi_suggestions(self, ctx: ApplicationContext):
-        if not await respond_with_thing_to_approve(ctx.interaction):
-            await ctx.respond("nothing to approve", ephemeral=True)
 
 
 def setup(bot: Bot):
