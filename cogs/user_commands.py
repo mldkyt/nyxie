@@ -26,7 +26,7 @@ from constants import (
 )
 from database import engine
 from logger import nyxie_logger
-from util.yuri_util import get_some_yaoi, get_some_yuri
+from util.yuri_util import get_some_yaoi, get_some_yuri, authorize_yuri_command
 
 dm_cache = []
 
@@ -292,8 +292,12 @@ class UserCommands(discord.Cog):
         more_yuri_spam_btn: bool = False,
     ):
         try:
+            if not await authorize_yuri_command(ctx):
+                await ctx.respond("Unauthorized!", ephemeral=True)
+                return
+
             with engine.begin() as c:
-                yuri_filename, yuri_source, cw, alt = get_some_yuri(c)
+                yuri_filename, yuri_source, cw, alt, yuri_id = get_some_yuri(c)
 
             if not yuri_filename:
                 await ctx.respond("no yuri found :(", ephemeral=True)
@@ -307,13 +311,13 @@ class UserCommands(discord.Cog):
                     title="yuri 🖤",
                     description=f"[source]({yuri_source})",
                     image=f"attachment://{yuri_filename.split('/')[-1]}",
-                    footer=EmbedFooter(f"nyxie {VERSION}"),
+                    footer=EmbedFooter(f"nyxie {VERSION} | yuri ID {yuri_id}"),
                 )
             else:
                 embed = Embed(
                     title="yuri 🖤",
                     description=f"[source]({yuri_source})",
-                    footer=EmbedFooter(f"nyxie {VERSION}"),
+                    footer=EmbedFooter(f"nyxie {VERSION} | yuri ID {yuri_id}"),
                 )
 
             await ctx.respond(
@@ -342,8 +346,12 @@ class UserCommands(discord.Cog):
         more_yaol_spam_btn: bool = False,
     ):
         try:
+            if not await authorize_yuri_command(ctx):
+                await ctx.respond("Unauthorized!", ephemeral=True)
+                return
+
             with engine.begin() as c:
-                yaoi_filename, yaoi_source, cw, alt = get_some_yaoi(c)
+                yaoi_filename, yaoi_source, cw, alt, yaoi_id = get_some_yaoi(c)
 
             if not yaoi_filename:
                 await ctx.respond("no yaoi found :(", ephemeral=True)
@@ -357,13 +365,13 @@ class UserCommands(discord.Cog):
                     title="yaoi 🖤",
                     description=f"[source]({yaoi_source})",
                     image=f"attachment://{yaoi_filename.split('/')[-1]}",
-                    footer=EmbedFooter(f"nyxie {VERSION}"),
+                    footer=EmbedFooter(f"nyxie {VERSION} | yaoi ID {yaoi_id}"),
                 )
             else:
                 embed = Embed(
                     title="yaoi 🖤",
                     description=f"[source]({yaoi_source})",
-                    footer=EmbedFooter(f"nyxie {VERSION}"),
+                    footer=EmbedFooter(f"nyxie {VERSION} | yaoi ID {yaoi_id}"),
                 )
 
             await ctx.respond(

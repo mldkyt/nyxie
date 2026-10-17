@@ -144,3 +144,10 @@ verifications = Table(
     Column("moderator_message_id", VARCHAR, nullable=False),
     Column("member_id", VARCHAR, nullable=False),
 )
+
+yuri_authorized_users = Table(
+    "yuri_authorized_users",
+    md_obj,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("uid", VARCHAR, nullable=False),
+)
