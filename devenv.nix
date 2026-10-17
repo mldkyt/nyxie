@@ -49,6 +49,14 @@
 
   processes.bot = {
     exec = "uv run main.py";
+    watch = {
+      paths = [
+        ./cogs
+        ./util
+      ];
+
+      extensions = ["py"];
+    };
   };
 
   tasks."db:push" = {
