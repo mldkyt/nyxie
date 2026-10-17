@@ -59,7 +59,7 @@ class YuriMgmt(Cog):
                     .values(cw="" if remove_cw else cw)
                     .where(yaoi_db.c.id == id)
                 )
-            if alt is not None:
+if alt is not None or remove_alt:
                 c.execute(
                     update(yaoi_db)
                     .values(alt="" if remove_alt else alt)
